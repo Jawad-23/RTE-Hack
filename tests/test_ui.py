@@ -50,3 +50,9 @@ def test_results_verdict_uses_plan_numbers(offline):
     text = " ".join(m.value for m in at.markdown)
     assert f"{rec['payback_years']:.1f}" in text
     assert f"{rec['capex_qar']:,.0f}" in text
+
+
+def test_assumptions_without_plan_shows_world_prices(offline):
+    at = run("views/assumptions.py")
+    assert not at.exception, at.exception
+    assert any("world median" in m.value for m in at.markdown)

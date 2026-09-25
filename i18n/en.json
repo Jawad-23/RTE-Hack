@@ -79,7 +79,7 @@
   "search_no_results": "No results found.",
   "search_error": "Search failed. Try again.",
   "est_count": "{n} of {total} rows are estimates.",
-  "estimate_banner": "Costs, prices and crop limits are still estimates, so treat these numbers as illustrative. See Assumptions.",
+  "estimate_banner": "Prices are FAOSTAT farm-gate prices and water use is calculated from this site's weather. Build costs and crop limits are still estimates, so treat profit and payback as illustrative. See Assumptions.",
   "fetched": "Fetched",
   "h_build": "Build cost (QAR/m²)",
   "h_crop": "Crop",
@@ -109,7 +109,7 @@
   "k_solar_n": "Sized for the hottest day's cooling",
   "k_solar_none": "No cooling electricity needed",
   "k_water": "Water use",
-  "k_water_n": "Irrigation plus cooling water",
+  "k_water_n": "Crop irrigation plus cooling-pad water, calculated from local weather",
   "kw": "kW",
   "l_data": "Climate data from NASA POWER",
   "l_demo": "Try {site}",
@@ -177,7 +177,7 @@
   "safe_answer_rec": "The recommendation is {setup} for {crop}: it keeps the crop below its heat limit {coverage}% of the year, costs {capex} QAR to build and pays back in {payback} years.",
   "see_setups": "See all seven setups",
   "set_edit_hint": "To change a value, edit the matching file in data/ and reload. Editing inside the app is planned.",
-  "set_note": "Every value the planner uses, with its source. Values marked estimate still need a real source.",
+  "set_note": "Every value the planner uses, with its source. Prices come live from FAOSTAT; values marked estimate still need a real source.",
   "set_title": "Assumptions",
   "setup_chiller": "Solar chiller greenhouse",
   "setup_open_field": "Open field",
@@ -279,5 +279,10 @@
   "diag_grid_kwh_year": "Grid electricity (kWh/year)",
   "diag_export_kwh_year": "Surplus solar (kWh/year)",
   "failure_reasons": "Why options were excluded",
-  "none_constraints": "No option passes all temperature, light, data and budget checks. Review the detailed reasons below."
+  "none_constraints": "No option passes all temperature, light, data and budget checks. Review the detailed reasons below.",
+  "h_kc": "Crop water factor (start / peak / end)",
+  "h_kc_source": "Water factor source",
+  "h_price_basis": "Where the price comes from",
+  "prices_country": "FAOSTAT farm-gate prices for {country}, fetched {date}. Farm-gate is what a wholesaler pays the farmer; shop prices are higher.",
+  "prices_world": "No site analysed yet, so these are world median FAOSTAT farm-gate prices (fetched {date}). Analyse a site to see its country's prices."
 }

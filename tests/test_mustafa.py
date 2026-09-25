@@ -8,10 +8,9 @@ from planner import crops, economics, solar
 def tiny_data(tmp_path, monkeypatch):
     """Small CSVs with round numbers so the expected results are easy to check by hand."""
     pd.DataFrame([{"crop": "tomato", "t_min_c": 10, "t_opt_min_c": 20, "t_opt_max_c": 27, "t_max_c": 35,
-                   "yield_kg_m2_year": 10, "water_l_m2_day": 5, "source": "test"}]).to_csv(tmp_path / "crops.csv", index=False)
-    pd.DataFrame([{"crop": "tomato", "price_qar_kg": 15, "source": "test", "year": 2024}]).to_csv(tmp_path / "prices.csv", index=False)
+                   "yield_kg_m2_year": 10, "source": "test"}]).to_csv(tmp_path / "crops.csv", index=False)
     pd.DataFrame([{"setup": "wet_pad", "capex_qar_m2": 400, "opex_qar_m2_year": 30, "shade_drop_c": 0, "pad_efficiency": 0.8,
-                   "solar_gain_c": 4, "setpoint_c": 0, "chiller_kw_per_m2_per_c": 0, "cop": 0, "water_l_m2_day_extra": 8,
+                   "solar_gain_c": 4, "setpoint_c": 0, "chiller_kw_per_m2_per_c": 0, "cop": 0,
                    "yield_factor": 1.0, "source": "test"}]).to_csv(tmp_path / "setups.csv", index=False)
     pd.DataFrame([{"key": "solar_capex_qar_kw", "value": 2500, "unit": "QAR/kW", "source": "test"},
                   {"key": "performance_ratio", "value": 0.8, "unit": "fraction", "source": "test"}]).to_csv(tmp_path / "settings.csv", index=False)
@@ -19,9 +18,12 @@ def tiny_data(tmp_path, monkeypatch):
     return tmp_path
 
 
+PRICE = {"price_qar_kg": 15}  # tomato at 15 QAR/kg keeps the hand calculation round
+
+
 def test_payback_matches_hand_calculation(tiny_data):
     # capex = 500 × 400 = 200,000; revenue = 500 × 10 × 15 = 75,000; opex = 500 × 30 = 15,000; profit = 60,000
-    out = economics.evaluate("wet_pad", "tomato", 500, 12, 0, 0)
+    out = economics.evaluate("wet_pad", "tomato", 500, 12, 0, 0, **PRICE, water_l_m2_day=13)
     assert out["capex_qar"] == 200_000
     assert out["profit_qar_year"] == 60_000
     assert out["payback_years"] == 3.33
@@ -30,22 +32,27 @@ def test_payback_matches_hand_calculation(tiny_data):
 
 
 def test_revenue_scales_with_growing_months_and_solar_adds_capex(tiny_data):
-    half = economics.evaluate("wet_pad", "tomato", 500, 6, 0, 10)
+    half = economics.evaluate("wet_pad", "tomato", 500, 6, 0, 10, **PRICE)
     assert half["revenue_qar_year"] == 37_500
     assert half["capex_qar"] == 200_000 + 10 * 2500
 
 
 def test_no_profit_means_no_payback(tiny_data):
-    assert economics.evaluate("wet_pad", "tomato", 500, 0, 0, 0)["payback_years"] is None
+    assert economics.evaluate("wet_pad", "tomato", 500, 0, 0, 0, **PRICE)["payback_years"] is None
 
 
 def test_missing_crop_returns_none_with_reason(tiny_data):
-    out = economics.evaluate("wet_pad", "banana", 500, 12, 0, 0)
+    out = economics.evaluate("wet_pad", "banana", 500, 12, 0, 0, **PRICE)
     assert out["capex_qar"] is None and "banana" in out["reason"]
 
 
+def test_missing_price_returns_none_with_reason(tiny_data):
+    out = economics.evaluate("wet_pad", "tomato", 500, 12, 0, 0)
+    assert out["capex_qar"] is None and "price" in out["reason"]
+
+
 def test_evaluate_outputs_are_plain_floats():
-    out = economics.evaluate("chiller", "tomato", 500, 12, 1000, 5)
+    out = economics.evaluate("chiller", "tomato", 500, 12, 1000, 5, **PRICE, water_l_m2_day=4.2)
     assert all(v is None or type(v) is float for v in out.values())
 
 

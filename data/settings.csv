@@ -17,3 +17,7 @@ cleaning_water_l_m2,0.5,L/m2/clean,estimate - editable scenario assumption
 dust_event_threshold_ug_m3,100,ug/m3,estimate - editable scenario assumption
 light_yield_loss_factor,0.5,fraction,estimate - editable scenario assumption
 pv_louver_open_output_fraction,0.6,fraction,estimate - editable scenario assumption
+usd_to_qar,3.64,QAR/USD,Qatar Central Bank fixed exchange rate (pegged since 2001); converts FAOSTAT USD prices
+irrigation_efficiency,0.9,fraction,FAO Irrigation Water Management Training Manual 4: typical drip irrigation application efficiency
+pad_airflow_m3_s_m2,0.041,m3/s per m2 floor,Standard fan-and-pad greenhouse design airflow (8 cfm per ft2 of floor; ASABE EP406 / NGMA)
+greenhouse_air_speed_ms,0.5,m/s,estimate - typical air speed across the crop in a fan-ventilated greenhouse; used for crop water inside closed setups

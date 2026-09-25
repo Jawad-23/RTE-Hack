@@ -41,7 +41,7 @@ The first run for a new pin fetches 5 years of hourly data from NASA POWER (can 
 | `docs/` | Problem, plan, team tasks, hackathon brief ([start here](docs/README.md)) | |
 | `ui-demo/` | Croptions UI prototype and design system the app is styled on (open `Croptions.dc.html`) | |
 
-Crop, equipment and cost assumptions in `data/*.csv` are estimates, and the app says so. Costs in particular decide which setup wins, so treat recommendations as illustrative until those rows have real sources.
+Crop prices come from FAOSTAT for the pin's country and water use is calculated from the site's weather. Crop limits, yields and equipment costs in `data/*.csv` are still estimates, and the app says so. Costs in particular decide which setup wins, so treat recommendations as illustrative until those rows have real sources.
 
 ## The AI assistant
 
@@ -112,7 +112,9 @@ The planner runs on any pin on Earth. *(To fill: the five regions from the feasi
 | --- | --- | --- |
 | [NASA POWER](https://power.larc.nasa.gov/) | Hourly temperature, humidity, sunlight, wind | Free and open; credit "NASA Langley Research Center (LaRC) POWER Project" |
 | [FAO EcoCrop](https://gaez.fao.org/pages/ecocrop) | Crop temperature limits (values in `data/crops.csv` are estimates until checked) | Open; credit FAO |
-| [FAOSTAT](https://www.fao.org/faostat/) | Crop prices (values in `data/prices.csv` are estimates until checked) | CC BY 4.0; credit FAO |
+| [FAOSTAT](https://www.fao.org/faostat/en/#data/PP) | Crop prices: latest farm-gate price for the pin's country, downloaded automatically and refreshed monthly (`planner/market.py`); an offline copy is in `data/snapshots/` | CC BY 4.0; credit FAO |
+| [FAO-56](https://www.fao.org/4/x0490e/x0490e00.htm) | Crop water use: hourly Penman-Monteith from the NASA POWER weather, times FAO crop coefficients (`planner/water.py`) | Credit FAO (Allen et al. 1998) |
+| [OpenStreetMap Nominatim](https://nominatim.org/) | Which country the pin is in, for its prices | ODbL; credit OpenStreetMap contributors |
 | [Open-Meteo / CAMS](https://open-meteo.com/en/docs/air-quality-api) | Recent modelled dust exposure, fetched on demand | Credit Open-Meteo and CAMS; separate from the typical climate year |
 
 Every value in `data/*.csv` has a `source` column. Values marked `estimate` are illustrative, not measured.

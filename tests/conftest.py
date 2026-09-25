@@ -37,3 +37,12 @@ def dry_year():
 @pytest.fixture
 def humid_year():
     return synthetic_year(rh_pct=60.0)
+
+
+@pytest.fixture(autouse=True)
+def offline_market(monkeypatch):
+    """Tests use the committed FAOSTAT snapshot and a fixed country, never the network."""
+    from planner import market
+
+    monkeypatch.setattr(market, "load_price_table", lambda refresh=True: market._read_table(market.SNAPSHOT_CSV))
+    monkeypatch.setattr(market, "country_for", lambda lat, lon: {"name": "Qatar", "m49": 634})

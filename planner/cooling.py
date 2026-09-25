@@ -55,7 +55,7 @@ def wet_bulb_c(temp_c, rh_pct) -> np.ndarray:
 
 
 def hourly_profile(climate_df: pd.DataFrame, setup: str, area_m2: float, crop=None) -> pd.DataFrame:
-    """Climate table + setup + farm area (m²) -> hourly DataFrame: outside_c, wet_bulb_c, inside_c, cooling_kwh."""
+    """Climate table + setup + farm area (m²) -> hourly DataFrame: outside_c, wet_bulb_c, inside_c, cooling_kwh, inside_rh_pct, pad_moisture_kg_kg, ..."""
     if setup not in SETUPS:
         raise ValueError(f"Unknown setup {setup!r}; expected one of {SETUPS}")
     p = load_setups().loc[setup]
@@ -118,6 +118,7 @@ def hourly_profile(climate_df: pd.DataFrame, setup: str, area_m2: float, crop=No
             "inside_c": inside,
             "cooling_kwh": cooling_kwh,
             "inside_rh_pct": rh,
+            "pad_moisture_kg_kg": pad_ratio - ratio,  # water the pads evaporate per kg of air (0 without pads)
             "vpd_kpa": saturation * (1 - rh / 100),
             "par_inside_w_m2": par * transmission,
             "screen_pct": screen,

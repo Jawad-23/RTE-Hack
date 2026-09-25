@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from planner import agronomy, climate, cooling, crops, dust, economics, solar
+from planner import agronomy, climate, cooling, crops, dust, economics, market, solar, water
 from planner.schemas import MIN_COVERAGE_PCT, MIN_LIGHT_OK_PCT, PRIORITIES, SETUPS
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
@@ -52,11 +52,13 @@ def plan(lat: float, lon: float, area_m2: float, budget_qar: float, priority: st
         crops_df = crops_df[crops_df["crop"] == crop]
 
     calendar_df = crops.crop_calendar(climate_df, crops_df)
+    prices = market.prices_for(lat, lon, solar.load_settings()["usd_to_qar"])
 
     options = []
     for row in crops_df.itertuples(index=False):
         for setup in SETUPS:
-            options.append(_evaluate_option(climate_df, row, setup, area_m2, budget_qar, cleaning_interval_days))
+            options.append(_evaluate_option(climate_df, row, setup, area_m2, budget_qar, cleaning_interval_days,
+                                            prices["prices"].get(row.crop)))
 
     passing = [o for o in options if o["passes"]]
     ranked = _rank(passing, priority)
@@ -71,8 +73,8 @@ def plan(lat: float, lon: float, area_m2: float, budget_qar: float, priority: st
         "calendar": {
             str(c): {str(m): str(calendar_df.loc[c, m]) for m in calendar_df.columns} for c in calendar_df.index
         },
-        "sources": _sources(lat, lon),
-        "assumptions": _assumptions(crops_df),
+        "sources": _sources(lat, lon, prices),
+        "assumptions": _assumptions(crops_df, prices),
     }
     # The existing assistant already forwards assumptions; no provider-code change
     # is needed for these new diagnostics to reach the model and number checker.
@@ -83,8 +85,8 @@ def plan(lat: float, lon: float, area_m2: float, budget_qar: float, priority: st
 
 
 def _evaluate_option(climate_df: pd.DataFrame, crop_row, setup: str, area_m2: float, budget_qar: float,
-                     cleaning_interval_days: int | None = None) -> dict:
-    """One crop × setup -> option dict with coverage, energy, solar and economics."""
+                     cleaning_interval_days: int | None = None, price: dict | None = None) -> dict:
+    """One crop × setup (+ its market price) -> option dict with coverage, energy, solar, water and economics."""
     crop_info = crop_row._asdict()
     sim = cooling.simulate(climate_df, setup, crop_row.t_max_c, area_m2, crop_info)
     prof = cooling.hourly_profile(climate_df, setup, area_m2, crop_info)
@@ -108,9 +110,11 @@ def _evaluate_option(climate_df: pd.DataFrame, crop_row, setup: str, area_m2: fl
     grid = float(np.maximum(prof["cooling_kwh"].to_numpy() - output, 0).sum())
     export = float(np.maximum(output - prof["cooling_kwh"].to_numpy(), 0).sum())
     diagnostics = agronomy.metrics(prof, crop_info, growing)
+    use = water.water_l_m2_day(climate_df, prof, crop_info, cooling.load_setups().loc[setup], growing, cfg)
     econ = economics.evaluate(
         setup, crop_row.crop, area_m2, len(growing), sim["cooling_kwh_year"], sol["solar_kw"],
-        grid_kwh_year=grid, export_kwh_year=export, yield_factor=light_yield_factor, **clean
+        grid_kwh_year=grid, export_kwh_year=export, yield_factor=light_yield_factor,
+        price_qar_kg=price["price_qar_kg"] if price else None, water_l_m2_day=use["crop_l_m2_day"] + use["pad_l_m2_day"], **clean
     )
 
     fails = []
@@ -137,6 +141,10 @@ def _evaluate_option(climate_df: pd.DataFrame, crop_row, setup: str, area_m2: fl
         "cooling_kwh_peak_day": sim["cooling_kwh_peak_day"],
         **sol,
         **econ,
+        "price_qar_kg": price["price_qar_kg"] if price else None,
+        "irrigation_l_day": round(use["crop_l_m2_day"] * area_m2, 2),
+        "pad_water_l_day": round(use["pad_l_m2_day"] * area_m2, 2),
+        "et0_mm_day": use["et0_mm_day"],
         **diagnostics,
         **clean,
         "grid_kwh_year": round(grid, 2),
@@ -193,23 +201,28 @@ def _site_summary(climate_df: pd.DataFrame, lat: float, lon: float) -> dict:
     }
 
 
-def _sources(lat: float, lon: float) -> list[dict]:
+def _sources(lat: float, lon: float, prices: dict | None = None) -> list[dict]:
     """Every dataset the plan relies on, with where it came from."""
+    country = (prices or {}).get("country") or {}
     return [
         climate.source_info(lat, lon),
-        {"name": "Crop heat limits and yields", "url": "data/crops.csv", "fetched": None},
-        {"name": "Crop prices", "url": "data/prices.csv", "fetched": None},
+        {"name": "Crop prices: FAOSTAT producer (farm-gate) prices" + (f" for {country['name']}" if country else ", world median"),
+         "url": market.FAOSTAT_PAGE, "fetched": (prices or {}).get("fetched")},
+        {"name": "Crop water: FAO-56 Penman-Monteith with the NASA POWER weather above",
+         "url": "https://www.fao.org/4/x0490e/x0490e00.htm", "fetched": None},
+        {"name": "Crop heat limits, yields and FAO-56 crop coefficients", "url": "data/crops.csv", "fetched": None},
         {"name": "Setup costs and cooling parameters", "url": "data/setups.csv", "fetched": None},
         {"name": "Shared costs (electricity, solar)", "url": "data/settings.csv", "fetched": None},
     ]
 
 
-def _assumptions(crops_df: pd.DataFrame) -> dict:
-    """Every CSV value the plan used, so the user (and the agent) can see and question it."""
+def _assumptions(crops_df: pd.DataFrame, prices: dict | None = None) -> dict:
+    """Every value the plan used, so the user (and the agent) can see and question it."""
     return {
         "min_coverage_pct": MIN_COVERAGE_PCT,
         "crops": crops_df.to_dict(orient="records"),
-        "prices": pd.read_csv(DATA_DIR / "prices.csv").to_dict(orient="records"),
+        "prices": [{"crop": c, **p} for c, p in (prices or {}).get("prices", {}).items()],
+        "price_country": (prices or {}).get("country"),
         "setups": pd.read_csv(DATA_DIR / "setups.csv").to_dict(orient="records"),
         "settings": pd.read_csv(DATA_DIR / "settings.csv").to_dict(orient="records"),
     }
