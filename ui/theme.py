@@ -59,7 +59,7 @@ def plotly_layout(lang: str = "en", height: int = 360) -> dict:
         font=dict(family=FONT_STACK_AR if lang == "ar" else FONT_STACK, size=14, color=INK),
         xaxis=dict(showgrid=False, zeroline=False, linecolor=SAND_300, tickfont=dict(color=INK_MUTED)),
         yaxis=dict(gridcolor=SAND_300, zeroline=False, tickfont=dict(color=INK_MUTED)),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0, font=dict(size=13)),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right" if lang == "ar" else "left", x=1 if lang == "ar" else 0, font=dict(size=13)),
         hoverlabel=dict(bgcolor=SAND_50, bordercolor=SAND_400, font=dict(family=FONT_STACK, color=INK)),
     )
 

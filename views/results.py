@@ -101,7 +101,7 @@ st.markdown(f'<div class="cr-banner">⚠ {t("estimate_banner", lang)}</div>', un
 with st.container(key="card_calendar"):
     a, b = st.columns([1.3, 1], vertical_alignment="center")
     a.markdown(ui.title(t("cal_title", lang), t("cal_sub", lang)), unsafe_allow_html=True)
-    b.markdown(f'<div style="display:flex;justify-content:flex-end">{ui.legend_status(lang)}</div>', unsafe_allow_html=True)
+    b.markdown(f'<div style="display:flex;justify-content:flex-start">{ui.legend_status(lang)}</div>', unsafe_allow_html=True)
     st.markdown(f'<div style="overflow-x:auto">{ui.calendar(plan["calendar"], rec["crop"] if rec else inp.get("crop"), lang)}</div>',
                 unsafe_allow_html=True)
 

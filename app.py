@@ -30,7 +30,9 @@ current = st.navigation(list(PAGES.values()), position="hidden")
 
 # ---------- top bar ----------
 with st.container(key="topbar"):
-    cols = st.columns([1.35, 0.72, 0.62, 0.85, 1.35, 0.9, 1.2, 1.45, 1.55], vertical_alignment="center")
+    # wider nav ratios so Arabic labels do not clip; chat column grows for Arabic text
+    nav_ratios = [1.35, 1.0, 1.0, 1.1, 1.5, 1.2, 1.3, 1.6, 1.5]
+    cols = st.columns(nav_ratios, vertical_alignment="center")
     cols[0].markdown(ui.brand(lang), unsafe_allow_html=True)
     for col, key in zip(cols[1:7], PAGES):
         col.page_link(PAGES[key], label=PAGES[key].title)

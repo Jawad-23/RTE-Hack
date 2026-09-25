@@ -1,6 +1,7 @@
 """Plan: pick a site on the map and describe the farm. Owned by Me."""
 
 import folium
+import requests
 import streamlit as st
 from streamlit_folium import st_folium
 
@@ -90,6 +91,30 @@ with map_col:
         if new_pin != ss["pin"]:
             ss["pin"] = new_pin
             st.rerun()
+
+    with st.expander(t("search_place", lang)):
+        q = st.text_input(t("search_place", lang), placeholder=t("search_placeholder", lang), key="plan_search_q")
+        if st.button(t("search_btn", lang), use_container_width=True):
+            if q:
+                try:
+                    r = requests.get(
+                        "https://nominatim.openstreetmap.org/search",
+                        params={"q": q, "format": "json", "limit": 5},
+                        headers={"User-Agent": "Croptions/1.0"},
+                        timeout=10,
+                    )
+                    r.raise_for_status()
+                    places = r.json()
+                    if not places:
+                        st.warning(t("search_no_results", lang))
+                    else:
+                        for p in places:
+                            label = f"{p['display_name']} — {float(p['lat']):.4f}, {float(p['lon']):.4f}"
+                            if st.button(label, key=f"plan_geo_{p['place_id']}", use_container_width=True):
+                                ss["pin"] = (round(float(p["lat"]), 4), round(float(p["lon"]), 4))
+                                st.rerun()
+                except Exception:
+                    st.error(t("search_error", lang))
 
     with st.expander(t("enter_coords", lang)):
         c1, c2, c3 = st.columns([1, 1, 1], vertical_alignment="bottom")
