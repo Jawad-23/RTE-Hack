@@ -86,3 +86,39 @@ def test_plan_reports_price_source_and_water_breakdown(dry_year, monkeypatch):
         assert o["price_qar_kg"] > 0
         assert o["water_l_day"] == pytest.approx(o["irrigation_l_day"] + o["pad_water_l_day"], abs=0.1)
     assert np.isfinite([o["et0_mm_day"] for o in p["options"]]).all()
+
+
+# conftest replaces load_price_table with the snapshot for every test; keep the real one for these.
+_REAL_LOAD_PRICE_TABLE = market.load_price_table
+
+
+def _saved_table(path, fetched):
+    table = pd.DataFrame([{"m49": 634, "area": "Qatar", "item_code": 388, "item": "Tomatoes", "year": 2023, "usd_tonne": 549.5}])
+    path.parent.mkdir(parents=True, exist_ok=True)
+    table.to_csv(path, index=False)
+    path.with_suffix(".json").write_text(f'{{"fetched": "{fetched}"}}', encoding="utf-8")
+
+
+@pytest.fixture
+def price_files(tmp_path, monkeypatch):
+    monkeypatch.setattr(market, "CACHE_CSV", tmp_path / "cache" / "faostat_prices.csv")
+    monkeypatch.setattr(market, "SNAPSHOT_CSV", tmp_path / "snapshots" / "faostat_prices.csv")
+    monkeypatch.setattr(market, "_last_failed_download", None)
+    calls = []
+    monkeypatch.setattr(market, "download_prices", lambda codes: calls.append(1) or (_ for _ in ()).throw(market.requests.Timeout("slow")))
+    return calls
+
+
+def test_fresh_snapshot_is_used_without_downloading(price_files):
+    from datetime import date
+    _saved_table(market.SNAPSHOT_CSV, date.today().isoformat())  # new container: no cache, recent snapshot
+    table, fetched = _REAL_LOAD_PRICE_TABLE()
+    assert len(table) == 1 and fetched == date.today() and price_files == []
+
+
+def test_failed_download_is_not_retried_by_the_next_plan(price_files):
+    _saved_table(market.SNAPSHOT_CSV, "2020-01-01")  # everything stale, FAOSTAT times out
+    for _ in range(3):
+        table, _ = _REAL_LOAD_PRICE_TABLE()
+        assert len(table) == 1
+    assert price_files == [1]

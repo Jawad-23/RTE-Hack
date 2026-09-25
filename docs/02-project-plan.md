@@ -162,7 +162,7 @@ RTE-Hack/
 ├── styles/rtl.css          # right-to-left layout for Arabic
 ├── data/
 │   ├── crops.csv           # heat limits, yield, water (estimates until sourced)
-│   ├── prices.csv          # crop prices (estimates until sourced)
+│   ├── snapshots/          # offline copy of FAOSTAT prices (planner/market.py)
 │   ├── setups.csv          # build/running costs and cooling parameters
 │   ├── settings.csv        # electricity, solar cost, performance ratio
 │   ├── demo_sites.csv      # example pins (Al Khor, Al Karaana)
@@ -181,7 +181,7 @@ Implemented in stage 2: `planner/controller.py` and `views/operate.py` (pages li
 | Language | Python 3.11 |
 | App and map | Streamlit, folium (Leaflet), Plotly |
 | Physics | PsychroLib (Stull formula as fallback), NumPy, pandas |
-| Data | NASA POWER API, FAO EcoCrop, FAOSTAT; Open-Meteo Air Quality planned |
+| Data | NASA POWER API, FAOSTAT producer prices (live, with offline snapshot), FAO-56 water use, FAO EcoCrop, Nominatim, Open-Meteo Air Quality |
 | AI agent | Claude API (`claude-sonnet-5`) with tool use by default; no temperature is sent because this model rejects it. Or any open-source model through an OpenAI-compatible server (for example Qwen2.5 7B on Ollama), at temperature 0. Either way the number checker keeps answers grounded |
 | Hosting for demo | Streamlit Community Cloud (free) |
 
@@ -251,7 +251,7 @@ Pick and test both demo pins on Friday night, and screenshot the results in case
 | Open-source LLM through OpenRouter (free models) | Code written and tested against a fake OpenAI-compatible server, including reading the key from Streamlit Secrets; **never called live** (OpenRouter is blocked in the build environment) | Add the OpenRouter key to the app's Secrets and ask the chat a question |
 | Map (Leaflet scripts and OpenStreetMap tiles) | Not loaded in the build environment; typed coordinates work | A normal internet connection |
 | FAO EcoCrop | **No download or API.** Crop limits in `crops.csv` were typed in as estimates | Look up each crop and fill `source` |
-| FAOSTAT | **No API.** Prices in `prices.csv` were typed in as estimates | Look up each price and fill `source` |
+| FAOSTAT | **Live.** Latest farm-gate price for the pin's country (`planner/market.py`), with a committed snapshot used when it is newer than 30 days or FAOSTAT is unreachable. Qatar has 2023 prices for 7 of 8 crops; strawberry is scaled from world prices | Refresh the snapshot before the demo: `python -m planner.market --refresh-snapshot` |
 | NASA POWER spectral data (PAR, UV, longwave, clear-sky) | Implemented and checked live | |
 | Open-Meteo Air Quality (dust) | Implemented for recent modelled dust exposure | |
 | Open-Meteo Climate API (2040/2050 view) | Not built (stretch) | |
@@ -261,8 +261,7 @@ Pick and test both demo pins on Friday night, and screenshot the results in case
 
 - **`setups.csv`, the numbers that decide the winner:** build cost per m² (open field 10, shade net 40, wet pad 300, chiller 450 QAR), running cost per m², yield factor per setup (1.0 to 1.8), extra water per m², and the physics values: shade net cools by 2 °C, pad efficiency 0.8, greenhouse solar heat gain 4 °C, chiller setpoint 26 °C, chiller load 0.03 kW per m² per °C, COP 3.
 - **`settings.csv`:** solar cost 2,500 QAR/kW, electricity 0.13 QAR/kWh, performance ratio 0.8, risky margin 3 °C.
-- **`crops.csv`:** temperature limits, yield and water use for all 8 crops.
-- **`prices.csv`:** price per kg for all 8 crops.
+- **`crops.csv`:** temperature limits and yields for all 8 crops (crop coefficients come from FAO-56 Table 12, prices from FAOSTAT and water from the FAO-56 calculation, so those are no longer estimates).
 
 ### Simplifications in the code
 
@@ -270,7 +269,7 @@ Pick and test both demo pins on Friday night, and screenshot the results in case
 2. **Electricity tariffs:** now applied to hourly grid imports; confirm the local tariff and any export agreement before investment.
 3. **Air pressure is fixed at sea level** (101,325 Pa) for wet-bulb; high sites are slightly off.
 4. **Greenhouse solar heat gain is on/off:** the full 4 °C whenever the sun is up, not scaled by how strong it is.
-5. **Wet pads:** efficiency and water use are constant, whatever the weather.
+5. **Wet pads:** efficiency is constant; pad water now follows the weather (`planner/water.py`). If the country lookup (Nominatim) fails, prices fall back to world medians and the source line says so.
 6. **Revenue** = yield × price × (growing months ÷ 12) × setup yield factor. Heat stress within a growing month is not modelled as a yield curve. DLI now gates suitability; the optional soiling scenario applies an estimated light/yield factor. A growing month is one with at least 90 % of hours below the crop's limit.
 7. **Coverage only checks the crop's maximum temperature**, over all 8,760 hours. Cold winter nights inside a greenhouse are not checked.
 8. **Economics:** no discounting, panel degradation, labour, land, financing or equipment replacement. The budget only limits build cost.

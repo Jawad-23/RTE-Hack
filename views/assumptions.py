@@ -53,9 +53,14 @@ with tabs[2]:
     if not prices:  # no site analysed yet: world medians from the same FAOSTAT table
         table, fetched = market.load_price_table()
         prices = [{"crop": c, **p} for c, p in market.price_per_crop(table, None, solar.load_settings()["usd_to_qar"]).items()]
-    note = t("prices_country", lang).format(country=country["name"], date=fetched) if country else t("prices_world", lang).format(date=fetched)
+    if country:
+        note = t("prices_country", lang).format(country=country["name"], date=fetched)
+    else:  # no site yet, or the site's country could not be looked up
+        note = t("prices_world_site" if plan.get("assumptions") else "prices_world", lang).format(date=fetched)
     st.markdown(f'<p class="cr-note">{note}</p>', unsafe_allow_html=True)
-    show(pd.DataFrame(prices)[["crop", "price_qar_kg", "year", "note"]].rename(columns={"note": "source"}),
+    table = pd.DataFrame(prices)[["crop", "price_qar_kg", "year", "note"]].rename(columns={"note": "source"})
+    table["year"] = table["year"].map(lambda y: "—" if pd.isna(y) else str(int(y)))
+    show(table,
          {"crop": "h_crop", "price_qar_kg": "h_price", "year": "h_year", "source": "h_price_basis"},
          "crop", lambda c: state.crop_label(c, lang), key="prices")
 with tabs[3]:

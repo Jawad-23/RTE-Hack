@@ -268,8 +268,8 @@ Rules:
 - [ ] **Replace estimates with real sources.** Every row in `data/*.csv` is marked `estimate`. In priority order:
   1. `setups.csv`: `capex_qar_m2` and `opex_qar_m2_year` for each setup, and `chiller_kw_per_m2_per_c`. These decide whether the solar chiller pays off, which is the pitch's main story
   2. `settings.csv`: `solar_capex_qar_kw`, `electricity_price_qar_kwh`
-  3. `crops.csv`: temperature limits from [FAO EcoCrop](https://gaez.fao.org/pages/ecocrop), yields, water use
-  4. `prices.csv`: [FAOSTAT](https://www.fao.org/faostat/) or Doha market prices
+  3. `crops.csv`: temperature limits from [FAO EcoCrop](https://gaez.fao.org/pages/ecocrop) and yields (water use is now calculated with FAO-56)
+  4. ~~`prices.csv`~~ done: prices now come live from FAOSTAT (`planner/market.py`); refresh `data/snapshots/` before the demo
 - [ ] Stage 2: new CSV columns and rows (section 9), economics for electricity sales and cleaning
 
 ## 8. Integration checkpoints

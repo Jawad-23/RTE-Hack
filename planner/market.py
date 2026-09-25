@@ -4,9 +4,11 @@ prices_for(lat, lon) finds the pin's country (OpenStreetMap Nominatim), then rea
 latest FAOSTAT farm-gate price for every crop in data/crops.csv (column faostat_item_code).
 
 Where the data comes from, freshest first:
-1. data/cache/faostat_prices.csv, downloaded from FAOSTAT and refreshed every REFRESH_DAYS.
+1. data/cache/faostat_prices.csv, downloaded from FAOSTAT, or
 2. data/snapshots/faostat_prices.csv, the same table committed to the repo so the app works offline.
    Regenerate it with:  python -m planner.market --refresh-snapshot
+Whichever is newer is used. FAOSTAT is only downloaded when both are older than REFRESH_DAYS, and a
+failed download is not retried for RETRY_AFTER_S, so no plan waits on FAOSTAT more than once.
 
 If the country has no recent price for a crop, the price is estimated as the world median for that
 crop times the country's price level (median of its own price / world median over the crops it does
@@ -18,6 +20,7 @@ from __future__ import annotations
 
 import io
 import json
+import time
 import zipfile
 from datetime import date
 from pathlib import Path
@@ -41,7 +44,10 @@ ELEMENT = "Producer Price (USD/tonne)"
 REFRESH_DAYS = 30
 MAX_AGE_YEARS = 6        # ignore a country's price if its latest year is older than this
 DOWNLOAD_TIMEOUT_S = 60
+RETRY_AFTER_S = 6 * 3600  # after a failed download, use the saved table for this long before trying again
 GEO_TIMEOUT_S = 10
+
+_last_failed_download: float | None = None  # time.monotonic() of this process's last failed download
 
 METHODS = {
     "country": "FAOSTAT {year} farm-gate price for {country}",
@@ -74,17 +80,21 @@ def tidy_prices(raw: pd.DataFrame, item_codes: list[int]) -> pd.DataFrame:
 
 
 def load_price_table(refresh: bool = True) -> tuple[pd.DataFrame, str]:
-    """-> (price table, date it was fetched). Uses the cache, re-downloads when stale, falls back to the snapshot."""
-    cached = _read_table(CACHE_CSV)
-    fresh = cached is not None and (date.today() - cached[1]).days < REFRESH_DAYS
-    if fresh or not refresh:
-        return cached or _read_table(SNAPSHOT_CSV) or _missing()
+    """-> (price table, date it was fetched): the newer of cache and snapshot; downloads only when both are stale."""
+    global _last_failed_download
+    saved = [t for t in (_read_table(CACHE_CSV), _read_table(SNAPSHOT_CSV)) if t is not None]
+    best = max(saved, key=lambda t: t[1], default=None)
+    stale = best is None or (date.today() - best[1]).days >= REFRESH_DAYS
+    failed_recently = _last_failed_download is not None and time.monotonic() - _last_failed_download < RETRY_AFTER_S
+    if not refresh or not stale or failed_recently:
+        return best or _missing()
     try:
         table = download_prices(_item_codes())
         _write_table(table, CACHE_CSV)
         return table, date.today().isoformat()
-    except (requests.RequestException, zipfile.BadZipFile, ValueError, KeyError, StopIteration):
-        return cached or _read_table(SNAPSHOT_CSV) or _missing()
+    except (requests.RequestException, zipfile.BadZipFile, ValueError, KeyError, StopIteration, OSError, MemoryError):
+        _last_failed_download = time.monotonic()
+        return best or _missing()
 
 
 def _read_table(path: Path):
