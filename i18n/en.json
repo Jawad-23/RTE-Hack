@@ -45,7 +45,7 @@
   "setup_chiller": "Solar chiller greenhouse",
   "month": "Month",
   "chat_title": "Ask the planner",
-  "illustrative": "Cost and price numbers are illustrative placeholders until real data is filled in.",
+  "illustrative": "Cost, price and crop inputs are estimates until real sources are added. See Assumptions below.",
   "enter_coords": "Or type coordinates",
   "latitude": "Latitude",
   "longitude": "Longitude",
