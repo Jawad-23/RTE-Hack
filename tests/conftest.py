@@ -24,7 +24,9 @@ def synthetic_year(summer_max_c: float = 45.0, rh_pct: float = 20.0) -> pd.DataF
         "ghi_wh_m2": 900 * sun,
         "wind_ms": np.full(HOURS_PER_YEAR, 3.0),
     })
-    return df[CLIMATE_COLUMNS]
+    df["par_w_m2"] = df["ghi_wh_m2"] * 0.45
+    df["heat_share"] = 0.5
+    return df
 
 
 @pytest.fixture

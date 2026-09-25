@@ -22,6 +22,7 @@ PAGES = {
     "plan": st.Page("views/plan.py", title=t("nav_plan", lang), url_path="plan"),
     "results": st.Page("views/results.py", title=t("nav_results", lang), url_path="results"),
     "compare": st.Page("views/compare.py", title=t("nav_compare", lang), url_path="compare"),
+    "operate": st.Page("views/operate.py", title=t("nav_operate", lang), url_path="operate"),
     "assumptions": st.Page("views/assumptions.py", title=t("nav_settings", lang), url_path="assumptions"),
 }
 st.session_state["_pages"] = PAGES
@@ -29,9 +30,9 @@ current = st.navigation(list(PAGES.values()), position="hidden")
 
 # ---------- top bar ----------
 with st.container(key="topbar"):
-    cols = st.columns([1.35, 0.72, 0.62, 0.85, 1.35, 1.2, 0.6, 1.45, 1.55], vertical_alignment="center")
+    cols = st.columns([1.35, 0.72, 0.62, 0.85, 1.35, 0.9, 1.2, 1.45, 1.55], vertical_alignment="center")
     cols[0].markdown(ui.brand(lang), unsafe_allow_html=True)
-    for col, key in zip(cols[1:6], PAGES):
+    for col, key in zip(cols[1:7], PAGES):
         col.page_link(PAGES[key], label=PAGES[key].title)
     if cols[7].button(f"● {t('chat_open', lang)}", key="ask_top", type="primary", use_container_width=True):
         state.open_chat()

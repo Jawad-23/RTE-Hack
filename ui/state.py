@@ -24,6 +24,7 @@ DEFAULTS = {
     "compare": None,      # {"a": plan, "b": plan}
     "chat_open": False,
     "chat_preset": None,
+    "cleaning_interval_days": None,
 }
 
 
@@ -40,9 +41,16 @@ def init() -> None:
             st.session_state["budget"] = float(qp.get("budget", DEFAULTS["budget"]))
             st.session_state["priority"] = qp.get("priority", "profit") if qp.get("priority") in PRIORITIES else "profit"
             st.session_state["crop"] = qp.get("crop") or None
+            interval = int(qp.get("cleaning", 0))
+            st.session_state["cleaning_interval_days"] = interval if interval in (7, 14, 30) else None
+            lat, lon = st.session_state["pin"]
+            if not (-90 <= lat <= 90 and -180 <= lon <= 180 and 50 <= st.session_state["area"] <= 100000
+                    and 0 <= st.session_state["budget"] <= 50000000):
+                raise ValueError("Invalid shared plan inputs")
             run_analysis(show_steps=False)
         except (ValueError, TypeError):
-            pass
+            for key in ("pin", "area", "budget", "crop", "cleaning_interval_days"):
+                st.session_state[key] = DEFAULTS[key]
     if qp.get("lang") in ("en", "ar"):
         st.session_state["lang"] = qp["lang"]
 
@@ -131,20 +139,19 @@ def run_analysis(show_steps: bool = True) -> dict | None:
         return None
     lat, lon = ss["pin"]
     args = dict(area_m2=float(ss["area"]), budget_qar=float(ss["budget"]), priority=ss["priority"], crop=ss["crop"])
+    args["cleaning_interval_days"] = ss.get("cleaning_interval_days")
     lg = lang()
     if show_steps:
         with st.status(t("a_title", lg), expanded=True) as status:
             st.write(f"⏳ {t('s1', lg)}")
-            try:
-                climate_for(lat, lon)
-            except climate.ClimateUnavailable:
-                pass  # plan() reports the reason
-            st.write(f"✓ {t('s1', lg)}")
-            st.write(f"⏳ {t('s3', lg)}")
             plan = optimizer.plan(lat, lon, **args)
-            for key in ("s2", "s3", "s4", "s5"):
-                st.write(f"✓ {t(key, lg)}")
-            status.update(label=t("st_done", lg), state="complete", expanded=False)
+            if plan["options"]:
+                for key in ("s1", "s2", "s3", "s4", "s5"):
+                    st.write(f"✓ {t(key, lg)}")
+                status.update(label=t("st_done", lg), state="complete", expanded=False)
+            else:
+                status.update(label=t("none_nodata", lg), state="error", expanded=True)
+                st.write(plan["reason"])
     else:
         plan = optimizer.plan(lat, lon, **args)
     ss["plan"] = plan
@@ -152,6 +159,10 @@ def run_analysis(show_steps: bool = True) -> dict | None:
                             "budget": f"{args['budget_qar']:.0f}", "priority": args["priority"], **({"crop": args["crop"]} if args["crop"] else {})})
     if not args["crop"] and "crop" in st.query_params:
         del st.query_params["crop"]
+    if args["cleaning_interval_days"]:
+        st.query_params["cleaning"] = str(args["cleaning_interval_days"])
+    elif "cleaning" in st.query_params:
+        del st.query_params["cleaning"]
     return plan
 
 

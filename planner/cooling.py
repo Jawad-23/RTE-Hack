@@ -12,6 +12,8 @@ import numpy as np
 import pandas as pd
 
 from planner.schemas import SETUPS
+from planner import agronomy, controller
+from planner.solar import load_settings
 
 try:
     import psychrolib
@@ -52,7 +54,7 @@ def wet_bulb_c(temp_c, rh_pct) -> np.ndarray:
     )
 
 
-def hourly_profile(climate_df: pd.DataFrame, setup: str, area_m2: float) -> pd.DataFrame:
+def hourly_profile(climate_df: pd.DataFrame, setup: str, area_m2: float, crop=None) -> pd.DataFrame:
     """Climate table + setup + farm area (m²) -> hourly DataFrame: outside_c, wet_bulb_c, inside_c, cooling_kwh."""
     if setup not in SETUPS:
         raise ValueError(f"Unknown setup {setup!r}; expected one of {SETUPS}")
@@ -61,20 +63,51 @@ def hourly_profile(climate_df: pd.DataFrame, setup: str, area_m2: float) -> pd.D
     t = climate_df["temp_c"].to_numpy(dtype=float)
     tw = _wet_bulb_cached(climate_df)
     sunny = climate_df["ghi_wh_m2"].to_numpy(dtype=float) > 0
+    cfg = load_settings()
+    screen = np.zeros(len(t))
+    reasons = ["fixed"] * len(t)
+    if setup == "agrivoltaic_louver":
+        previous = {"screen_pct": 0}
+        for i, row in enumerate(climate_df.to_dict("records")):
+            previous = controller.decide(row, crop or {"t_max_c": 35}, previous, cfg)
+            screen[i], reasons[i] = previous["screen_pct"], previous["reason"]
+    par = climate_df.get("par_w_m2", pd.Series(np.nan, index=climate_df.index)).to_numpy(dtype=float)
+    transmission = float(p["par_transmission"]) * (1 - screen / 100 * float(p["screen_max_light_loss"]))
+    gain = p["solar_gain_c"] * sunny
+    if setup == "nir_screen_wet_pad":
+        heat_share = climate_df.get("heat_share", pd.Series(np.nan, index=climate_df.index)).fillna(0).to_numpy()
+        gain = gain * (1 - heat_share * (1 - float(p["nir_transmission"])))
     # Solar heat gain inside a closed greenhouse only applies while the sun is up.
-    wet_pad_c = t - p["pad_efficiency"] * (t - tw) + p["solar_gain_c"] * sunny
+    wet_pad_c = t - p["pad_efficiency"] * (t - tw) + gain
 
     cooling_kwh = np.zeros_like(t)
     if setup == "open_field":
         inside = t
-    elif setup == "shade_net":
-        inside = t - p["shade_drop_c"]
-    elif setup == "wet_pad":
+    elif setup in ("shade_net", "agrivoltaic_fixed"):
+        inside = t - p["shade_drop_c"] * sunny
+    elif setup == "agrivoltaic_louver":
+        inside = t - p["shade_drop_c"] * screen / 100
+    elif setup in ("wet_pad", "nir_screen_wet_pad"):
         inside = wet_pad_c
     else:  # chiller: wet pads first, the chiller removes whatever is left above the setpoint
         excess_c = np.clip(wet_pad_c - p["setpoint_c"], 0, None)
         inside = np.where(excess_c > 0, p["setpoint_c"], wet_pad_c)
         cooling_kwh = area_m2 * p["chiller_kw_per_m2_per_c"] * excess_c / p["cop"]
+
+    # Evaporative cooling adds moisture. Approximate constant moist-air enthalpy
+    # across the pad; clip condensation to saturation after mechanical cooling.
+    vapour = agronomy.saturation_kpa(t) * climate_df["rh_pct"].to_numpy() / 100
+    ratio = 0.62198 * vapour / (SEA_LEVEL_PA / 1000 - vapour)
+    pad_t = t - p["pad_efficiency"] * (t - tw)
+    enthalpy = 1.006 * t + ratio * (2501 + 1.86 * t)
+    pad_ratio = np.maximum(ratio, (enthalpy - 1.006 * pad_t) / (2501 + 1.86 * pad_t))
+    vapour = pad_ratio * (SEA_LEVEL_PA / 1000) / (0.62198 + pad_ratio)
+    saturation = agronomy.saturation_kpa(inside)
+    rh = np.clip(vapour / saturation * 100, 0, 100)
+    pv_factor = np.ones(len(t))
+    if setup == "agrivoltaic_louver":
+        pv_factor = cfg["pv_louver_open_output_fraction"] + (1 - cfg["pv_louver_open_output_fraction"]) * screen / 100
+    pv = area_m2 * float(p["pv_kw_m2"]) * climate_df["ghi_wh_m2"].to_numpy() / 1000 * cfg["performance_ratio"] * pv_factor
 
     return pd.DataFrame(
         {
@@ -84,13 +117,19 @@ def hourly_profile(climate_df: pd.DataFrame, setup: str, area_m2: float) -> pd.D
             "wet_bulb_c": tw,
             "inside_c": inside,
             "cooling_kwh": cooling_kwh,
+            "inside_rh_pct": rh,
+            "vpd_kpa": saturation * (1 - rh / 100),
+            "par_inside_w_m2": par * transmission,
+            "screen_pct": screen,
+            "screen_reason": reasons,
+            "pv_kwh": pv,
         }
     )
 
 
-def simulate(climate_df: pd.DataFrame, setup: str, crop_limit_c: float, area_m2: float) -> dict:
+def simulate(climate_df: pd.DataFrame, setup: str, crop_limit_c: float, area_m2: float, crop=None) -> dict:
     """Climate table, setup name, crop t_max_c (°C), area (m²) -> inside_temp_c (8,760 °C), coverage_pct, cooling_kwh_year, cooling_kwh_peak_day."""
-    prof = hourly_profile(climate_df, setup, area_m2)
+    prof = hourly_profile(climate_df, setup, area_m2, crop)
     daily_kwh = prof["cooling_kwh"].groupby(prof["hour_of_year"] // 24).sum()
     return {
         "inside_temp_c": [round(float(v), 2) for v in prof["inside_c"]],

@@ -1,5 +1,7 @@
 # Project docs
 
+**Current branch update:** [Optional update: implementation and validation](05-optional-update.md). Stage 2 is implemented on `jawad/optional-update`; see its live-data report and remaining human validation tasks. Earlier Sep 25 notes below describe the prior baseline.
+
 Planning documents for our Reboot the Earth Doha 2026 project (Challenge 1). Read them in this order:
 
 | File | What it covers |

@@ -1,5 +1,7 @@
 # Team tasks and system architecture
 
+**Current branch:** `jawad/optional-update` includes `jawad/redesign`, existing `salih/openrouter` content and the Stage 2 implementation. No PR was created. API keys, provider setup and LLM models remain assigned to the teammate and were not changed. See [implementation and remaining work](05-optional-update.md).
+
 Sep 25, 2026 · @Blay · kept in sync with the code
 
 ## 1. Who does what
@@ -287,7 +289,7 @@ At each checkpoint, merge all open pull requests into `main`, then everyone pull
 
 ## 9. Stage 2: smarter shading and dust
 
-**Planned. Work in this order; stop after each step, show the diff and test results, and get a go-ahead before the next.** One feature per branch, named `<owner>/<feature>`. The app stays a planning tool: no hardware code.
+**Implemented together on the user-requested update branch.** The following table preserves the original ownership/specification. See [Optional update](05-optional-update.md) for delivered behaviour, test evidence and remaining limitations. The app stays a planning tool: no hardware code.
 
 | Step | What | Me | Mustafa | Salih |
 | --- | --- | --- | --- | --- |
@@ -301,7 +303,7 @@ At each checkpoint, merge all open pull requests into `main`, then everyone pull
 | 8 | Stretch: area scan, up to 25 points | `app.py` | | |
 | 9 | Wire everything through the dashboard, agent, checker, i18n, README and these docs | `app.py`, docs | README credits | `agent.py`, `checker.py`, Arabic |
 
-### Decisions still open before stage 2 starts
+### Original design questions (resolved or limited in Optional update)
 
 - **Hourly availability.** `ALLSKY_SFC_PAR_TOT`, `ALLSKY_SFC_UVA` and `ALLSKY_SFC_UVB` are listed as hourly in W/m². `CLRSKY_SFC_PAR_TOT`, `CLRSKY_SFC_SW_DWN` and `ALLSKY_SFC_LW_DWN` still need confirming at hourly resolution. The hourly API allows at most 15 parameters per request (we would use 10). Solar data is at about 1° resolution.
 - **Open-Meteo dust history.** Hourly `dust` in µg/m³ from CAMS global (about 40 km). How many past years are available has not been confirmed.

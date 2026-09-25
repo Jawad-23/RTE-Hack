@@ -12,11 +12,11 @@ from planner import cooling, solar
 from planner.schemas import MIN_COVERAGE_PCT, SETUPS
 
 
-def monthly_inside_max(climate_df: pd.DataFrame, area_m2: float) -> pd.DataFrame:
+def monthly_inside_max(climate_df: pd.DataFrame, area_m2: float, crop=None) -> pd.DataFrame:
     """Climate table + area -> DataFrame (index month 1–12): average daily maximum temperature (°C) outside and inside each setup."""
     out = {}
     for setup in SETUPS:
-        prof = cooling.hourly_profile(climate_df, setup, area_m2)
+        prof = cooling.hourly_profile(climate_df, setup, area_m2, crop)
         daily = prof.groupby(prof["hour_of_year"] // 24).agg(month=("month", "first"), inside=("inside_c", "max"), outside=("outside_c", "max"))
         out[setup] = daily.groupby("month")["inside"].mean()
         out["outside"] = daily.groupby("month")["outside"].mean()
@@ -79,6 +79,8 @@ def no_recommendation_key(plan: dict) -> str:
         return "none_nodata"
     if not any(o["coverage_pct"] >= MIN_COVERAGE_PCT for o in plan["options"]):
         return "none_too_hot"
+    if any(o.get("light_ok_pct") is None or o.get("light_ok_pct", 0) < 90 for o in plan["options"]):
+        return "none_constraints"
     return "none_budget"
 
 

@@ -1,6 +1,6 @@
 # RTE Hack: Farming the Desert Sun
 
-Our project for the **Reboot the Earth** hackathon (Doha 2026, Challenge 1). Drop a pin anywhere hot and dry and the app tells you what to grow, what setup to build (open field, shade net, wet-pad greenhouse or solar chiller greenhouse), how much solar to install and when it pays off. Every number comes from open data or an editable CSV.
+Our project for the **Reboot the Earth** hackathon (Doha 2026, Challenge 1). Drop a pin anywhere hot and dry and the app tells you what to grow, what setup to build (seven setups including selective heat screens and agrivoltaics), how much solar to install and when it pays off. Every number comes from open data or an editable CSV.
 
 ## Run it
 
@@ -28,7 +28,7 @@ The first run for a new pin fetches 5 years of hourly data from NASA POWER (can 
 | Path | What | Owner |
 | --- | --- | --- |
 | `app.py` | Entry point: top bar, page navigation, language switch, the "Ask Croptions" dialog | Repo owner |
-| `views/` | The five pages: Home, Plan, Results, Compare sites, Assumptions | Repo owner |
+| `views/` | The six pages: Home, Plan, Results, Compare sites, Operate, Assumptions | Repo owner |
 | `ui/` | Design tokens and CSS (`theme.py`), HTML components, Plotly charts, page state, chart summaries (`insights.py`) | Repo owner |
 | `.streamlit/config.toml`, `assets/` | Theme colours and logo from the Croptions design system | Repo owner |
 | `planner/schemas.py` | Shared column names, setups, statuses, units | Repo owner |
@@ -41,7 +41,7 @@ The first run for a new pin fetches 5 years of hourly data from NASA POWER (can 
 | `docs/` | Problem, plan, team tasks, hackathon brief ([start here](docs/README.md)) | |
 | `ui-demo/` | Croptions UI prototype and design system the app is styled on (open `Croptions.dc.html`) | |
 
-Every value in `data/*.csv` is currently labelled `estimate`, and the app says so. Costs in particular decide which setup wins, so treat recommendations as illustrative until those rows have real sources.
+Crop, equipment and cost assumptions in `data/*.csv` are estimates, and the app says so. Costs in particular decide which setup wins, so treat recommendations as illustrative until those rows have real sources.
 
 ## The AI assistant
 
@@ -85,7 +85,9 @@ Branch per person and feature (`<owner>/<feature>`), only edit files you own, an
 
 ## Roadmap: Plan → Build → Operate
 
-**Today the planner uses satellite data. In the Operate stage, cameras and ESP32 sensors would feed the same controller with live data.** Next up (planned, not built): sunlight split into growth light, heat and UV; humidity stress; light sufficiency; NIR-screen and agrivoltaic setups; a rule-based smart-screen controller; an Operate simulator for the demo; dust and cleaning. Details: [docs/01-problem-and-solution.md](docs/01-problem-and-solution.md#7-what-we-are-adding-next-smarter-shading).
+**The planner and Operate simulator use satellite climate data.** Stage 2 is implemented on `jawad/optional-update`: spectral sunlight, humidity stress, daily light, three new setups, a rule-based screen controller, ten-minute simulation playback, cleaning scenarios and a bounded area scan. The branch includes both the Croptions redesign and the existing OpenRouter integration. Model configuration and API credentials are maintained separately by the teammate.
+
+See [implementation, validation and remaining work](docs/05-optional-update.md). Run `python scripts/validate_demo.py --five-sites` to verify public data access and cache demo sites. The default planner now prices uncovered cooling electricity hour by hour; surplus solar earns zero by default. All new crop and equipment parameters remain illustrative estimates.
 
 Future work only, none of it in the code:
 
@@ -111,6 +113,7 @@ The planner runs on any pin on Earth. *(To fill: the five regions from the feasi
 | [NASA POWER](https://power.larc.nasa.gov/) | Hourly temperature, humidity, sunlight, wind | Free and open; credit "NASA Langley Research Center (LaRC) POWER Project" |
 | [FAO EcoCrop](https://gaez.fao.org/pages/ecocrop) | Crop temperature limits (values in `data/crops.csv` are estimates until checked) | Open; credit FAO |
 | [FAOSTAT](https://www.fao.org/faostat/) | Crop prices (values in `data/prices.csv` are estimates until checked) | CC BY 4.0; credit FAO |
+| [Open-Meteo / CAMS](https://open-meteo.com/en/docs/air-quality-api) | Recent modelled dust exposure, fetched on demand | Credit Open-Meteo and CAMS; separate from the typical climate year |
 
 Every value in `data/*.csv` has a `source` column. Values marked `estimate` are illustrative, not measured.
 

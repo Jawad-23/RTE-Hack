@@ -12,8 +12,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from planner import climate, cooling, crops, economics, solar
-from planner.schemas import MIN_COVERAGE_PCT, PRIORITIES, SETUPS
+from planner import agronomy, climate, cooling, crops, dust, economics, solar
+from planner.schemas import MIN_COVERAGE_PCT, MIN_LIGHT_OK_PCT, PRIORITIES, SETUPS
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
@@ -26,11 +26,19 @@ RANK_KEYS = {
 RANK_WORDS = {"profit": "highest 10-year profit", "payback": "fastest payback", "water": "lowest water use"}
 
 
-def plan(lat: float, lon: float, area_m2: float, budget_qar: float, priority: str, crop: str | None = None) -> dict:
+def plan(lat: float, lon: float, area_m2: float, budget_qar: float, priority: str, crop: str | None = None,
+         *, cleaning_interval_days: int | None = None) -> dict:
     """Pin (°), farm area (m²), budget (QAR), priority, optional crop -> dict: site, recommended, options, calendar, sources, assumptions."""
     if priority not in PRIORITIES:
         raise ValueError(f"priority must be one of {PRIORITIES}, got {priority!r}")
+    if not np.isfinite([lat, lon, area_m2, budget_qar]).all() or not (-90 <= lat <= 90 and -180 <= lon <= 180):
+        raise ValueError("Coordinates, area and budget must be finite and coordinates within bounds")
+    if area_m2 <= 0 or budget_qar < 0:
+        raise ValueError("Area must be positive and budget cannot be negative")
+    if cleaning_interval_days is not None and cleaning_interval_days not in (7, 14, 30):
+        raise ValueError("Cleaning interval must be 7, 14 or 30 days")
     inputs = {"lat": lat, "lon": lon, "area_m2": area_m2, "budget_qar": budget_qar, "priority": priority, "crop": crop}
+    inputs["cleaning_interval_days"] = cleaning_interval_days
 
     try:
         climate_df = climate.get_typical_year(lat, lon)
@@ -48,7 +56,7 @@ def plan(lat: float, lon: float, area_m2: float, budget_qar: float, priority: st
     options = []
     for row in crops_df.itertuples(index=False):
         for setup in SETUPS:
-            options.append(_evaluate_option(climate_df, row, setup, area_m2, budget_qar))
+            options.append(_evaluate_option(climate_df, row, setup, area_m2, budget_qar, cleaning_interval_days))
 
     passing = [o for o in options if o["passes"]]
     ranked = _rank(passing, priority)
@@ -66,24 +74,56 @@ def plan(lat: float, lon: float, area_m2: float, budget_qar: float, priority: st
         "sources": _sources(lat, lon),
         "assumptions": _assumptions(crops_df),
     }
+    # The existing assistant already forwards assumptions; no provider-code change
+    # is needed for these new diagnostics to reach the model and number checker.
+    result["assumptions"]["option_diagnostics"] = [{k: o.get(k) for k in (
+        "crop", "setup", "light_ok_pct", "dli_mean_mol_m2_day", "vpd_stress_hours",
+        "inside_rh_mean_pct", "grid_kwh_year", "export_kwh_year", "cleaning_cost_qar_year")} for o in options]
     return to_json_safe(result)
 
 
-def _evaluate_option(climate_df: pd.DataFrame, crop_row, setup: str, area_m2: float, budget_qar: float) -> dict:
+def _evaluate_option(climate_df: pd.DataFrame, crop_row, setup: str, area_m2: float, budget_qar: float,
+                     cleaning_interval_days: int | None = None) -> dict:
     """One crop × setup -> option dict with coverage, energy, solar and economics."""
-    sim = cooling.simulate(climate_df, setup, crop_row.t_max_c, area_m2)
+    crop_info = crop_row._asdict()
+    sim = cooling.simulate(climate_df, setup, crop_row.t_max_c, area_m2, crop_info)
+    prof = cooling.hourly_profile(climate_df, setup, area_m2, crop_info)
     monthly = cooling.monthly_coverage_pct(sim["inside_temp_c"], climate_df["month"], crop_row.t_max_c)
     growing = [m for m, pct in monthly.items() if pct >= MIN_COVERAGE_PCT]
     sol = solar.size_solar(sim["cooling_kwh_peak_day"], climate_df)
+    cfg = solar.load_settings()
+    integrated_kw = area_m2 * float(cooling.load_setups().loc[setup, "pv_kw_m2"])
+    sol["solar_kw"] = round(sol["solar_kw"] + integrated_kw, 2)
+    output = prof["pv_kwh"].to_numpy() + (sol["solar_kw"] - integrated_kw) * climate_df["ghi_wh_m2"].to_numpy() / 1000 * cfg["performance_ratio"]
+    clean = {"cleaning_cost_qar_year": 0.0, "cleaning_water_l_year": 0.0}
+    light_yield_factor = 1.0
+    if cleaning_interval_days and setup != "open_field":
+        scenario = dust.cleaning_scenario(area_m2, cleaning_interval_days, len(prof))
+        loss = scenario["loss_fraction"]
+        output *= 1 - loss
+        prof["par_inside_w_m2"] *= 1 - loss
+        light_yield_factor = 1 - float(loss.mean()) * cfg["light_yield_loss_factor"]
+        clean = {k: scenario[k] for k in clean}
+    sol["solar_kwh_year"] = round(float(output.sum()), 2)
+    grid = float(np.maximum(prof["cooling_kwh"].to_numpy() - output, 0).sum())
+    export = float(np.maximum(output - prof["cooling_kwh"].to_numpy(), 0).sum())
+    diagnostics = agronomy.metrics(prof, crop_info, growing)
     econ = economics.evaluate(
-        setup, crop_row.crop, area_m2, len(growing), sim["cooling_kwh_year"], sol["solar_kw"]
+        setup, crop_row.crop, area_m2, len(growing), sim["cooling_kwh_year"], sol["solar_kw"],
+        grid_kwh_year=grid, export_kwh_year=export, yield_factor=light_yield_factor, **clean
     )
 
     fails = []
     if sim["coverage_pct"] < MIN_COVERAGE_PCT:
         fails.append(f"coverage {sim['coverage_pct']}% is below {MIN_COVERAGE_PCT}%")
-    if econ["capex_qar"] > budget_qar:
+    if econ["capex_qar"] is None:
+        fails.append(econ.get("reason", "Missing economic assumptions"))
+    elif econ["capex_qar"] > budget_qar:
         fails.append(f"build cost {econ['capex_qar']} QAR is over the {budget_qar} QAR budget")
+    if diagnostics["light_ok_pct"] is None:
+        fails.append("Light sufficiency unavailable: no growing days or missing PAR/crop light limit")
+    elif diagnostics["light_ok_pct"] < MIN_LIGHT_OK_PCT:
+        fails.append(f"light sufficiency {diagnostics['light_ok_pct']}% is below {MIN_LIGHT_OK_PCT}% of growing days")
 
     inside = np.asarray(sim["inside_temp_c"])
     return {
@@ -97,6 +137,10 @@ def _evaluate_option(climate_df: pd.DataFrame, crop_row, setup: str, area_m2: fl
         "cooling_kwh_peak_day": sim["cooling_kwh_peak_day"],
         **sol,
         **econ,
+        **diagnostics,
+        **clean,
+        "grid_kwh_year": round(grid, 2),
+        "export_kwh_year": round(export, 2),
         "passes": not fails,
         "fail_reasons": fails,
     }
@@ -126,7 +170,7 @@ def _reason(recommended: dict | None, options: list[dict], priority: str, crop: 
     what = crop or "any crop in the table"
     if not any(o["coverage_pct"] >= MIN_COVERAGE_PCT for o in options):
         return f"No setup keeps {what} below its heat limit {MIN_COVERAGE_PCT}% of the year at this site."
-    return f"Setups that keep {what} cool enough all cost more than this budget."
+    return f"No option for {what} passes all temperature, light, data and budget checks. See each option's fail_reasons."
 
 
 def _site_summary(climate_df: pd.DataFrame, lat: float, lon: float) -> dict:

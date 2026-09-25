@@ -39,6 +39,9 @@ SETUP_STYLE = {
     "shade_net": {"color": "#6E7F62", "dash": "dash", "width": 2.5},
     "wet_pad": {"color": SKY, "dash": "solid", "width": 2.5},
     "chiller": {"color": GREEN, "dash": "solid", "width": 4},
+    "nir_screen_wet_pad": {"color": "#76528B", "dash": "dash", "width": 2.5},
+    "agrivoltaic_fixed": {"color": "#9A5528", "dash": "dot", "width": 2.5},
+    "agrivoltaic_louver": {"color": "#176D74", "dash": "solid", "width": 2.5},
 }
 
 FONT_STACK = "'IBM Plex Sans', 'IBM Plex Sans Arabic', system-ui, sans-serif"
@@ -81,6 +84,7 @@ header[data-testid="stHeader"] {{ display: none; }}
 .stMain [data-testid="stVerticalBlock"] {{ gap: 16px; }}
 .stMain, .stMain p, .stMain li, .stMain label, .stMain h1, .stMain h2, .stMain h3 {{ direction: {direction}; text-align: {align}; }}
 .stMain h1, .stMain h2, .stMain h3 {{ font-family: {font}; letter-spacing: -0.015em; color: {INK}; }}
+.stMain [data-testid="stMetricValue"], .stMain [data-testid="stMetricValue"] * {{ direction: ltr; unicode-bidi: isolate; text-align: {align}; }}
 .stMain a {{ color: {GREEN}; }}
 
 /* Top bar */
@@ -226,13 +230,12 @@ iframe {{ border-radius: 20px; }}
 [data-testid="stChatMessage"] {{ background: {SAND_50}; border-radius: 16px; }}
 div[role="dialog"] {{ border-radius: 20px; }}
 
-@media (max-width: 800px) {{
+@media (max-width: 1100px) {{
   .block-container, [data-testid="stMainBlockContainer"] {{ padding: 0 16px 64px; }}
   .st-key-topbar {{ margin: 0 -16px 16px !important; padding: 8px 16px; width: calc(100% + 32px) !important; }}
   .st-key-topbar [data-testid="stHorizontalBlock"] {{ flex-direction: row !important; flex-wrap: wrap !important; gap: 4px !important; }}
   .st-key-topbar [data-testid="stColumn"] {{ width: auto !important; flex: 0 0 auto !important; min-width: 0 !important; }}
   .st-key-topbar [data-testid="stColumn"]:first-child {{ flex-basis: 100% !important; }}
-  .st-key-topbar [data-testid="stColumn"]:nth-child(7) {{ display: none; }}
   [data-testid="stPageLink"] a {{ padding: 4px 8px; }}
   .cr-brand {{ margin-bottom: 6px; }}
   .cr-brand .mark {{ width: 28px; height: 28px; }}

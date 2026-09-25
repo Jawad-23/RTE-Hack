@@ -15,6 +15,8 @@ HOURS_PER_YEAR = 8760
 
 # The four setups, always these exact strings
 SETUPS = ["open_field", "shade_net", "wet_pad", "chiller"]
+SETUPS += ["nir_screen_wet_pad", "agrivoltaic_fixed", "agrivoltaic_louver"]
+MIN_LIGHT_OK_PCT = 90.0
 
 # Crop calendar statuses
 STATUS = ["good", "risky", "impossible"]

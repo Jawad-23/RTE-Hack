@@ -6,6 +6,9 @@ from streamlit_folium import st_folium
 
 from i18n import t
 from planner import crops
+from planner import scan
+from folium.plugins import Draw
+import pandas as pd
 from planner.schemas import PRIORITIES
 from ui import state
 
@@ -43,6 +46,12 @@ with form:
                      key=state.bind("priority"), on_change=state.save, args=("priority",))
 
         go = st.button(f"{t('p_analyse', lang)} →", type="primary", use_container_width=True, disabled=pin is None)
+        with st.expander(t("dust_scenario", lang)):
+            choice = st.selectbox(t("cleaning_interval", lang), [0, 7, 14, 30],
+                                  index=[0, 7, 14, 30].index(ss.get("cleaning_interval_days") or 0),
+                                  format_func=lambda n: t("dust_off", lang) if n == 0 else t("clean_days", lang).format(n=n))
+            ss["cleaning_interval_days"] = choice or None
+            st.caption(t("dust_scenario_note", lang))
         if pin is None:
             st.markdown(f'<p class="cr-note" style="text-align:center">{t("p_need_pin", lang)}</p>', unsafe_allow_html=True)
         if go:
@@ -58,12 +67,24 @@ with map_col:
     ).add_to(fmap)
     folium.TileLayer("OpenStreetMap", name=t("p_ter", lang), show=False).add_to(fmap)
     folium.LayerControl(position="topleft", collapsed=False).add_to(fmap)
+    Draw(export=False, draw_options={"polyline": False, "polygon": False, "circle": False,
+         "marker": False, "circlemarker": False, "rectangle": True}, edit_options={"edit": False}).add_to(fmap)
     for row in state.demo_sites().itertuples():
         folium.CircleMarker((row.lat, row.lon), radius=6, color="#EBDDBF", fill=True, fill_opacity=0.9,
                             tooltip=row.name_ar if lang == "ar" else row.name_en).add_to(fmap)
     if ss["pin"]:
         folium.Marker(ss["pin"], icon=folium.Icon(color="darkgreen", icon="leaf")).add_to(fmap)
-    clicked = st_folium(fmap, height=640, use_container_width=True, returned_objects=["last_clicked"], key="plan_map")
+    clicked = st_folium(fmap, height=640, use_container_width=True, returned_objects=["last_clicked", "all_drawings"], key="plan_map")
+    if clicked and clicked.get("all_drawings") is not None:
+        if clicked["all_drawings"]:
+            ring = clicked["all_drawings"][-1]["geometry"]["coordinates"][0]
+            bounds = (min(p[1] for p in ring), min(p[0] for p in ring), max(p[1] for p in ring), max(p[0] for p in ring))
+            if bounds != ss.get("_scan_bounds"):
+                ss.pop("_scan_results", None)
+            ss["_scan_bounds"] = bounds
+        else:
+            ss.pop("_scan_bounds", None)
+            ss.pop("_scan_results", None)
     if clicked and clicked.get("last_clicked"):
         new_pin = (round(clicked["last_clicked"]["lat"], 4), round(clicked["last_clicked"]["lng"], 4))
         if new_pin != ss["pin"]:
@@ -82,3 +103,19 @@ with map_col:
             if st.button(f"📍 {row.name_ar if lang == 'ar' else row.name_en}", key=f"demo_{row.key}"):
                 ss["pin"] = (float(row.lat), float(row.lon))
                 st.rerun()
+
+    with st.expander(t("scan_title", lang)):
+        st.caption(t("scan_note", lang))
+        side = st.selectbox(t("scan_size", lang), [2, 3, 4, 5], format_func=lambda n: f"{n} × {n} ({n*n})")
+        if st.button(t("scan_run", lang), disabled="_scan_bounds" not in ss):
+            with st.spinner(t("scan_run", lang)):
+                try:
+                    ss["_scan_results"] = scan.scan_area(ss["_scan_bounds"], side, area_m2=ss["area"],
+                        budget_qar=ss["budget"], priority=ss["priority"], crop=ss["crop"],
+                        cleaning_interval_days=ss.get("cleaning_interval_days"))
+                except ValueError as exc:
+                    st.error(str(exc))
+        if ss.get("_scan_results"):
+            result = pd.DataFrame(ss["_scan_results"])
+            st.dataframe(result, hide_index=True)
+            st.download_button(t("scan_csv", lang), result.to_csv(index=False), "croptions-area-scan.csv", "text/csv")

@@ -3,3 +3,17 @@ electricity_price_qar_kwh,0.13,QAR/kWh,estimate
 solar_capex_qar_kw,2500.0,QAR/kW,estimate
 performance_ratio,0.8,fraction,typical value
 risky_margin_c,3.0,°C,estimate - how far above t_max_c the average daily max may go before a month is impossible
+par_umol_j,4.57,umol/J,estimate - editable scenario assumption
+screen_step_pct,10,%,estimate - editable scenario assumption
+screen_max_pct,80,%,estimate - editable scenario assumption
+screen_min_par_w_m2,120,W/m2,estimate - editable scenario assumption
+screen_heat_margin_c,3,C,estimate - editable scenario assumption
+screen_hysteresis_c,2,C,estimate - editable scenario assumption
+electricity_sell_qar_kwh,0,QAR/kWh,estimate - editable scenario assumption
+dust_daily_soiling_fraction,0.003,fraction/day,estimate - editable scenario assumption
+dust_max_soiling_fraction,0.25,fraction,estimate - editable scenario assumption
+cleaning_cost_qar_m2,0.15,QAR/m2/clean,estimate - editable scenario assumption
+cleaning_water_l_m2,0.5,L/m2/clean,estimate - editable scenario assumption
+dust_event_threshold_ug_m3,100,ug/m3,estimate - editable scenario assumption
+light_yield_loss_factor,0.5,fraction,estimate - editable scenario assumption
+pv_louver_open_output_fraction,0.6,fraction,estimate - editable scenario assumption

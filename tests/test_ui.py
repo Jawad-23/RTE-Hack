@@ -8,7 +8,7 @@ from streamlit.testing.v1 import AppTest
 from planner import climate
 
 APP = str(Path(__file__).resolve().parent.parent / "app.py")
-PAGES = ["views/home.py", "views/plan.py", "views/results.py", "views/compare.py", "views/assumptions.py"]
+PAGES = ["views/home.py", "views/plan.py", "views/results.py", "views/compare.py", "views/assumptions.py", "views/operate.py"]
 
 
 @pytest.fixture

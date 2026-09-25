@@ -1,5 +1,11 @@
 # Farming the Desert Sun: Problem and Solution
 
+**Implementation update:** the Stage 2 software described below is now on
+`jawad/optional-update`. See [implementation and validation](05-optional-update.md)
+for delivered behaviour, measured API checks and remaining assumptions. Hardware
+and learned controllers remain future work; the original pitch narrative is not
+evidence that the estimated farm economics have been validated.
+
 Sep 24, 2026 · @Blay · updated Sep 25, 2026 to match the code (see [README](README.md) for what changed)
 
 ## 1. The problem

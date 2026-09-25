@@ -9,6 +9,7 @@ import pandas as pd
 import streamlit as st
 
 from i18n import t
+from planner.schemas import SETUPS
 from ui import charts, insights, state
 from ui import components as ui
 from ui.theme import PLOTLY_CONFIG
@@ -115,11 +116,12 @@ with st.container(key="card_compare"):
 # ---------- charts ----------
 climate_df = state.climate_for(lat, lon)
 limit = insights.crop_limit(plan, crop)
-monthly = insights.monthly_inside_max(climate_df, inp["area_m2"])
+crop_info = next(c for c in plan["assumptions"]["crops"] if c["crop"] == crop)
+monthly = insights.monthly_inside_max(climate_df, inp["area_m2"], crop_info)
 with st.container(key="card_temp"):
     st.markdown(ui.title(t("temp_title", lang), t("temp_sub", lang)), unsafe_allow_html=True)
     st.plotly_chart(charts.inside_temperature(monthly, limit, state.crop_label(crop, lang), lang), use_container_width=True, config=PLOTLY_CONFIG)
-    cool_all_year = [state.setup_label(s, lang) for s in ("open_field", "shade_net", "wet_pad", "chiller") if not insights.months_above(monthly[s], limit)]
+    cool_all_year = [state.setup_label(s, lang) for s in SETUPS if not insights.months_above(monthly[s], limit)]
     pad_hot = insights.months_above(monthly["wet_pad"], limit)
     parts = [t("temp_cap_ok", lang).format(setups="، ".join(cool_all_year) if lang == "ar" else ", ".join(cool_all_year), limit=f"{limit:.0f}")
              if cool_all_year else t("temp_cap_none", lang).format(limit=f"{limit:.0f}")]
@@ -148,6 +150,18 @@ with right, st.container(key="card_profit"):
                     unsafe_allow_html=True)
 
 # ---------- assumptions and sources ----------
+st.subheader(t("diagnostics_title", lang))
+st.caption(t("diagnostics_note", lang))
+diagnostic_cols = ["setup", "light_ok_pct", "dli_mean_mol_m2_day", "vpd_stress_hours", "inside_rh_mean_pct", "grid_kwh_year", "export_kwh_year"]
+diagnostics = pd.DataFrame(options).reindex(columns=diagnostic_cols)
+diagnostics["setup"] = diagnostics["setup"].map(lambda s: state.setup_label(s, lang))
+diagnostics = diagnostics.rename(columns={k: t("diag_" + k, lang) for k in diagnostic_cols})
+st.dataframe(diagnostics, hide_index=True)
+with st.expander(t("failure_reasons", lang)):
+    for option in options:
+        if option["fail_reasons"]:
+            st.write(state.setup_label(option["setup"], lang) + ": " + "; ".join(option["fail_reasons"]))
+
 left, right = st.columns(2, gap="medium")
 with left, st.container(key="card_assum"):
     st.markdown(ui.title(t("assumptions", lang), t("assum_sub", lang)), unsafe_allow_html=True)

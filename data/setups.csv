@@ -1,5 +1,8 @@
-setup,capex_qar_m2,opex_qar_m2_year,shade_drop_c,pad_efficiency,solar_gain_c,setpoint_c,chiller_kw_per_m2_per_c,cop,water_l_m2_day_extra,yield_factor,source
-open_field,10,5,0,0.0,0,0,0.0,0.0,0,1.0,estimate
-shade_net,40,8,2,0.0,0,0,0.0,0.0,0,1.1,estimate
-wet_pad,300,25,0,0.8,4,0,0.0,0.0,8,1.5,estimate
-chiller,450,35,0,0.8,4,26,0.03,3.0,3,1.8,estimate
+setup,capex_qar_m2,opex_qar_m2_year,shade_drop_c,pad_efficiency,solar_gain_c,setpoint_c,chiller_kw_per_m2_per_c,cop,water_l_m2_day_extra,yield_factor,source,par_transmission,nir_transmission,pv_kw_m2,screen_max_light_loss
+open_field,10,5,0,0.0,0,0,0.0,0.0,0,1.0,estimate,1,1,0,0
+shade_net,40,8,2,0.0,0,0,0.0,0.0,0,1.1,estimate,0.7,1,0,0
+wet_pad,300,25,0,0.8,4,0,0.0,0.0,8,1.5,estimate,0.8,1,0,0
+chiller,450,35,0,0.8,4,26,0.03,3.0,3,1.8,estimate,0.8,1,0,0
+nir_screen_wet_pad,370,25,0,0.8,4,0,0.0,0.0,8,1.5,estimate,0.75,0.4,0,0
+agrivoltaic_fixed,120,8,2,0.0,0,0,0.0,0.0,0,1.1,estimate,0.65,1,0.06,0
+agrivoltaic_louver,180,8,2,0.0,0,0,0.0,0.0,0,1.1,estimate,1,1,0.06,0.65

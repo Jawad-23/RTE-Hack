@@ -38,6 +38,7 @@ if run:
     ss["cmp_a"], ss["cmp_b"] = a, b
     with st.spinner(t("a_title", lang)):
         args = dict(area_m2=float(ss["area"]), budget_qar=float(ss["budget"]), priority=ss["priority"], crop=ss["crop"])
+        args["cleaning_interval_days"] = ss.get("cleaning_interval_days")
         ss["compare"] = {k: optimizer.plan(choices[key][1], choices[key][2], **args) | {"_key": key} for k, key in (("a", a), ("b", b))}
 
 cmp = ss.get("compare")

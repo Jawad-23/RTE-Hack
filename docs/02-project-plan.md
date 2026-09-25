@@ -1,6 +1,8 @@
 # Project plan: Farming the Desert Sun
 
-Sep 25, 2026 · @Blay · kept in sync with the code
+Sep 25, 2026 · @Blay
+
+**Branch status:** Stage 2 is implemented on `jawad/optional-update`. See [the current implementation and validation record](05-optional-update.md) for exact behaviour and limits. This branch includes the redesign and existing OpenRouter work. No PR or deployment has been made. The original schedule and pitch below are planning targets, not evidence of completion.
 
 ## 1. Goal and deliverables
 
@@ -17,7 +19,7 @@ We submit four things:
 
 **Build the must-haves first and demo them end to end before touching anything else.** Stretch items only start once the full pipeline works.
 
-### Stage 1: the core planner (done on branches, waiting for review and merge)
+### Stage 1: the core planner (core on main; redesign and updates on this branch)
 
 | Priority | Feature | Why | Status |
 | --- | --- | --- | --- |
@@ -31,21 +33,21 @@ We submit four things:
 | Must-have | Look and feel of the Croptions prototype (5 pages, English/Arabic, phone width) | What judges see first | Done on `jawad/redesign` |
 | Stretch | Compare two sites side by side | The "same heat, different air" demo moment | Done on `jawad/redesign` |
 
-### Stage 2: smarter shading and dust (planned, in this order)
+### Stage 2: smarter shading and dust (implemented on this branch)
 
-Each step is a separate branch, reviewed before the next starts. Full rules and specs are in the [Team tasks](03-team-tasks.md#9-stage-2-smarter-shading-and-dust) tab.
+These steps are collected on the user-requested `jawad/optional-update` branch. The detailed completion record and scientific limitations are in [Optional update](05-optional-update.md).
 
 | Step | Feature | Owner | Status |
 | --- | --- | --- | --- |
-| 1 | Split sunlight into growth light (PAR), heat (NIR) and UV | Me | Planned; hourly availability of 3 NASA parameters to confirm |
-| 2 | Humidity stress (VPD) and inside humidity per setup | Me + Mustafa (crops.csv column) | Planned |
-| 3 | Light sufficiency (daily light integral) so shading has a trade-off | Me + Mustafa | Planned |
-| 4 | Three new setups: NIR-screen wet pad, fixed agrivoltaic, agrivoltaic louvers | Me + Mustafa (CSV rows, electricity revenue) | Planned |
-| 5 | One shared rule-based screen controller | Me | Planned |
-| 6 | Operate simulator page for the demo video | Me | Planned |
-| 7 | Dust: haze light loss, cleaning interval, dust-storm exposure (Open-Meteo) | Me + Mustafa | Planned; Open-Meteo dust history to confirm |
-| 8 | Area scan (draw a rectangle, grid of plans) | Me | Stretch |
-| 9 | Wire new metrics through app, agent, checker, i18n, README | Everyone | Planned |
+| 1 | Split sunlight into growth light (PAR), heat (NIR) and UV | Me | Implemented; hourly parameters and units checked live |
+| 2 | Humidity stress (VPD) and inside humidity per setup | Me + Mustafa (crops.csv column) | Implemented |
+| 3 | Light sufficiency (daily light integral) so shading has a trade-off | Me + Mustafa | Implemented |
+| 4 | Three new setups: NIR-screen wet pad, fixed agrivoltaic, agrivoltaic louvers | Me + Mustafa (CSV rows, electricity revenue) | Implemented |
+| 5 | One shared rule-based screen controller | Me | Implemented |
+| 6 | Operate simulator page for the demo video | Me | Implemented |
+| 7 | Dust: haze light loss, cleaning interval, dust-storm exposure (Open-Meteo) | Me + Mustafa | Implemented: recent 30-day exposure plus separate cleaning scenarios |
+| 8 | Area scan (draw a rectangle, grid of plans) | Me | Implemented (max 25 points) |
+| 9 | Wire new metrics through app, agent, checker, i18n, README | Everyone | Implemented |
 
 ### Not in scope (roadmap only; mention in the pitch, do not build)
 
@@ -66,7 +68,7 @@ Keep the demo to about 8 crops and Qatar sites, but never hard-code Qatar: any p
 | 5 | `economics.py` | setup, crop, farm size, prices | Build cost, running cost, profit per year, payback | Working |
 | 6 | `optimizer.py` | pin, area, budget, priority, crop | Ranked plan (JSON-safe) | Working |
 | 7 | `agent.py` + `checker.py` | user question + current plan | Checked plain-language answer; may re-run the planner | Working (needs an API key) |
-| 8 | `controller.py` | one hour of climate + crop + screen state | Screen position % + reason code | Planned (step 5) |
+| 8 | `controller.py` | one hour of climate + crop + screen state | Screen position % + reason code | Implemented |
 
 ### Core formulas
 
@@ -172,7 +174,7 @@ RTE-Hack/
 └── LICENSE                 # MIT
 ```
 
-Planned in stage 2: `planner/controller.py` and `views/operate.py` (pages live in `views/`, not `pages/`, because the app uses its own top navigation).
+Implemented in stage 2: `planner/controller.py` and `views/operate.py` (pages live in `views/`, not `pages/`, because the app uses its own top navigation).
 
 | Layer | Tool |
 | --- | --- |
@@ -219,11 +221,11 @@ Pick and test both demo pins on Friday night, and screenshot the results in case
 **Tick these off before the code freeze; open-source rules are a hard requirement.**
 
 - [x] MIT license from the first code commit
-- [ ] Repo is public
+- [x] Repo is public
 - [x] Every library and dataset credited in the README
 - [ ] Every value in `data/*.csv` has a real source, or is clearly labelled `estimate`
 - [ ] README covers the problem, how to run, architecture diagram, data sources and limits
-- [ ] Demo pins tested with live NASA data and cached locally
+- [x] Demo pins tested with live NASA data and cached locally (see validation report)
 - [ ] Backup demo video recorded
 - [ ] Pitch deck final and rehearsed with a timer
 - [ ] Submitted in the format the Participant Handbook asks for
@@ -244,14 +246,14 @@ Pick and test both demo pins on Friday night, and screenshot the results in case
 
 | API / data | State | What it takes |
 | --- | --- | --- |
-| NASA POWER hourly (temperature, humidity, sunlight, wind) | Code written and unit-tested; **never run against the real API** (blocked in the build environment) | Run `python -m planner.climate 25.29 51.53` on a laptop |
+| NASA POWER hourly (temperature, humidity, sunlight, wind) | Implemented and checked against the live public API; see validation report | Run `python -m planner.climate 25.29 51.53` on a laptop |
 | Claude API | Code written and tested with a fake model; **never called live** | An `ANTHROPIC_API_KEY` in `.env` |
 | Open-source LLM through OpenRouter (free models) | Code written and tested against a fake OpenAI-compatible server, including reading the key from Streamlit Secrets; **never called live** (OpenRouter is blocked in the build environment) | Add the OpenRouter key to the app's Secrets and ask the chat a question |
 | Map (Leaflet scripts and OpenStreetMap tiles) | Not loaded in the build environment; typed coordinates work | A normal internet connection |
 | FAO EcoCrop | **No download or API.** Crop limits in `crops.csv` were typed in as estimates | Look up each crop and fill `source` |
 | FAOSTAT | **No API.** Prices in `prices.csv` were typed in as estimates | Look up each price and fill `source` |
-| NASA POWER spectral data (PAR, UV, longwave, clear-sky) | Not built (stage 2, step 1) | |
-| Open-Meteo Air Quality (dust) | Not built (stage 2, step 7) | |
+| NASA POWER spectral data (PAR, UV, longwave, clear-sky) | Implemented and checked live | |
+| Open-Meteo Air Quality (dust) | Implemented for recent modelled dust exposure | |
 | Open-Meteo Climate API (2040/2050 view) | Not built (stretch) | |
 | Nominatim (place name → coordinates) | Listed in the Problem and solution tab, not built | Small; only if time allows |
 
@@ -264,12 +266,12 @@ Pick and test both demo pins on Friday night, and screenshot the results in case
 
 ### Simplifications in the code
 
-1. **Solar and night-time cooling:** the array is sized so one day of panel output equals the hottest day's cooling energy, but the chiller also runs at night. This quietly assumes free storage or grid net metering. There is no battery cost.
-2. **`electricity_price_qar_kwh` is not used yet:** solar is assumed to cover all cooling electricity.
+1. **Solar and night-time cooling:** corrected on this branch. Hourly deficits incur grid costs; surplus export defaults to zero revenue. Grid access is assumed, with no battery.
+2. **Electricity tariffs:** now applied to hourly grid imports; confirm the local tariff and any export agreement before investment.
 3. **Air pressure is fixed at sea level** (101,325 Pa) for wet-bulb; high sites are slightly off.
 4. **Greenhouse solar heat gain is on/off:** the full 4 °C whenever the sun is up, not scaled by how strong it is.
 5. **Wet pads:** efficiency and water use are constant, whatever the weather.
-6. **Revenue** = yield × price × (growing months ÷ 12) × setup yield factor. Heat stress within a growing month and light levels do not change yield. A growing month is one with at least 90 % of hours below the crop's limit.
+6. **Revenue** = yield × price × (growing months ÷ 12) × setup yield factor. Heat stress within a growing month is not modelled as a yield curve. DLI now gates suitability; the optional soiling scenario applies an estimated light/yield factor. A growing month is one with at least 90 % of hours below the crop's limit.
 7. **Coverage only checks the crop's maximum temperature**, over all 8,760 hours. Cold winter nights inside a greenhouse are not checked.
 8. **Economics:** no discounting, panel degradation, labour, land, financing or equipment replacement. The budget only limits build cost.
 9. **Typical year:** averaging 5 years smooths out heatwaves, so extremes are under-represented.

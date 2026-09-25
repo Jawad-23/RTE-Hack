@@ -4,6 +4,8 @@
 
 # Python
 .venv/
+.venv-codex/
+.cache/
 __pycache__/
 *.py[cod]
 .pytest_cache/
