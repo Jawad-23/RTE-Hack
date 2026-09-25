@@ -60,3 +60,18 @@ def test_get_typical_year_uses_cache_and_reports_missing_data(tmp_path, monkeypa
     monkeypatch.setattr(climate.time, "sleep", lambda _s: None)
     with pytest.raises(climate.ClimateUnavailable):
         climate.get_typical_year(3.0, 4.0, years=[2023])
+
+
+def test_offline_gives_up_after_first_year(tmp_path, monkeypatch):
+    monkeypatch.setattr(climate, "CACHE_DIR", tmp_path)
+    calls = []
+
+    def offline(*_a, **_k):
+        calls.append(1)
+        raise climate.requests.ConnectionError("offline")
+
+    monkeypatch.setattr(climate.requests, "get", offline)
+    monkeypatch.setattr(climate.time, "sleep", lambda _s: None)
+    with pytest.raises(climate.ClimateUnavailable):
+        climate.get_typical_year(5.0, 6.0, years=[2021, 2022, 2023])
+    assert len(calls) == climate.RETRIES  # one year's retries, not all three years'

@@ -72,6 +72,9 @@ def get_typical_year(lat: float, lon: float, years: list[int] | None = None) -> 
     for year in years or default_years():
         try:
             yearly.append(fetch_year(lat, lon, year))
+        except requests.ConnectionError as exc:
+            errors.append(f"{year}: {exc}")
+            break  # offline: don't spend retries on every other year
         except (requests.RequestException, ValueError, KeyError) as exc:
             errors.append(f"{year}: {exc}")
     if not yearly:
@@ -106,7 +109,8 @@ def fetch_year(lat: float, lon: float, year: int) -> pd.DataFrame:
             return parse_power_json(resp.json())
         except requests.RequestException as exc:
             last_exc = exc
-            time.sleep(2**attempt)
+            if attempt < RETRIES - 1:
+                time.sleep(2**attempt)
     raise last_exc  # type: ignore[misc]
 
 
