@@ -97,6 +97,45 @@ if rec:
     ]), unsafe_allow_html=True)
 st.markdown(f'<div class="cr-banner">⚠ {t("estimate_banner", lang)}</div>', unsafe_allow_html=True)
 
+# ---------- what NASA measured at this site ----------
+site = plan.get("site") or {}
+if "monthly_temp_max_mean_c" in site:
+    def _v(key, fmt=state.n1):
+        return fmt(site.get(key))
+
+    hot = site["hottest_month"]
+    focus_limit = insights.crop_limit(plan, crop)
+    focus = next((c for c in plan["assumptions"]["crops"] if c["crop"] == crop), {})
+    peak_et0 = max(site["monthly_et0_mm_day"].items(), key=lambda kv: kv[1])
+    nasa = next((s for s in plan.get("sources", []) if "NASA" in s.get("name", "")), {})
+    years = nasa.get("years") or []
+    with st.container(key="card_site"):
+        st.markdown(ui.title(t("sc_title", lang), t("sc_sub", lang)), unsafe_allow_html=True)
+        st.markdown(ui.tiles([
+            {"k": t("sc_peak", lang), "v": _v("hottest_month_temp_max_mean_c"), "unit": "°C",
+             "note": t("sc_peak_n", lang).format(month=ui.MONTHS[lang][hot - 1], max=state.n1(site.get("temp_max_c")))},
+            {"k": t("sc_hours", lang), "v": state.n0((site.get("hours_above_limit_outdoor") or {}).get(crop)), "unit": t("sc_h_year", lang),
+             "note": t("sc_hours_n", lang).format(crop=state.crop_label(crop, lang), limit=f"{focus_limit:.0f}")},
+            {"k": t("sc_humid", lang), "v": state.n0(site.get("hottest_month_rh_mean_pct")), "unit": "%",
+             "note": t("sc_humid_n", lang).format(wb=state.n1(site.get("hottest_month_wet_bulb_max_c")))},
+            {"k": t("sc_sun", lang), "v": _v("peak_sun_hours_day"), "unit": t("sc_kwh_day", lang),
+             "note": t("sc_sun_n", lang).format(year=state.n0(site.get("solar_kwh_m2_year")))},
+            {"k": t("sc_dli", lang), "v": _v("dli_outdoor_mol_m2_day"), "unit": t("sc_mol", lang),
+             "note": t("sc_dli_n", lang).format(crop=state.crop_label(crop, lang), need=state.n0(focus.get("dli_min_mol_m2_day")))},
+            {"k": t("sc_ir", lang), "v": _v("heat_share_pct", state.n0), "unit": "%", "note": t("sc_ir_n", lang)},
+            {"k": t("sc_haze", lang), "v": _v("haze_loss_pct", state.n0), "unit": "%", "note": t("sc_haze_n", lang)},
+            {"k": t("sc_et0", lang), "v": _v("et0_mm_day"), "unit": t("sc_mm_day", lang),
+             "note": t("sc_et0_n", lang).format(month=ui.MONTHS[lang][int(peak_et0[0]) - 1], mm=state.n1(peak_et0[1]))},
+        ]), unsafe_allow_html=True)
+        c1, c2 = st.columns(2, gap="medium")
+        c1.plotly_chart(charts.site_temperature(site, focus_limit, state.crop_label(crop, lang), lang), use_container_width=True, config=PLOTLY_CONFIG)
+        c2.plotly_chart(charts.site_humidity(site, lang), use_container_width=True, config=PLOTLY_CONFIG)
+        span = f"{min(years)}–{max(years)}" if years else "—"
+        st.markdown(f'<p class="cr-note">{t("sc_source", lang).format(years=span, date=nasa.get("fetched") or "—")}</p>',
+                    unsafe_allow_html=True)
+        if site.get("missing"):
+            st.caption(" · ".join(site["missing"]))
+
 # ---------- crop calendar ----------
 with st.container(key="card_calendar"):
     a, b = st.columns([1.3, 1], vertical_alignment="center")
@@ -112,6 +151,26 @@ with st.container(key="card_compare"):
     st.markdown(ui.title(t("cmp_title", lang), t("cmp_sub", lang).format(crop=state.crop_label(crop, lang), area=state.n0(inp["area_m2"]))),
                 unsafe_allow_html=True)
     st.markdown(ui.comparison(options, rec, lang), unsafe_allow_html=True)
+
+# ---------- the plan with the Croptions Kit ----------
+kit_cost = plan.get("kit") or {}
+if rec and kit_cost.get("capex_with_kit_qar") is not None:
+    with st.container(key="card_kit"):
+        a, b = st.columns([3, 1], vertical_alignment="center")
+        a.markdown(ui.title(t("kc_title", lang), t("kc_sub", lang)), unsafe_allow_html=True)
+        if b.button(f"{t('kc_open', lang)} →", type="primary", use_container_width=True):
+            st.switch_page(pages["operate"])
+        st.markdown(ui.tiles([
+            {"k": t("kc_pods", lang), "v": str(kit_cost["pods"]), "unit": "",
+             "note": t("kc_pods_n", lang).format(price=state.n0(kit_cost["kit_capex_qar"] / kit_cost["pods"]), area=state.n0(kit_cost["pod_area_m2"]))},
+            {"k": t("kc_cost", lang), "v": state.n0(kit_cost["capex_with_kit_qar"]), "unit": t("qar", lang),
+             "note": t("kc_cost_n", lang).format(plan=state.n0(rec["capex_qar"]), kit=state.n0(kit_cost["kit_capex_qar"]))},
+            {"k": t("kc_profit", lang), "v": state.n0(kit_cost["profit_with_kit_qar_year"]), "unit": t("qar", lang),
+             "note": t("kc_profit_n", lang).format(service=state.n0(kit_cost["kit_opex_qar_year"]))},
+            {"k": t("kc_pay", lang), "v": state.n1(kit_cost["payback_with_kit_years"]), "unit": t("years", lang),
+             "note": t("kc_pay_n", lang).format(years=state.n1(rec["payback_years"]))},
+        ]), unsafe_allow_html=True)
+        st.markdown(f'<p class="cr-note">⚠ {t("kc_note", lang)}</p>', unsafe_allow_html=True)
 
 # ---------- charts ----------
 climate_df = state.climate_for(lat, lon)

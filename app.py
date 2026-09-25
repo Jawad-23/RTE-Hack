@@ -22,11 +22,16 @@ PAGES = {
     "plan": st.Page("views/plan.py", title=t("nav_plan", lang), url_path="plan"),
     "results": st.Page("views/results.py", title=t("nav_results", lang), url_path="results"),
     "compare": st.Page("views/compare.py", title=t("nav_compare", lang), url_path="compare"),
-    "operate": st.Page("views/operate.py", title=t("nav_operate", lang), url_path="operate"),
+    "operate": st.Page("views/operate.py", title=t("nav_operate", lang), url_path="kit"),
     "assumptions": st.Page("views/assumptions.py", title=t("nav_settings", lang), url_path="assumptions"),
 }
+# The phone remote for the Croptions Kit: reached only by its QR code link, so it is not in the top bar.
+REMOTE = st.Page("views/kit_remote.py", title=t("kit_remote_nav", lang), url_path="kit-remote")
 st.session_state["_pages"] = PAGES
-current = st.navigation(list(PAGES.values()), position="hidden")
+current = st.navigation([*PAGES.values(), REMOTE], position="hidden")
+if current.url_path == REMOTE.url_path:  # phone screen: no top bar, no assistant
+    current.run()
+    st.stop()
 
 # ---------- top bar ----------
 with st.container(key="topbar"):

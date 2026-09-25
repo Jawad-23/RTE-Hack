@@ -56,3 +56,42 @@ def test_assumptions_without_plan_shows_world_prices(offline):
     at = run("views/assumptions.py")
     assert not at.exception, at.exception
     assert any("world median" in m.value for m in at.markdown)
+
+
+def test_kit_dashboard_shows_phone_readings(offline):
+    from ui import kit_ui
+    at = run("views/operate.py", plan=True)
+    assert not at.exception, at.exception
+    code = at.session_state["_kit_code"]
+    ctx = kit_ui.store().context(code)
+    assert kit_ui.send(code, ctx, "heat_stress", None)["seq"] == 1
+    at.run()
+    assert not at.exception, at.exception
+    assert at.session_state["_kit_seen"] == 1
+    text = " ".join(m.value for m in at.markdown)
+    assert "Leaf temperature" in text and "Water stress" in text
+
+
+@pytest.mark.parametrize("lang", ["en", "ar"])
+def test_kit_remote_page(offline, lang):
+    from ui import kit_ui
+    code = kit_ui.store().create({"site": "Al Khor", "crop": "tomato", "setup": "wet_pad", "sim_day": 200,
+                                  "day": [{"hour": h, "air_c": 30.0, "rh_pct": 50.0, "par_w_m2": 300.0 if 6 <= h <= 18 else 0.0,
+                                           "outside_c": 35.0} for h in range(24)]})
+    at = AppTest.from_file(APP, default_timeout=60)
+    at.session_state["lang"] = lang
+    at.query_params["farm"] = code
+    at.run()
+    at.switch_page("views/kit_remote.py").run()
+    assert not at.exception, at.exception
+    at.button(key="remote_heat_stress").click().run()
+    assert not at.exception, at.exception
+    assert kit_ui.store().readings(code)[-1]["scenario"] == "heat_stress"
+
+
+def test_results_shows_site_climate_and_kit_cost(offline):
+    at = run("views/results.py", plan=True)
+    text = " ".join(m.value for m in at.markdown)
+    assert "What NASA measured at this site" in text
+    if at.session_state["plan"]["recommended"]:
+        assert "Build cost with kit" in text

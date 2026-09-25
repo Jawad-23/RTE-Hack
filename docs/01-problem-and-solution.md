@@ -126,6 +126,7 @@ To stay fully open, the agent talks to the LLM through one function (`call_llm` 
 4. **Three new setups:** a wet-pad greenhouse with a heat-reflective (NIR-blocking) roof, fixed agrivoltaic panels over the crop, and agrivoltaic louvers that move.
 5. **One rule-based controller** that decides how far to close a smart screen each hour. The planner and the demo use the same rule.
 6. **Operate simulator:** a demo page that replays one day at the chosen site, comparing fixed shade with the smart screen. It is a simulation using satellite climate data, not live sensor data.
+8. **Croptions Kit (simulated):** the Operate page becomes the kit dashboard. A phone plays the sensor pod and sends simulated readings; the dashboard shows CWSI, VPD, dew-point risk, light so far and the controller's advice. The Results page adds the kit's cost and a "What NASA measured at this site" card. See [Croptions Kit](06-croptions-kit.md).
 7. **Dust:** haze light loss, panel and roof cleaning intervals, and dust-storm exposure.
 
 ## 8. Roadmap: Plan → Build → Operate
@@ -136,7 +137,8 @@ To stay fully open, the agent talks to the LLM through one function (`call_llm` 
 | --- | --- | --- |
 | Plan | Pin → crop, setup, solar size, payback (this app) | Working |
 | Build | Generative facility layouts | Roadmap |
-| Operate | Live sensors and spectrometers (cameras, ESP32) feeding the controller | Roadmap |
+| Operate | Croptions Kit dashboard with simulated phone readings | Built (simulation) |
+| Operate | Real kit pods and spectrometers (cameras, ESP32) feeding the controller | Roadmap |
 | Operate | Learned (reinforcement learning) controller trained on our simulator | Roadmap |
 | Operate | Computer-vision dust detection and targeted cleaning | Roadmap |
 | Operate | Camera-based canopy stress detection | Roadmap |

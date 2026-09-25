@@ -1,0 +1,6 @@
+scenario,hour,air_offset_c,rh_offset_pct,par_factor,leaf_stress_fraction,night_leaf_offset_c,source
+normal,,0,0,1.0,0.15,-1.0,"estimate - simulated demo scenario: the site's typical inside conditions for that hour, crop transpiring normally"
+heat_stress,14,4,-5,1.0,0.8,-1.0,"estimate - simulated demo scenario: a hotter than typical afternoon and a leaf that has almost stopped cooling itself"
+dry_air,13,2,-20,1.0,0.5,-1.0,"estimate - simulated demo scenario: a dry wind lowers humidity by 20 points"
+sun_surge,12,1,0,1.3,0.4,-1.0,"estimate - simulated demo scenario: haze clears and sunlight rises 30% above the typical value"
+humid_night,4,-1,35,0.0,0.0,-1.5,"estimate - simulated demo scenario: a humid pre-dawn hour; leaves cool below air temperature by radiating heat"
