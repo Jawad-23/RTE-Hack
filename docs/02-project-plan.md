@@ -1,49 +1,70 @@
 # Project plan: Farming the Desert Sun
 
-Sep 25, 2026 · @Blay
+Sep 25, 2026 · @Blay · kept in sync with the code
 
 ## 1. Goal and deliverables
 
-**By Saturday's judging, demo a working web app: drop a pin in Qatar and get back the best crop, setup, solar size and payback, with every number traceable to open data.**
+**By Saturday's judging, demo a working web app: drop a pin and get back the best crop, setup, solar size and payback, with every number traceable to open data.**
 
 We submit four things:
 
 1. **Working prototype:** a web app that runs live, not slides pretending to be an app.
-2. **Public GitHub repo:** MIT license, clean code, README, credits for all data and libraries.
+2. **Public GitHub repo** ([Jawad-23/RTE-Hack](https://github.com/Jawad-23/RTE-Hack)): MIT license, clean code, README, credits for all data and libraries.
 3. **Pitch deck:** about 6 slides, problem to solution to demo to impact.
-4. **Demo video (backup):** a 2-minute screen recording in case the live demo fails.
+4. **Demo video (backup):** a 2-minute screen recording in case the live demo fails. The Operate simulator (step 6) is built for this.
 
 ## 2. Scope
 
 **Build the must-haves first and demo them end to end before touching anything else.** Stretch items only start once the full pipeline works.
 
-| Priority | Feature | Why |
-| --- | --- | --- |
-| Must-have | Pin on map, fetch NASA POWER data | Everything depends on it |
-| Must-have | Crop check: which crops fit which months | Challenge 1 feature: site suitability |
-| Must-have | Cooling simulation for 4 setups (8,760 hours) | Our unique insight |
-| Must-have | Solar sizing and payback for each setup | Challenge 1 feature: investment planning |
-| Must-have | Results screen with recommendation and comparison table | What judges see |
-| Must-have | LLM explanation with number checker | Responsible AI criterion |
-| Stretch | Chat follow-ups ("what if I double the budget?") | Shows the agent re-running tools |
-| Stretch | Dust light-loss from Open-Meteo | Extra ML/data depth |
-| Stretch | 2040 climate view | Climate-change story |
-| Roadmap only | Satellite imagery, SMS delivery, soil sensors | Mention in pitch, do not build |
+### Stage 1: the core planner (done on branches, waiting for review and merge)
+
+| Priority | Feature | Why | Status |
+| --- | --- | --- | --- |
+| Must-have | Pin on map (or typed coordinates), fetch NASA POWER data | Everything depends on it | Working; live NASA fetch still to be tested on a laptop |
+| Must-have | Crop check: which crops fit which months | Challenge 1 feature: site suitability | Working |
+| Must-have | Cooling simulation for 4 setups (8,760 hours) | Our unique insight | Working |
+| Must-have | Solar sizing and payback for each setup | Challenge 1 feature: investment planning | Working, on estimated costs |
+| Must-have | Results screen with recommendation and comparison table | What judges see | Working |
+| Must-have | LLM explanation with number checker | Responsible AI criterion | Working; needs an API key to test live |
+| Stretch | Chat follow-ups ("what if I double the budget?") | Shows the agent re-running tools | Working (same agent) |
+
+### Stage 2: smarter shading and dust (planned, in this order)
+
+Each step is a separate branch, reviewed before the next starts. Full rules and specs are in the [Team tasks](03-team-tasks.md#9-stage-2-smarter-shading-and-dust) tab.
+
+| Step | Feature | Owner | Status |
+| --- | --- | --- | --- |
+| 1 | Split sunlight into growth light (PAR), heat (NIR) and UV | Me | Planned; hourly availability of 3 NASA parameters to confirm |
+| 2 | Humidity stress (VPD) and inside humidity per setup | Me + Mustafa (crops.csv column) | Planned |
+| 3 | Light sufficiency (daily light integral) so shading has a trade-off | Me + Mustafa | Planned |
+| 4 | Three new setups: NIR-screen wet pad, fixed agrivoltaic, agrivoltaic louvers | Me + Mustafa (CSV rows, electricity revenue) | Planned |
+| 5 | One shared rule-based screen controller | Me | Planned |
+| 6 | Operate simulator page for the demo video | Me | Planned |
+| 7 | Dust: haze light loss, cleaning interval, dust-storm exposure (Open-Meteo) | Me + Mustafa | Planned; Open-Meteo dust history to confirm |
+| 8 | Area scan (draw a rectangle, grid of plans) | Me | Stretch |
+| 9 | Wire new metrics through app, agent, checker, i18n, README | Everyone | Planned |
+
+### Not in scope (roadmap only; mention in the pitch, do not build)
+
+Cameras, ESP32 and any other hardware; live sensors and spectrometers; learned (RL) controller; computer-vision dust detection; camera-based canopy stress detection; predictive maintenance; upwind dust-front warning; predictive pre-cooling; generative facility layouts; satellite imagery; SMS delivery; soil sensors; the 2040 climate view. See the roadmap in the [Problem and solution](01-problem-and-solution.md#8-roadmap-plan--build--operate) tab.
 
 Keep the demo to about 8 crops and Qatar sites, but never hard-code Qatar: any pin on Earth should run.
 
 ## 3. Modules
 
-**Six modules, each a plain Python function with a fixed input and output, so people can build them in parallel.** Agree on these interfaces in the first hour and do not change them.
+**Each module is a plain Python function with a fixed input and output, so people can build them in parallel.** The interfaces live in `planner/schemas.py` and the [Team tasks](03-team-tasks.md#3-shared-contracts) tab; extend them, never rename.
 
-| # | Module | Input | Output |
-| --- | --- | --- | --- |
-| 1 | `climate.py` | lat, lon | Hourly table: temp, humidity, solar radiation, wind (typical year) |
-| 2 | `crops.py` | climate table, crop list | For each crop, which months it can grow in open field |
-| 3 | `cooling.py` | climate table, crop heat limit, setup | Inside temperature per hour, coverage % |
-| 4 | `solar.py` | climate table, cooling energy needed | Panel size (kW), yearly solar output |
-| 5 | `economics.py` | setup, crop, farm size, prices | Build cost, running cost, profit per year, payback |
-| 6 | `agent.py` | user goal + all tool outputs | Ranked plan + checked plain-language explanation |
+| # | Module | Input | Output | Status |
+| --- | --- | --- | --- | --- |
+| 1 | `climate.py` | lat, lon | Hourly table: temp, humidity, solar radiation, wind (typical year) | Working |
+| 2 | `crops.py` | climate table, crop list | For each crop, which months it can grow in open field | Working |
+| 3 | `cooling.py` | climate table, crop heat limit, setup | Inside temperature per hour, coverage % | Working |
+| 4 | `solar.py` | climate table, cooling energy needed | Panel size (kW), yearly solar output | Working |
+| 5 | `economics.py` | setup, crop, farm size, prices | Build cost, running cost, profit per year, payback | Working |
+| 6 | `optimizer.py` | pin, area, budget, priority, crop | Ranked plan (JSON-safe) | Working |
+| 7 | `agent.py` + `checker.py` | user question + current plan | Checked plain-language answer; may re-run the planner | Working (needs an API key) |
+| 8 | `controller.py` | one hour of climate + crop + screen state | Screen position % + reason code | Planned (step 5) |
 
 ### Core formulas
 
@@ -81,64 +102,78 @@ Decision rule: pick the setup with the highest 10-year profit among those with c
 
 ## 4. Team roles
 
-**Three people, three layers.** Full step-by-step instructions are in the Team tasks tab.
+**Three people, three layers.** Full step-by-step instructions are in the [Team tasks](03-team-tasks.md) tab.
 
 | Person | Owns |
 | --- | --- |
-| Me (repo owner) | Repo, data pipeline, cooling physics, optimizer, main app |
-| Salih | AI agent, number checker, English/Arabic chat |
-| Mustafa | Data tables, crop check, solar sizing, economics, README credits |
+| Me (repo owner) | Repo, data pipeline, cooling physics, controller, optimizer, main app, simulator page |
+| Salih | AI agent, number checker, English/Arabic chat, Arabic translations |
+| Mustafa | Data tables and their sources, crop check, solar sizing, economics, README credits |
+
+Stage 1 code for Salih's and Mustafa's layers was written for them on their own branches (`salih/agent-chat`, `mustafa/core-modules`) so the app runs end to end. Each of them should review their branch before it is merged.
 
 ## 5. Timeline
 
 **Friday builds the engine; Saturday polishes, freezes code and rehearses.** Times assume judging on Saturday afternoon; shift everything once we confirm the real deadline from the Participant Handbook.
 
-| When | Milestone | Checkpoint |
-| --- | --- | --- |
-| Fri 09:00–10:00 | Kickoff: agree module interfaces, create repo, add MIT license | Repo public, everyone can push |
-| Fri 10:00–13:00 | Each role builds its module on fixed test data | Each module runs alone in the terminal |
-| Fri 13:00–14:00 | Lunch + mentor check-in on Slack | Feedback noted |
-| Fri 14:00–17:00 | Connect modules: pin to data to cooling to payback | **Full pipeline prints a plan in the terminal** |
-| Fri 17:00–21:00 | Streamlit app with map and results screen; agent + number checker | Pin to results screen works in the browser |
-| Fri 21:00–23:00 | Stretch features only if the pipeline is solid; draft slides | Deck skeleton done |
-| Sat 08:00–10:00 | Bug fixes, test 5 different pins, README | App works on every test pin |
-| Sat 10:00 | **Code freeze.** No new features after this | Final commit tagged |
-| Sat 10:00–11:00 | Record backup demo video | Video saved |
-| Sat 11:00–13:00 | Finish deck, rehearse the pitch 3 times with a timer | Pitch fits the time limit |
-| Sat afternoon | Submit and present | Submitted |
+| When | Milestone | Checkpoint | Status |
+| --- | --- | --- | --- |
+| Fri 09:00–10:00 | Kickoff: agree module interfaces, create repo, add MIT license | Repo public, everyone can push | Done (public visibility still to set) |
+| Fri 10:00–13:00 | Each role builds its module on fixed test data | Each module runs alone in the terminal | Done |
+| Fri 13:00–14:00 | Lunch + mentor check-in on Slack | Feedback noted | |
+| Fri 14:00–17:00 | Connect modules: pin to data to cooling to payback | **Full pipeline prints a plan in the terminal** | Done (`python -m planner.optimizer`) |
+| Fri 17:00–21:00 | Streamlit app with map and results screen; agent + number checker | Pin to results screen works in the browser | Done; merge branches into `main` |
+| Fri 21:00–23:00 | Stage 2 steps 1–3 if the pipeline is solid; draft slides | Deck skeleton done | |
+| Sat 08:00–10:00 | Bug fixes, test 5 different pins, README | App works on every test pin | |
+| Sat 10:00 | **Code freeze.** No new features after this | Final commit tagged | |
+| Sat 10:00–11:00 | Record backup demo video | Video saved | |
+| Sat 11:00–13:00 | Finish deck, rehearse the pitch 3 times with a timer | Pitch fits the time limit | |
+| Sat afternoon | Submit and present | Submitted | |
 
 The one rule that matters: if the full pipeline is not working by Friday 17:00, drop all stretch items and make the must-haves solid.
 
 ## 6. Repo structure and stack
 
-**One public repo, one folder per module, all assumptions in editable CSV files.** Anyone in another country can swap in local prices and crops without touching code.
+**One repo, one folder per layer, all assumptions in editable CSV files.** Anyone in another country can swap in local prices and crops without touching code.
 
 ```
-desert-farm-planner/
-├── app.py              # Streamlit app: map, inputs, results
+RTE-Hack/
+├── app.py                  # Streamlit app: map, inputs, results, chat
 ├── planner/
-│   ├── climate.py      # NASA POWER fetch + typical year
-│   ├── crops.py        # crop-by-month check
-│   ├── cooling.py      # wet-bulb + 8,760-hour simulation
-│   ├── solar.py        # panel sizing (pvlib)
-│   ├── economics.py    # cost, profit, payback
-│   └── agent.py        # LLM agent + number checker
+│   ├── schemas.py          # shared names, units, constants
+│   ├── climate.py          # NASA POWER fetch + typical year + cache
+│   ├── crops.py            # crop-by-month check
+│   ├── cooling.py          # wet-bulb + 8,760-hour simulation
+│   ├── solar.py            # panel sizing
+│   ├── economics.py        # cost, profit, payback
+│   ├── optimizer.py        # every crop × setup, filter, rank: plan()
+│   ├── agent.py            # Claude agent with tools
+│   ├── checker.py          # blocks numbers not in the plan
+│   └── chat_ui.py          # English/Arabic chat panel
+├── i18n/                   # en.json, ar.json, t()
+├── styles/rtl.css          # right-to-left layout for Arabic
 ├── data/
-│   ├── crops.csv       # heat limits (from FAO EcoCrop)
-│   ├── setups.csv      # build and running costs per setup
-│   └── prices.csv      # crop prices (FAOSTAT)
-├── tests/              # one test per module
-├── README.md           # problem, how to run, credits
-└── LICENSE             # MIT
+│   ├── crops.csv           # heat limits, yield, water (estimates until sourced)
+│   ├── prices.csv          # crop prices (estimates until sourced)
+│   ├── setups.csv          # build/running costs and cooling parameters
+│   ├── settings.csv        # electricity, solar cost, performance ratio
+│   └── cache/              # cached climate per pin (not committed)
+├── tests/                  # one test file per module
+├── docs/                   # these planning docs
+├── ui-demo/                # Croptions UI prototype
+├── README.md               # problem, how to run, credits
+└── LICENSE                 # MIT
 ```
+
+Planned in stage 2: `planner/controller.py` and `pages/operate_simulator.py`.
 
 | Layer | Tool |
 | --- | --- |
 | Language | Python 3.11 |
-| App and map | Streamlit, Folium (Leaflet) |
-| Physics | PsychroLib, pvlib, NumPy, pandas |
-| Data | NASA POWER API, Open-Meteo API, FAO EcoCrop, FAOSTAT |
-| AI agent | Claude API with tool use, temperature 0 |
+| App and map | Streamlit, folium (Leaflet), Plotly |
+| Physics | PsychroLib (Stull formula as fallback), NumPy, pandas |
+| Data | NASA POWER API, FAO EcoCrop, FAOSTAT; Open-Meteo Air Quality planned |
+| AI agent | Claude API (`claude-sonnet-5`) with tool use. This model does not accept a temperature setting, so no temperature is sent; the number checker is what keeps answers grounded |
 | Hosting for demo | Streamlit Community Cloud (free) |
 
 ## 7. Demo script and pitch flow
@@ -163,22 +198,25 @@ Pick and test both demo pins on Friday night, and screenshot the results in case
 
 | Risk | Fallback |
 | --- | --- |
-| NASA POWER is slow or down during the demo | Cache the data for both demo pins as local files on Friday |
-| Venue Wi-Fi fails | Run the app locally; backup video as last resort |
-| LLM API fails or is slow | App shows the full plan without the explanation; physics still works |
-| Cost and price numbers are rough | Label them "illustrative, editable in CSV"; judges value honesty |
-| Crop heat limits are hard to find | Start with 8 well-known crops typed in by hand from EcoCrop |
-| Modules don't fit together | Interfaces fixed in hour one; test with fake data early |
+| NASA POWER is slow or down during the demo | Cache the data for both demo pins as local files on Friday. Offline, the app now fails in seconds with a clear message instead of hanging |
+| Venue Wi-Fi fails or the map can't load | Run the app locally; use **Or type coordinates** under the map; backup video as last resort |
+| LLM API fails, is slow, or no key | The chat says it is unavailable; the full plan and dashboard still work |
+| Cost and price numbers are rough | Labelled "estimate" in the CSVs and in the app; judges value honesty. Quote only the app's numbers in the pitch |
+| The chiller payback on estimated costs is long | This may undercut the pitch's "solar chiller pays off" story. Replace estimates with sourced costs before building slides around it |
+| Crop heat limits are hard to find | Start with 8 well-known crops typed in by hand from EcoCrop; mark each value's source |
+| Someone builds hardware tonight | Cameras and ESP32 are roadmap only; the Operate simulator stands in for them in the demo |
 | Running out of time | Drop stretch features at Friday 17:00, never the must-haves |
 
 ## 9. Submission checklist
 
 **Tick these off before the code freeze; open-source rules are a hard requirement.**
 
-- [ ] Repo is public with an MIT license from the first commit
-- [ ] All code written during the hackathon; every library and dataset credited in the README
+- [x] MIT license from the first code commit
+- [ ] Repo is public
+- [x] Every library and dataset credited in the README
+- [ ] Every value in `data/*.csv` has a real source, or is clearly labelled `estimate`
 - [ ] README covers the problem, how to run, architecture diagram, data sources and limits
-- [ ] Demo pins tested and data cached locally
+- [ ] Demo pins tested with live NASA data and cached locally
 - [ ] Backup demo video recorded
 - [ ] Pitch deck final and rehearsed with a timer
 - [ ] Submitted in the format the Participant Handbook asks for
@@ -186,6 +224,7 @@ Pick and test both demo pins on Friday night, and screenshot the results in case
 ### Open questions
 
 - [ ] What is the exact submission deadline and format? Check the Participant Handbook QR code.
-- [ ] What does the academic integrity policy say about using AI assistants?
+- [ ] What does the academic integrity policy say about using AI assistants? Much of the code was written with Claude Code.
 - [ ] How long is the pitch? Adjust the demo script to fit.
-- [ ] How many people are on the team? Adjust the roles table.
+- [ ] Which five regions go in "Where this applies"?
+- [ ] Does the team agree that cameras and ESP32 are roadmap only?

@@ -27,22 +27,45 @@ The first run for a new pin fetches 5 years of hourly data from NASA POWER (can 
 
 | Path | What | Owner |
 | --- | --- | --- |
-| `app.py` | Streamlit app: map, inputs, results dashboard | Repo owner |
+| `app.py` | Streamlit app: map, inputs, results dashboard, chat | Repo owner |
 | `planner/schemas.py` | Shared column names, setups, statuses, units | Repo owner |
 | `planner/climate.py` | NASA POWER fetch → 8,760-hour typical year, cached | Repo owner |
 | `planner/cooling.py` | Wet-bulb physics and inside temperature per setup | Repo owner |
 | `planner/optimizer.py` | Runs every crop × setup, filters, ranks: `plan()` | Repo owner |
-| `planner/crops.py`, `solar.py`, `economics.py`, `data/*.csv` | Crop check, solar sizing, economics, data tables | Mustafa (stubs for now) |
-| `planner/agent.py`, `checker.py`, `chat_ui.py`, `i18n/`, `styles/rtl.css` | AI agent, number checker, English/Arabic chat | Salih (stubs for now) |
+| `planner/crops.py`, `solar.py`, `economics.py`, `data/*.csv` | Crop check, solar sizing, economics, data tables | Mustafa |
+| `planner/agent.py`, `checker.py`, `chat_ui.py`, `i18n/`, `styles/rtl.css` | Claude agent, number checker, English/Arabic chat | Salih |
 | `tests/` | One test file per module | everyone |
 | `docs/` | Problem, plan, team tasks, hackathon brief ([start here](docs/README.md)) | |
 | `ui-demo/` | Croptions UI prototype and design system (open `Croptions.dc.html`) | |
 
-Stubs return fake but correctly shaped data, so the whole app runs end to end while each module is being built. The values in `data/*.csv` are placeholders marked `PLACEHOLDER` until real sources are filled in.
+Every value in `data/*.csv` is currently labelled `estimate`, and the app says so. Costs in particular decide which setup wins, so treat recommendations as illustrative until those rows have real sources.
+
+## The AI assistant
+
+The chat uses Claude with two tools that run our own planner (`run_plan`, `compare_sites`). A checker compares every number in the reply with the plan and tool results; an answer with an unknown number is rewritten once, then replaced by a template built only from plan fields. Without an `ANTHROPIC_API_KEY` the chat says it is unavailable and the dashboard still works.
 
 ## How we work
 
-Branch per person and module (`jawad/core`, `mustafa/economics`, …), only edit files you own, and open a pull request into `main`. Full rules: [docs/03-team-tasks.md](docs/03-team-tasks.md#4-rules-for-everyone).
+Branch per person and feature (`<owner>/<feature>`), only edit files you own, and open a pull request into `main`. Current branches and merge order: [docs/03-team-tasks.md](docs/03-team-tasks.md#branches-right-now). Full rules: [docs/03-team-tasks.md](docs/03-team-tasks.md#4-rules-for-everyone).
+
+## Roadmap: Plan → Build → Operate
+
+**Today the planner uses satellite data. In the Operate stage, cameras and ESP32 sensors would feed the same controller with live data.** Next up (planned, not built): sunlight split into growth light, heat and UV; humidity stress; light sufficiency; NIR-screen and agrivoltaic setups; a rule-based smart-screen controller; an Operate simulator for the demo; dust and cleaning. Details: [docs/01-problem-and-solution.md](docs/01-problem-and-solution.md#7-what-we-are-adding-next-smarter-shading).
+
+Future work only, none of it in the code:
+
+- Learned (reinforcement learning) controller trained on our simulator
+- Live sensors and spectrometers (cameras, ESP32)
+- Computer-vision dust detection and targeted cleaning
+- Camera-based canopy stress detection
+- Predictive maintenance (screen motors, panel soiling)
+- Upwind dust-front early warning
+- Predictive pre-cooling
+- Generative facility layouts
+
+## Where this applies
+
+The planner runs on any pin on Earth. *(To fill: the five regions from the feasibility list.)*
 
 ## Credits
 

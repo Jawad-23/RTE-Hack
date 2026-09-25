@@ -1,18 +1,20 @@
 # Team tasks and system architecture
 
-Sep 25, 2026 · @Blay
+Sep 25, 2026 · @Blay · kept in sync with the code
 
 ## 1. Who does what
 
 **Three people, three layers, no shared files.** Each person only edits the files they own, so nobody breaks anyone else's work.
 
-| Person | Layer | Files they own | Difficulty |
+| Person | Layer | Files they own | Stage 1 status |
 | --- | --- | --- | --- |
-| **Me** (repo owner) | Data pipeline, cooling physics, optimizer, main app | `schemas.py`, `climate.py`, `cooling.py`, `optimizer.py`, `app.py`, `requirements.txt` | Hard |
-| **Salih** | AI agent, number checker, English/Arabic chat | `agent.py`, `checker.py`, `chat_ui.py`, `i18n/en.json`, `i18n/ar.json`, `styles/rtl.css` | Hard |
-| **Mustafa** | Data tables, crop check, solar sizing, economics, README credits | `data/*.csv`, `crops.py`, `solar.py`, `economics.py`, `tests/test_mustafa.py`, README credits section | Easy |
+| **Me** (repo owner) | Data pipeline, cooling physics, optimizer, main app; stage 2: controller and simulator page | `schemas.py`, `climate.py`, `cooling.py`, `optimizer.py`, `app.py`, `requirements.txt`; later `controller.py`, `pages/operate_simulator.py` | Done on `jawad/core` |
+| **Salih** | AI agent, number checker, English/Arabic chat | `agent.py`, `checker.py`, `chat_ui.py`, `i18n/*`, `styles/rtl.css`, `tests/test_agent.py`, `tests/test_checker.py`, `tests/test_i18n.py` | Done on `salih/agent-chat`; **Salih to review, especially the Arabic** |
+| **Mustafa** | Data tables and sources, crop check, solar sizing, economics, README credits | `data/*.csv`, `crops.py`, `solar.py`, `economics.py`, `tests/test_mustafa.py`, README credits section | Done on `mustafa/core-modules`; **Mustafa to review and replace estimates with sources** |
 
-Why this split: Salih's Arabic makes him the right person for the bilingual chat, and the agent with guardrails is the most complex AI piece. Mustafa's modules are simple arithmetic on tables with clear inputs and outputs, so he can finish them and learn the codebase without blocking anyone. I own the core pipeline and the glue, since I control the repo.
+Why this split: Salih's Arabic makes him the right person for the bilingual chat, and the agent with guardrails is the most complex AI piece. Mustafa's modules are simple arithmetic on tables with clear inputs and outputs. I own the core pipeline and the glue, since I control the repo.
+
+Stage 1 code for Salih's and Mustafa's layers was written for them (with Claude Code) on their own branches so the whole app runs today. Ownership does not change: each person reviews their branch, owns it from now on, and does the "Your next tasks" list in their section.
 
 ## 2. System architecture
 
@@ -59,7 +61,9 @@ flowchart TD
     L --> M
 ```
 
-How a request flows: the user drops a pin, `optimizer.plan()` runs the engine and the dashboard shows the result. In chat, the agent sends the question to Claude with our tools attached; Claude asks to run a tool, the agent runs `optimizer.plan()` and returns the result; Claude writes the answer; the checker confirms every number matches before the user sees it.
+How a request flows: the user drops a pin (or types coordinates), `optimizer.plan()` runs the engine and the dashboard shows the result. In chat, the agent sends the question and the current plan to Claude with our tools attached; Claude asks to run a tool, the agent runs `optimizer.plan()` and returns the result; Claude writes the answer; the checker confirms every number matches before the user sees it. If the checker rejects the answer twice, the user gets a template answer built only from plan fields.
+
+Stage 2 adds `controller.py` (called by `cooling.py` and the simulator page) and Open-Meteo dust data under `climate.py`.
 
 ### Components and licenses
 
@@ -72,21 +76,22 @@ How a request flows: the user drops a pin, `optimizer.plan()` runs the engine an
 | [PsychroLib](https://github.com/psychrometrics/psychrolib) | Wet-bulb temperature | Yes | MIT |
 | [requests](https://requests.readthedocs.io/) | API calls | Yes | Apache 2.0 |
 | [anthropic](https://github.com/anthropics/anthropic-sdk-python) Python SDK | Talks to the Claude API | Yes | MIT |
+| [python-dotenv](https://github.com/theskumar/python-dotenv) | Loads `.env` | Yes | BSD-3 |
 | Claude API | The LLM behind the agent | **No** (paid service) | Credited; kept swappable for an open-weight model |
 | [NASA POWER](https://power.larc.nasa.gov/) | Climate data | Open data | Credit NASA POWER in README |
 | [FAO EcoCrop](https://gaez.fao.org/pages/ecocrop) | Crop heat limits | Open data | Credit FAO |
-| [FAOSTAT](https://www.fao.org/faostat/) | Crop prices | Open data | Credit FAO; check terms |
+| [FAOSTAT](https://www.fao.org/faostat/) | Crop prices | Open data | CC BY 4.0; credit FAO |
+| [Open-Meteo](https://open-meteo.com/) Air Quality API | Dust (stage 2) | Open data | Free for non-commercial use; credit Open-Meteo and CAMS |
 
-Our own code is MIT licensed. The only closed piece is the LLM, which is why the agent talks to it through one small function that another model can replace.
+Our own code is MIT licensed. The only closed piece is the LLM, which is why the agent talks to it through one small function (`call_llm`) that another model can replace.
 
 ## 3. Shared contracts
 
-**These names, columns and units are fixed. Nobody renames them without telling the whole team.** I commit `schemas.py` in the first hour; everyone imports from it.
+**These names, columns and units are fixed. Extend them; never rename them without telling the whole team.** Everyone imports from `planner/schemas.py`.
 
 ```python
 # planner/schemas.py  — owned by Me. Do not edit without asking.
 
-# Climate table: 8,760 rows, one per hour of a typical year
 CLIMATE_COLUMNS = [
     "hour_of_year",  # int 0..8759
     "month",         # int 1..12
@@ -95,29 +100,28 @@ CLIMATE_COLUMNS = [
     "ghi_wh_m2",     # float, solar energy that hour, Wh/m²
     "wind_ms",       # float, wind speed at 2 m, m/s
 ]
-
-# The four setups, always these exact strings
+HOURS_PER_YEAR = 8760
 SETUPS = ["open_field", "shade_net", "wet_pad", "chiller"]
-
-# Crop calendar statuses
 STATUS = ["good", "risky", "impossible"]
-
-# Coverage threshold for a setup to be acceptable
 MIN_COVERAGE_PCT = 90.0
+PRIORITIES = ["profit", "payback", "water"]
 ```
 
 | Function | Owner | Input | Output |
 | --- | --- | --- | --- |
-| `climate.get_typical_year(lat, lon)` | Me | floats | DataFrame with `CLIMATE_COLUMNS` |
+| `climate.get_typical_year(lat, lon)` | Me | floats | DataFrame with `CLIMATE_COLUMNS`; raises `ClimateUnavailable` when offline with no cache |
 | `crops.load_crops()` | Mustafa | none | DataFrame from `data/crops.csv` |
 | `crops.crop_calendar(climate_df, crops_df)` | Mustafa | DataFrames | DataFrame: rows = crop, columns = months 1–12, values from `STATUS` |
 | `cooling.simulate(climate_df, setup, crop_limit_c, area_m2)` | Me | DataFrame, str, float, float | dict: `inside_temp_c` (list of 8,760), `coverage_pct`, `cooling_kwh_year`, `cooling_kwh_peak_day` |
 | `solar.size_solar(cooling_kwh_peak_day, climate_df)` | Mustafa | float, DataFrame | dict: `solar_kw`, `solar_kwh_year`, `peak_sun_hours` |
-| `economics.evaluate(setup, crop, area_m2, growing_months, cooling_kwh_year, solar_kw)` | Mustafa | str, str, floats | dict: `capex_qar`, `opex_qar_year`, `revenue_qar_year`, `profit_qar_year`, `payback_years`, `profit_10y_qar`, `water_l_day` |
-| `optimizer.plan(lat, lon, area_m2, budget_qar, priority, crop=None)` | Me | see names | dict (JSON-safe): `site`, `recommended`, `options` (list, one per setup × crop), `calendar`, `sources`, `assumptions` |
+| `economics.evaluate(setup, crop, area_m2, growing_months, cooling_kwh_year, solar_kw)` | Mustafa | str, str, floats | dict: `capex_qar`, `opex_qar_year`, `revenue_qar_year`, `profit_qar_year`, `payback_years`, `profit_10y_qar`, `water_l_day` (all `None` plus `reason` if data is missing) |
+| `optimizer.plan(lat, lon, area_m2, budget_qar, priority, crop=None)` | Me | see names | dict (JSON-safe): `inputs`, `site`, `recommended`, `reason`, `options` (one per crop × setup), `calendar`, `sources`, `assumptions` |
 | `agent.ask(message, history, current_plan)` | Salih | str, list, dict | dict: `reply`, `language` (`"en"`/`"ar"`), `verified` (bool), `plan` (new plan or None), `tool_log` |
+| `checker.verify(reply, plan, tool_results, user_text="")` | Salih | str, dict, list, str | `(ok, bad_numbers)` |
 
-Rules: every output must be JSON-safe (plain floats, strings, lists, dicts; no NumPy types), because the agent sends it to the LLM. Units always live in the key name: `_c`, `_qar`, `_kwh`, `_m2`, `_pct`.
+Rules: every output must be JSON-safe (plain floats, strings, lists, dicts; no NumPy types), because the agent sends it to the LLM. Units always live in the key name: `_c`, `_qar`, `_kwh`, `_m2`, `_pct`, and in stage 2 `_w_m2`, `_kpa`, `_mol_m2_day`.
+
+LLM settings (top of `agent.py`): `MODEL = "claude-sonnet-5"`, `MAX_TOKENS = 4096`, `MAX_TOOL_ROUNDS = 5`. **No temperature:** this model rejects a temperature setting. Switching `MODEL` to `"claude-haiku-4-5"` saves credits.
 
 ## 4. Rules for everyone
 
@@ -126,22 +130,39 @@ Rules: every output must be JSON-safe (plain floats, strings, lists, dicts; no N
 ### One-time setup (everyone)
 
 ```bash
-git clone https://github.com/<my-username>/desert-farm-planner.git
-cd desert-farm-planner
+git clone https://github.com/Jawad-23/RTE-Hack.git
+cd RTE-Hack
 python -m venv .venv
 # Windows:  .venv\Scripts\activate
 # Mac/Linux: source .venv/bin/activate
 pip install -r requirements.txt
+cp .env.example .env    # paste your own ANTHROPIC_API_KEY
+python -m pytest        # everything should pass
+streamlit run app.py
 ```
 
 ### Git workflow
 
-1. Never commit directly to `main`. Work on your own branch: `git checkout -b <your-name>/<module>`, for example `mustafa/economics`.
+1. Never commit directly to `main`. Work on your own branch: `<owner>/<feature>`, for example `mustafa/vpd-columns`.
 2. Only edit files you own (section 1). Need a change in someone else's file? Message them.
 3. Pull often: `git pull origin main` at least every 2 hours, and before opening a pull request.
 4. Commit small and often with clear messages: `economics: add payback calculation`.
 5. Open a pull request into `main`; I review and merge. Do not merge your own PR.
-6. Before pushing, run `python -m pytest` and make sure your tests pass.
+6. Before pushing, run `python -m pytest` and make sure all tests pass.
+
+### Branches right now
+
+`main` does not exist yet. The stage 1 branches are stacked so each can be reviewed on its own:
+
+```
+claude/rte-hack-repo-setup-acjcdd   docs + UI demo
+└── jawad/core                      scaffold, climate, cooling, optimizer, app
+    └── mustafa/core-modules        crops, solar, economics, CSV sources, credits
+        └── salih/agent-chat        agent, checker, chat, i18n
+            └── jawad/docs-sync     these docs, synced with the code
+```
+
+Merge order into `main`: the setup branch, then `jawad/core`, `mustafa/core-modules`, `salih/agent-chat`, `jawad/docs-sync`. The tip, `jawad/docs-sync`, is the whole working project.
 
 ### Secrets
 
@@ -153,84 +174,44 @@ pip install -r requirements.txt
 
 - Python 3.11. Use the names and units from `schemas.py`; never invent new column names.
 - Every public function gets a one-line docstring saying inputs, outputs and units.
-- No hard-coded Qatar values in code; all numbers that could change go in `data/*.csv`.
-- Missing data returns `None` with a reason, never a guessed number.
+- No hard-coded parameters in code; every number that could change goes in `data/*.csv` with a `source` column. No real source means the source says `estimate`.
+- Missing data returns `None` with a reason, never a guessed number. NASA POWER's fill value `-999` is NaN.
+- Never show a performance claim (in the UI, README or agent prompt) that the code does not calculate.
 - Do not add a new library without asking me; I add it to `requirements.txt`.
+- No hardware code: no microcontroller, sensor, MQTT or device code. Cameras and ESP32 are roadmap only.
 
 ## 5. My tasks (repo owner)
 
-**First job: unblock the others within the first hour with a repo, contracts and working stubs.** Then build the data pipeline, the cooling physics, the optimizer and the main app.
+### Stage 1: done
 
-### Step 1: Create the repository (first 45 minutes)
+- [x] Repo with MIT license, `.gitignore` (`.env`, `.venv/`, `data/cache/`, `__pycache__/`), pinned `requirements.txt`, `.env.example`
+- [x] `planner/schemas.py` and working stubs for every module
+- [x] `climate.py`: NASA POWER hourly fetch for the 5 most recent full years, fill values as NaN, unit check, drop 29 Feb, average into 8,760 rows, cache in `data/cache/`, fail fast when offline
+- [x] `cooling.py`: wet-bulb with PsychroLib (Stull fallback), inside temperature for the 4 setups, chiller energy, coverage, peak-day energy; solar heat gain applies only while the sun is up
+- [x] `optimizer.py`: every crop × setup, filter on coverage and budget, rank by priority, one-sentence reason, sources and assumptions, JSON-safe, `python -m planner.optimizer LAT LON` prints a plan
+- [x] `app.py`: map plus "Or type coordinates" fallback, inputs, recommendation tiles, crop calendar heatmap, comparison table, inside-temperature chart, hottest-day solar chart (only when there is cooling to power), 10-year profit chart, assumptions and sources, English/Arabic toggle with RTL
 
-- [ ] Create a **public** GitHub repo `desert-farm-planner` with an **MIT license** and the Python `.gitignore` template.
-- [ ] Add to `.gitignore`: `.env`, `.venv/`, `data/cache/`, `__pycache__/`.
-- [ ] Invite Salih and Mustafa as collaborators. In Settings → Branches, protect `main` so it needs a pull request.
-- [ ] Create the folder structure from the Project plan tab, plus `i18n/`, `styles/` and `data/cache/`.
-- [ ] Commit `planner/schemas.py` (section 3).
-- [ ] Commit `requirements.txt`: `streamlit`, `folium`, `streamlit-folium`, `plotly`, `pandas`, `numpy`, `psychrolib`, `requests`, `anthropic`, `python-dotenv`, `pytest`. After installing, pin versions with `pip freeze`.
-- [ ] Commit a **stub** for every module: each function exists with the exact signature from section 3 and returns fake but correctly shaped data. This lets Salih and Mustafa test their code before mine is finished.
-- [ ] Post the repo link in the team chat and confirm everyone can clone and run `streamlit run app.py`.
+### Your next tasks
 
-### Step 2: `climate.py`, the data pipeline
-
-- [ ] Call the NASA POWER hourly endpoint for 5 recent full years, one year per request:
-
-```
-https://power.larc.nasa.gov/api/temporal/hourly/point?parameters=T2M,RH2M,ALLSKY_SFC_SW_DWN,WS2M&community=AG&latitude={lat}&longitude={lon}&start=20190101&end=20191231&format=JSON&time-standard=LST
-```
-
-- [ ] Values sit under `properties.parameter.<NAME>`, keyed by `YYYYMMDDHH`. Replace the fill value `-999` with NaN.
-- [ ] Check the units block in the response for `ALLSKY_SFC_SW_DWN` and convert to Wh/m² per hour if needed.
-- [ ] Drop 29 February, then average each (month, day, hour) across the years to build a typical year of exactly 8,760 rows with `CLIMATE_COLUMNS`.
-- [ ] Cache the result as `data/cache/{lat:.2f}_{lon:.2f}.csv` and read from the cache first. Pre-cache both demo pins on Friday.
-
-### Step 3: `cooling.py`, the physics
-
-- [ ] Wet-bulb with PsychroLib in SI units: `psychrolib.SetUnitSystem(psychrolib.SI)`, then `GetTWetBulbFromRelHum(temp_c, rh_pct / 100, 101325)`. Apply it to all 8,760 rows.
-- [ ] Inside temperature per setup, using parameters from `data/setups.csv`:
-  - `open_field`: outside temperature
-  - `shade_net`: outside temperature minus `shade_drop_c`
-  - `wet_pad`: `T - pad_efficiency * (T - Tw) + solar_gain_c`
-  - `chiller`: `setpoint_c` whenever the wet-pad temperature is above it; energy = area × `chiller_kw_per_m2_per_c` × (wet-pad temperature − setpoint) ÷ `cop`, per hour
-- [ ] Coverage = % of hours where inside temperature is below the crop's `t_max_c`.
-- [ ] Return the dict from section 3, including the highest single-day cooling energy (`cooling_kwh_peak_day`).
-- [ ] Test: a dry site (40°C, 15% RH) must show much lower wet-pad temperatures than a humid one (40°C, 60% RH).
-
-### Step 4: `optimizer.py`, the decision
-
-- [ ] For every crop × setup: run the crop calendar, cooling, solar and economics.
-- [ ] Keep options with coverage of at least `MIN_COVERAGE_PCT` and `capex_qar` within budget.
-- [ ] Rank by the chosen priority: `profit` (highest `profit_10y_qar`), `payback` (lowest `payback_years`) or `water` (lowest `water_l_day`).
-- [ ] If nothing passes, return `recommended: None` with a reason, e.g. "No setup keeps tomatoes below their heat limit within this budget."
-- [ ] Add `sources` (dataset name, URL, fetch date) and `assumptions` (every CSV value used). Convert everything to plain Python types.
-
-### Step 5: `app.py`, the main app
-
-- [ ] Sidebar: language toggle (English / العربية), farm size, budget, optional crop, priority. All labels come from Salih's `t(key, lang)` function.
-- [ ] Map with `st_folium`; read the clicked point from `last_clicked`.
-- [ ] "Analyse this site" button: call `optimizer.plan()`, show a spinner with the step list, store the result in `st.session_state["plan"]`.
-- [ ] Results: recommendation card, `st.metric` tiles, crop calendar heatmap (Plotly), comparison table, inside-temperature chart, solar-vs-cooling day chart, 10-year profit chart, assumptions and sources expanders.
-- [ ] Mount Salih's chat with `chat_ui.render(st.session_state.get("plan"), lang)`.
-- [ ] When `lang == "ar"`, load `styles/rtl.css` with `st.markdown(..., unsafe_allow_html=True)`.
+- [ ] Create `main` and merge the stage 1 branches in the order in section 4
+- [ ] Invite Salih and Mustafa as collaborators (GitHub → Settings → Collaborators); protect `main`
+- [ ] Run `python -m planner.climate 25.29 51.53` on a laptop to test the live NASA fetch (it could not be tested from the build environment)
+- [ ] Pick and cache the two demo pins (dry inland, humid coastal)
+- [ ] Stage 2 steps 1, 5, 6 and your parts of 2, 3, 4, 7 (section 9)
 
 ## 6. Salih's tasks: AI agent and bilingual chat
 
-**Build the agent that plans with tools, the checker that blocks invented numbers, and the English/Arabic chat.** Until my optimizer is ready, work against the stub `optimizer.plan()`, which already returns correctly shaped fake data.
+### Stage 1: done (please review)
 
-### Step 1: `agent.py`, the agent loop
+- [x] `agent.py`: tools `run_plan` and `compare_sites`, tool loop capped at 5 rounds, current plan in the first user turn, language detection, `tool_log`, only `call_llm()` talks to the API
+- [x] `checker.py`: `extract_numbers` (Western and Arabic-Indic digits, `٫` and `٬`, commas), `allowed_numbers` (every number in the plan, tool results and the user's message), `verify` with 1 % / ±0.1 tolerance, months 1–12 and years 2000–2100 allowed
+- [x] Rewrite once on a failed check, then a template answer from plan fields in the right language
+- [x] `i18n/en.json` and `i18n/ar.json` with identical keys, `t(key, lang)` with English fallback and a warning
+- [x] `chat_ui.py`: history, 4 suggested prompts, "Verified" badge, tool log in an expander, "Plan updated" note, Arabic in `dir="rtl"`
+- [x] `styles/rtl.css`: RTL text, LTR charts, tables, metrics and number inputs
+- [x] Tests: made-up payback fails, plan number passes, Arabic-Indic digits pass, i18n keys match, agent loop with a fake LLM
 
-- [ ] Load the key with `python-dotenv`; create `client = anthropic.Anthropic()` (it reads `ANTHROPIC_API_KEY` automatically).
-- [ ] Keep all LLM settings in one place at the top: `MODEL = "claude-sonnet-5"` (switch to `"claude-haiku-4-5-20251001"` to save credits), `TEMPERATURE = 0`, `MAX_TOKENS = 1024`. Only one function, `call_llm()`, talks to the API, so the model can be swapped later.
-- [ ] Define two tools with JSON schemas:
-  - `run_plan`: `lat`, `lon`, `area_m2`, `budget_qar`, `priority` (enum `profit` / `payback` / `water`), optional `crop`. Runs `optimizer.plan()`.
-  - `compare_sites`: two sets of `lat`, `lon` plus shared inputs. Runs `optimizer.plan()` twice.
-- [ ] Tool loop: call the model; while `stop_reason == "tool_use"`, run each requested tool, send back a `tool_result`, call again. Stop after 5 rounds to prevent loops.
-- [ ] Pass the current plan as JSON in the first user turn, so questions like "why not wet pads?" need no new tool call.
-- [ ] Detect language: if the message contains any character in the Arabic range `\u0600–\u06FF`, set `language = "ar"`, else `"en"`.
-- [ ] Return the dict from section 3, with `tool_log` as a short readable list, e.g. `["run_plan(budget_qar=125000)"]`.
-
-System prompt (start from this, tune it):
+System prompt (in `agent.py`):
 
 ```
 You are a farm planning assistant for hot, arid regions.
@@ -244,108 +225,32 @@ Rules:
 7. You advise; the farmer makes the final decision.
 ```
 
-### Step 2: `checker.py`, the hallucination guard
+### Your next tasks
 
-- [ ] `extract_numbers(text)`: find every number in the reply. Convert Arabic-Indic digits (٠–٩) to Western digits first, and handle the Arabic decimal and thousands separators (٫, ٬) and normal commas.
-- [ ] `allowed_numbers(plan, tool_results)`: walk the dicts recursively and collect every number.
-- [ ] `verify(reply, plan, tool_results)`: a number passes if it is within 1% (or ±0.1) of an allowed number. Also allow months 1–12 and years 2000–2100. Return `(ok, bad_numbers)`.
-- [ ] In `agent.ask`: if the check fails, ask the model once to rewrite using only allowed numbers, naming the bad ones. If it fails again, return a safe template answer built directly from the plan fields, in the right language.
-
-### Step 3: `i18n/`, translations
-
-- [ ] `i18n/en.json` and `i18n/ar.json` with **identical keys** for every label, button, placeholder, error and empty state from the UI design prompt.
-- [ ] `i18n/__init__.py` with `t(key, lang)`: returns the string, falls back to English and prints a warning if the key is missing.
-- [ ] Write the Arabic yourself and keep it natural and simple for farmers, not machine-literal.
-
-### Step 4: `chat_ui.py` and `styles/rtl.css`
-
-- [ ] `render(plan, lang)`: keep history in `st.session_state["chat"]`; draw messages with `st.chat_message`; input with `st.chat_input(t("chat_placeholder", lang))`.
-- [ ] Empty chat: show 4 suggested prompts as buttons in the current language (the list is in the UI design prompt).
-- [ ] Under each assistant message: a small "Verified" / "تم التحقق" badge when `verified` is true, and the `tool_log` inside a collapsed `st.expander`.
-- [ ] If `agent.ask` returns a new `plan`, save it to `st.session_state["plan"]` and show a "Plan updated" note, so my dashboard redraws.
-- [ ] Arabic messages go inside `<div dir="rtl">` so mixed Arabic/English text reads correctly.
-- [ ] `rtl.css`: set the app to `direction: rtl; text-align: right`, but keep charts, tables and number inputs `direction: ltr` so they don't break.
-
-### Step 5: Tests
-
-- [ ] `tests/test_checker.py`: a reply with a made-up payback must fail; the same reply with the plan's number must pass; an Arabic reply with Arabic-Indic digits must pass.
-- [ ] `tests/test_i18n.py`: `en.json` and `ar.json` have exactly the same keys.
-- [ ] Before the demo, test 4 English and 4 Arabic questions end to end and save the good transcripts.
+- [ ] Review `salih/agent-chat`; you own it from now on
+- [ ] **Review every Arabic string** in `i18n/ar.json`. They were written without a native speaker; make them natural and simple for farmers
+- [ ] With your own key in `.env`, test 4 English and 4 Arabic questions end to end and save the good transcripts
+- [ ] Stage 2 step 9: agent and checker updates, Arabic for new labels (they will arrive as `TODO_AR: <English>`)
 
 ## 7. Mustafa's tasks: data tables, crops, solar, economics
 
-**Everything here is simple arithmetic on tables. Do the steps in order, run the tests after each one, and ask in the team chat if anything is unclear.** Never change a column name.
+### Stage 1: done (please review)
 
-### Step 1: The data files (do these first; everyone needs them)
+- [x] `crops.py`: `load_crops()`, `crop_calendar()` from average daily max/min per month: `good`, `risky` (up to 3 °C over the limit), `impossible`
+- [x] `solar.py`: `peak_sun_hours` from `ghi_wh_m2`, `solar_kw` sized for the peak cooling day, `performance_ratio` from `settings.csv`, zeros when there is no cooling
+- [x] `economics.py`: capex (setup + solar), revenue, opex, profit, payback (`None` if no profit), 10-year profit, water; missing data returns `None` with a reason
+- [x] `tests/test_mustafa.py`: capex 200,000 and profit 60,000 give payback 3.33; zero cooling gives `solar_kw` 0; a 45 °C month is `impossible` for lettuce
+- [x] README Credits section
 
-- [ ] `data/crops.csv`, one row per crop, about 8 crops (tomato, cucumber, lettuce, bell pepper, eggplant, okra, melon, strawberry). Take temperature limits from [FAO EcoCrop](https://gaez.fao.org/pages/ecocrop) and write the source in the last column.
+### Your next tasks
 
-```csv
-crop,t_min_c,t_opt_min_c,t_opt_max_c,t_max_c,yield_kg_m2_year,water_l_m2_day,source
-tomato,0,0,0,0,0,0,FAO EcoCrop (fill real values)
-```
-
-- [ ] `data/prices.csv`: crop prices in QAR per kg, from [FAOSTAT](https://www.fao.org/faostat/) or local market data.
-
-```csv
-crop,price_qar_kg,source,year
-tomato,0,FAOSTAT (fill real value),2024
-```
-
-- [ ] `data/setups.csv`: exactly 4 rows, using the setup names from `schemas.py`. Leave a cell as `0` when it does not apply (for example, `pad_efficiency` for `open_field`).
-
-```csv
-setup,capex_qar_m2,opex_qar_m2_year,shade_drop_c,pad_efficiency,solar_gain_c,setpoint_c,chiller_kw_per_m2_per_c,cop,water_l_m2_day_extra,yield_factor,source
-open_field,0,0,0,0,0,0,0,0,0,1.0,estimate
-shade_net,0,0,2,0,0,0,0,0,0,1.0,estimate
-wet_pad,0,0,0,0.8,4,0,0,0,0,1.0,estimate
-chiller,0,0,0,0.8,4,26,0,3.0,0,1.0,estimate
-```
-
-- [ ] `data/settings.csv`: one value per row, for costs shared by all setups.
-
-```csv
-key,value,unit,source
-electricity_price_qar_kwh,0,QAR/kWh,fill
-solar_capex_qar_kw,0,QAR/kW,fill
-performance_ratio,0.8,fraction,typical value
-```
-
-The zeros are placeholders showing the format. Fill real values, and write where each came from in the `source` column. If you can't find one, make a sensible estimate and write `estimate`; we label these "illustrative" in the demo.
-
-### Step 2: `economics.py`
-
-- [ ] Implement `evaluate(setup, crop, area_m2, growing_months, cooling_kwh_year, solar_kw)` by reading the CSVs with pandas:
-  - `capex_qar` = area × `capex_qar_m2` + `solar_kw` × `solar_capex_qar_kw`
-  - `revenue_qar_year` = area × `yield_kg_m2_year` × `price_qar_kg` × (`growing_months` ÷ 12) × `yield_factor`
-  - `opex_qar_year` = area × `opex_qar_m2_year` (for now we assume the solar panels cover the cooling electricity)
-  - `profit_qar_year` = revenue − opex
-  - `payback_years` = capex ÷ profit, or `None` if profit is 0 or less
-  - `profit_10y_qar` = profit × 10 − capex
-  - `water_l_day` = area × (`water_l_m2_day` + `water_l_m2_day_extra`)
-- [ ] Return plain Python floats (use `float(...)`), rounded to 2 decimals.
-
-### Step 3: `solar.py`
-
-- [ ] Implement `size_solar(cooling_kwh_peak_day, climate_df)`:
-  - `peak_sun_hours` = sum of `ghi_wh_m2` ÷ 1000 ÷ 365 (average kWh/m² per day)
-  - `solar_kw` = `cooling_kwh_peak_day` ÷ (`peak_sun_hours` × `performance_ratio`)
-  - `solar_kwh_year` = `solar_kw` × `peak_sun_hours` × `performance_ratio` × 365
-- [ ] If `cooling_kwh_peak_day` is 0 (open field), return zeros.
-
-### Step 4: `crops.py`
-
-- [ ] `load_crops()`: read `data/crops.csv` and return the DataFrame.
-- [ ] `crop_calendar(climate_df, crops_df)`: for each month, work out the average daily maximum and minimum temperature (group by month and day, take max and min, then average per month). For each crop and month:
-  - `good` if daily max ≤ `t_max_c` and daily min ≥ `t_min_c`
-  - `risky` if daily max is at most 3°C above `t_max_c`
-  - `impossible` otherwise
-
-### Step 5: Tests and README
-
-- [ ] `tests/test_mustafa.py`, for example: capex 200,000 and profit 60,000 must give payback 3.33; zero cooling must give `solar_kw` 0; a 45°C month must be `impossible` for lettuce.
-- [ ] Run `python -m pytest` until everything passes.
-- [ ] Write the **Credits** section of the README: every dataset and library from section 2 with its link and license.
+- [ ] Review `mustafa/core-modules`; you own it from now on
+- [ ] **Replace estimates with real sources.** Every row in `data/*.csv` is marked `estimate`. In priority order:
+  1. `setups.csv`: `capex_qar_m2` and `opex_qar_m2_year` for each setup, and `chiller_kw_per_m2_per_c`. These decide whether the solar chiller pays off, which is the pitch's main story
+  2. `settings.csv`: `solar_capex_qar_kw`, `electricity_price_qar_kwh`
+  3. `crops.csv`: temperature limits from [FAO EcoCrop](https://gaez.fao.org/pages/ecocrop), yields, water use
+  4. `prices.csv`: [FAOSTAT](https://www.fao.org/faostat/) or Doha market prices
+- [ ] Stage 2: new CSV columns and rows (section 9), economics for electricity sales and cleaning
 
 ## 8. Integration checkpoints
 
@@ -353,11 +258,36 @@ The zeros are placeholders showing the format. Fill real values, and write where
 
 | When | Checkpoint | Me | Salih | Mustafa |
 | --- | --- | --- | --- | --- |
-| Fri, hour 1 | Repo live | Repo, schemas, stubs pushed | Cloned, app runs | Cloned, app runs |
-| Fri 13:00 | Modules work alone | `climate.py` returns 8,760 rows for Doha | Agent answers using the stub plan | All 4 CSVs filled; `economics.py` passes tests |
-| Fri 17:00 | **Full pipeline** | `optimizer.plan()` prints a real plan in the terminal | Checker blocks a fake number | `solar.py` and `crops.py` merged |
-| Fri 21:00 | **App end to end** | Pin to results screen in the browser | Chat works in English and Arabic, RTL looks right | README credits done; tests all pass |
+| Fri, hour 1 | Repo live | Done | Clone, `pytest`, app runs | Clone, `pytest`, app runs |
+| Fri 13:00 | Modules work alone | Done | Done; review | Done; review |
+| Fri 17:00 | **Full pipeline** | Done: `optimizer.plan()` prints a plan | Done: checker blocks a fake number | Done |
+| Fri 21:00 | **App end to end** | Merge into `main`; live NASA test | Live chat test in English and Arabic | Sources for the top estimates |
 | Sat 08:00–10:00 | Polish | Test 5 pins, cache demo pins | Test 8 demo questions | Double-check every CSV source |
 | Sat 10:00 | **Code freeze** | Tag the final commit | No new features | No new features |
 
 At each checkpoint, merge all open pull requests into `main`, then everyone pulls and runs the app once. If a checkpoint is missed by more than an hour, we cut a stretch feature, never a must-have.
+
+## 9. Stage 2: smarter shading and dust
+
+**Planned. Work in this order; stop after each step, show the diff and test results, and get a go-ahead before the next.** One feature per branch, named `<owner>/<feature>`. The app stays a planning tool: no hardware code.
+
+| Step | What | Me | Mustafa | Salih |
+| --- | --- | --- | --- | --- |
+| 1 | Split sunlight: add NASA POWER `ALLSKY_SFC_PAR_TOT`, `ALLSKY_SFC_UVA`, `ALLSKY_SFC_UVB`, `ALLSKY_SFC_LW_DWN`, `CLRSKY_SFC_SW_DWN`, `CLRSKY_SFC_PAR_TOT`. New columns `par_w_m2`, `uv_w_m2`, `nir_w_m2`, `lw_down_w_m2`, `clearsky_ghi_w_m2`, `clearsky_par_w_m2`, `heat_share`. Invalidate old caches | `climate.py`, `schemas.py` | | |
+| 2 | VPD stress and inside humidity per setup; `vpd_stress_hours`, `inside_rh_pct` in `simulate()` | `cooling.py` | `crops.csv`: `vpd_max_kpa` | |
+| 3 | Daily light integral; `light_ok_pct`; reject setups below `MIN_LIGHT_OK_PCT` (90) | `cooling.py`, `optimizer.py`, `schemas.py` | `crops.csv`: `dli_min_mol_m2_day`; `crops.py` DLI | |
+| 4 | New setups `nir_screen_wet_pad`, `agrivoltaic_fixed`, `agrivoltaic_louver` | `cooling.py`, `schemas.py` | `setups.csv` columns and rows; `settings.csv`: `electricity_sell_qar_kwh`; `economics.py` electricity revenue (new keyword arguments with defaults) | |
+| 5 | Shared rule-based controller `decide(hour_row, crop, state) -> {screen_pct, reason}`, 10 % steps, thresholds in `settings.csv` | `controller.py` | `settings.csv` thresholds | |
+| 6 | Operate simulator page: one day at 10-minute steps, fixed shade vs smart screen, Play button, CSV export, "Simulation using satellite climate data for this site. Not live sensor data." | `pages/operate_simulator.py` | | Arabic for the banner |
+| 7 | Dust: haze light loss, cleaning interval (7/14/30 days), Open-Meteo dust-storm exposure | `climate.py`, `optimizer.py` | `settings.csv` rates, thresholds, costs; `economics.py` cleaning cost and water | |
+| 8 | Stretch: area scan, up to 25 points | `app.py` | | |
+| 9 | Wire everything through the dashboard, agent, checker, i18n, README and these docs | `app.py`, docs | README credits | `agent.py`, `checker.py`, Arabic |
+
+### Decisions still open before stage 2 starts
+
+- **Hourly availability.** `ALLSKY_SFC_PAR_TOT`, `ALLSKY_SFC_UVA` and `ALLSKY_SFC_UVB` are listed as hourly in W/m². `CLRSKY_SFC_PAR_TOT`, `CLRSKY_SFC_SW_DWN` and `ALLSKY_SFC_LW_DWN` still need confirming at hourly resolution. The hourly API allows at most 15 parameters per request (we would use 10). Solar data is at about 1° resolution.
+- **Open-Meteo dust history.** Hourly `dust` in µg/m³ from CAMS global (about 40 km). How many past years are available has not been confirmed.
+- **Step 3 needs `par_transmission` for the existing greenhouse setups** (currently only planned for step 4). Proposal: add the column in step 3, with open field = 1.
+- **Step 3 "growing days":** days in months with at least 90 % coverage, or all 365 days?
+- **Step 7 lost revenue from light loss** needs a yield-per-light factor in `settings.csv` (`estimate` unless sourced).
+- **`heat_share` is NaN at night**, so the climate table check must allow NaN in that one column.

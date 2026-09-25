@@ -1,6 +1,6 @@
 # Farming the Desert Sun: Problem and Solution
 
-Sep 24, 2026 · @Blay
+Sep 24, 2026 · @Blay · updated Sep 25, 2026 to match the code (see [README](README.md) for what changed)
 
 ## 1. The problem
 
@@ -37,7 +37,7 @@ What the user does:
 
 What the tool does behind the scenes:
 
-1. Pulls 20+ years of that site's real sun, temperature, humidity and dust data from satellites.
+1. Pulls 5 recent years of that site's hourly sun, temperature, humidity and wind data from NASA POWER satellites and averages them into one typical year. *(Planned: sunlight split into growth light, heat and UV, and dust exposure; see section 7.)*
 2. Checks every candidate crop against the site's climate, month by month.
 3. Simulates every hour of a typical year (8,760 hours) inside each setup: open field, shade net, wet-pad greenhouse, chiller greenhouse.
 4. Sizes solar panels to power the cooling, then calculates cost, water use, profit and payback.
@@ -47,7 +47,7 @@ What the user gets back:
 
 *(Chart or image: see the illustrated version in [01-problem-and-solution.pdf](01-problem-and-solution.pdf).)*
 
-*Mockup of the results screen, with illustrative numbers.* For this humid coastal site, the tool rules out cheap wet-pad cooling, recommends a solar-powered chiller greenhouse, and shows that it pays for itself in about 3.4 years.
+*Mockup of the results screen, with illustrative numbers.* For this humid coastal site, the tool rules out cheap wet-pad cooling, recommends a solar-powered chiller greenhouse, and shows how long it takes to pay for itself.
 
 ## 4. Turning the sun into the solution
 
@@ -55,7 +55,7 @@ What the user gets back:
 
 *(Chart or image: see the illustrated version in [01-problem-and-solution.pdf](01-problem-and-solution.pdf).)*
 
-This is also where "pays for itself" comes in. Every setup costs money up front and earns money from the crops it grows. Payback = years until the earnings cover the cost. The tool compares every option for the site. Example for a 500 m² humid coastal site (illustrative numbers):
+This is also where "pays for itself" comes in. Every setup costs money up front and earns money from the crops it grows. Payback = years until the earnings cover the cost. The tool compares every option for the site. Example for a 500 m² humid coastal site (illustrative numbers, written before the app existed):
 
 | Setup | Months it can grow | Build cost | Profit per year | Payback | Profit over 10 years |
 | --- | --- | --- | --- | --- | --- |
@@ -63,6 +63,8 @@ This is also where "pays for itself" comes in. Every setup costs money up front 
 | Shade net | 5 | 20,000 QAR | 8,000 QAR | 2.5 years | 60,000 QAR |
 | Wet-pad greenhouse | 7 (fails in humid summer) | 150,000 QAR | 30,000 QAR | 5.0 years | 150,000 QAR |
 | **Solar-powered chiller greenhouse** | **12** | **230,000 QAR** | **68,000 QAR** | **3.4 years** | **450,000 QAR** |
+
+> **Check before pitching:** with the estimated costs now in `data/*.csv`, the app calculates a much longer payback for the solar chiller greenhouse than this table shows, because powering the chiller needs a large solar array. The pitch must quote the app's own numbers, not this table. Replacing the estimates with sourced costs is the fix.
 
 The cheapest option pays back fastest but earns little. The tool recommends the setup that earns the most over the farm's life while keeping the crop alive, and shows every trade-off openly.
 
@@ -85,7 +87,7 @@ How we stop hallucinations:
 | Explanation drifts from the results | A checker compares every number in the explanation with the tool outputs. Any mismatch is rejected and regenerated. |
 | Made-up crop facts | Crop limits come only from the FAO EcoCrop table. The agent cannot recommend a crop that is not in it. |
 | Missing or bad data | Tools return "unknown" instead of a guess, and the agent must say there is not enough data. |
-| Different answer each time | Temperature set to 0 and a deterministic optimizer, so the same input gives the same plan. |
+| Different answer each time | The optimizer is deterministic, so the same input always gives the same plan. The wording of the explanation can vary (the model we use does not take a temperature setting), but every number in it is checked. |
 | False confidence | Every result shows its assumptions and data sources, and the user can edit the assumptions. |
 
 The farmer always makes the final call; the tool advises. This directly answers the hackathon's "responsible AI use" criterion, and it is a strong line for judges: *our AI can plan, compare and explain, but it cannot make up a number.*
@@ -96,30 +98,63 @@ The farmer always makes the final call; the tool advises. This directly answers 
 
 | Source | Type | What we take from it | Cost / key |
 | --- | --- | --- | --- |
-| [NASA POWER](https://power.larc.nasa.gov/) | API | Hourly sunlight, temperature, humidity and wind, 20+ years | Free, no key |
-| [Open-Meteo](https://open-meteo.com/) Air Quality API | API | Dust and haze levels | Free for non-commercial use, no key |
-| [Open-Meteo](https://open-meteo.com/) Climate API | API | Climate projections to 2050 | Free for non-commercial use, no key |
+| [NASA POWER](https://power.larc.nasa.gov/) | API | Hourly sunlight, temperature, humidity and wind (we use the 5 most recent full years) | Free, no key |
+| [Open-Meteo](https://open-meteo.com/) Air Quality API | API | Dust levels *(planned, step 7)* | Free for non-commercial use, no key |
+| [Open-Meteo](https://open-meteo.com/) Climate API | API | Climate projections to 2050 *(stretch, not started)* | Free for non-commercial use, no key |
 | [FAO EcoCrop](https://gaez.fao.org/pages/ecocrop) | Dataset | Temperature and water limits for each crop | Free download |
 | [FAOSTAT](https://www.fao.org/faostat/) | API / download | Crop prices, for revenue | Free |
 | [Nominatim](https://nominatim.org/) (OpenStreetMap) | API | Turns a place name into coordinates | Free, fair-use limits |
 | [Claude API](https://docs.claude.com/) | API | The AI agent: planning, tool calls, explanations | Paid per use, API key |
 
-Open-source libraries: **pvlib** (solar panel output), **PsychroLib** (wet-bulb and humidity physics), **pandas** (data handling), **Streamlit** (web app) and **Leaflet** (interactive map).
+Open-source libraries: **PsychroLib** (wet-bulb and humidity physics), **pandas** (data handling), **Streamlit** (web app), **Plotly** (charts) and **folium/Leaflet** (interactive map). Solar output is calculated directly from NASA POWER sunlight; we do not use pvlib.
 
-To stay fully open, the agent layer is built so it can swap to an open-weight model later. All crop limits and cost assumptions live in editable CSV files, so any country can plug in its own local values.
+To stay fully open, the agent talks to the LLM through one function (`call_llm` in `planner/agent.py`), so it can swap to an open-weight model later. All crop limits and cost assumptions live in editable CSV files, so any country can plug in its own local values.
+
+## 7. What we are adding next: smarter shading
+
+**Shading keeps crops cool but also takes away the light they grow with. The planner will weigh both.** These are planned, not built yet; the order and status are tracked in the [Project plan](02-project-plan.md#2-scope).
+
+1. **Split sunlight** into growth light (PAR), heat (near-infrared) and UV, using NASA POWER's spectral data.
+2. **Humidity stress (VPD)** and inside humidity for each setup.
+3. **Light sufficiency (daily light integral)**, so a setup that keeps the crop cool by starving it of light is rejected.
+4. **Three new setups:** a wet-pad greenhouse with a heat-reflective (NIR-blocking) roof, fixed agrivoltaic panels over the crop, and agrivoltaic louvers that move.
+5. **One rule-based controller** that decides how far to close a smart screen each hour. The planner and the demo use the same rule.
+6. **Operate simulator:** a demo page that replays one day at the chosen site, comparing fixed shade with the smart screen. It is a simulation using satellite climate data, not live sensor data.
+7. **Dust:** haze light loss, panel and roof cleaning intervals, and dust-storm exposure.
+
+## 8. Roadmap: Plan → Build → Operate
+
+**Today the planner and the simulator use satellite data. In the Operate stage, cameras and ESP32 sensors feed the same controller with live data.** Everything below is future work; none of it is in the code.
+
+| Stage | What | Status |
+| --- | --- | --- |
+| Plan | Pin → crop, setup, solar size, payback (this app) | Working |
+| Build | Generative facility layouts | Roadmap |
+| Operate | Live sensors and spectrometers (cameras, ESP32) feeding the controller | Roadmap |
+| Operate | Learned (reinforcement learning) controller trained on our simulator | Roadmap |
+| Operate | Computer-vision dust detection and targeted cleaning | Roadmap |
+| Operate | Camera-based canopy stress detection | Roadmap |
+| Operate | Predictive maintenance (screen motors, panel soiling) | Roadmap |
+| Operate | Upwind dust-front early warning | Roadmap |
+| Operate | Predictive pre-cooling | Roadmap |
+
+## 9. Where this applies
+
+**The planner runs on any pin on Earth, so this is a real claim, not just words.** The five regions from our feasibility list go here. *(To fill: the list is not in the repo yet.)*
 
 ## Sources
 
 - [Arab News: GCC food imports (about 85%) and warming about twice the global rate](https://www.arabnews.com/node/2586821)
 - Doha temperatures and crop limits in section 1 are approximate averages; the real app pulls exact values from NASA POWER and FAO EcoCrop.
-- Greenhouse temperatures in section 2 are our own calculation. Numbers in sections 3 and 4 are illustrative.
+- Greenhouse temperatures in section 2 are our own calculation. Numbers in sections 3 and 4 are illustrative and predate the app.
+- The [PDF version](01-problem-and-solution.pdf) is the Sep 24 snapshot with the charts and mockup; it does not include the Sep 25 updates or sections 7–9.
 
 ## Solution map
 
 ```mermaid
 flowchart TD
     A[User drops a pin<br/>+ budget, size, crop wish] --> B[AI agent<br/>plans which tools to run]
-    B --> C[Open data<br/>NASA POWER, Open-Meteo,<br/>FAO EcoCrop, FAOSTAT]
+    B --> C[Open data<br/>NASA POWER, FAO EcoCrop, FAOSTAT<br/>+ Open-Meteo dust, planned]
     C --> D[Crop and season check<br/>what grows, which months]
     C --> E[Cooling simulation<br/>8,760 hours, wet-bulb physics]
     C --> F[Solar and payback model<br/>panel size, cost, profit]
