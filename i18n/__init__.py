@@ -21,3 +21,8 @@ def t(key: str, lang: str = "en") -> str:
         return strings[key]
     warnings.warn(f"Missing i18n key {key!r} for {lang!r}", stacklevel=2)
     return _load("en").get(key, key)
+
+
+def has(key: str) -> bool:
+    """True if the English strings define this key."""
+    return key in _load("en")

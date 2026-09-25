@@ -8,7 +8,7 @@ Sep 25, 2026 · @Blay · kept in sync with the code
 
 | Person | Layer | Files they own | Stage 1 status |
 | --- | --- | --- | --- |
-| **Me** (repo owner) | Data pipeline, cooling physics, optimizer, main app; stage 2: controller and simulator page | `schemas.py`, `climate.py`, `cooling.py`, `optimizer.py`, `app.py`, `requirements.txt`; later `controller.py`, `pages/operate_simulator.py` | Done on `jawad/core` |
+| **Me** (repo owner) | Data pipeline, cooling physics, optimizer, main app; stage 2: controller and simulator page | `schemas.py`, `climate.py`, `cooling.py`, `optimizer.py`, `app.py`, `views/*`, `ui/*`, `.streamlit/config.toml`, `requirements.txt`; later `controller.py`, `views/operate.py` | Done on `jawad/core` |
 | **Salih** | AI agent, number checker, English/Arabic chat | `agent.py`, `checker.py`, `chat_ui.py`, `i18n/*`, `styles/rtl.css`, `tests/test_agent.py`, `tests/test_checker.py`, `tests/test_i18n.py` | Done on `salih/agent-chat`; **Salih to review, especially the Arabic** |
 | **Mustafa** | Data tables and sources, crop check, solar sizing, economics, README credits | `data/*.csv`, `crops.py`, `solar.py`, `economics.py`, `tests/test_mustafa.py`, README credits section | Done on `mustafa/core-modules`; **Mustafa to review and replace estimates with sources** |
 
@@ -161,17 +161,18 @@ streamlit run app.py
 
 ### Branches right now
 
-`main` does not exist yet. The stage 1 branches are stacked so each can be reviewed on its own:
+`main` holds the whole working project and is what the live app (https://croptions.streamlit.app) runs. The stage 1 branches were stacked so each person could review their part:
 
 ```
 claude/rte-hack-repo-setup-acjcdd   docs + UI demo
 └── jawad/core                      scaffold, climate, cooling, optimizer, app
     └── mustafa/core-modules        crops, solar, economics, CSV sources, credits
         └── salih/agent-chat        agent, checker, chat, i18n
-            └── jawad/docs-sync     these docs, synced with the code
+            └── jawad/docs-sync     docs synced with the code  ==  main
+                └── jawad/redesign  Croptions look and feel (open for review)
 ```
 
-Merge order into `main`: the setup branch, then `jawad/core`, `mustafa/core-modules`, `salih/agent-chat`, `jawad/docs-sync`. The tip, `jawad/docs-sync`, is the whole working project.
+New work branches from `main` and comes back through a pull request.
 
 ### Secrets
 
@@ -200,9 +201,12 @@ Merge order into `main`: the setup branch, then `jawad/core`, `mustafa/core-modu
 - [x] `optimizer.py`: every crop × setup, filter on coverage and budget, rank by priority, one-sentence reason, sources and assumptions, JSON-safe, `python -m planner.optimizer LAT LON` prints a plan
 - [x] `app.py`: map plus "Or type coordinates" fallback, inputs, recommendation tiles, crop calendar heatmap, comparison table, inside-temperature chart, hottest-day solar chart (only when there is cooling to power), 10-year profit chart, assumptions and sources, English/Arabic toggle with RTL
 
+- [x] Redesign to match the Croptions prototype (`jawad/redesign`): five pages in `views/`, design tokens and components in `ui/`, English/Arabic labels from the prototype, chat in an "Ask Croptions" dialog, compare-sites page, UI smoke tests
+
 ### Your next tasks
 
-- [ ] Create `main` and merge the stage 1 branches in the order in section 4
+- [x] Create `main` and merge the stage 1 branches in the order in section 4
+- [ ] Merge `jawad/redesign` into `main` to update the live app
 - [ ] Invite Salih and Mustafa as collaborators (GitHub → Settings → Collaborators); protect `main`
 - [ ] Run `python -m planner.climate 25.29 51.53` on a laptop to test the live NASA fetch (it could not be tested from the build environment)
 - [ ] Pick and cache the two demo pins (dry inland, humid coastal)
@@ -289,7 +293,7 @@ At each checkpoint, merge all open pull requests into `main`, then everyone pull
 | 3 | Daily light integral; `light_ok_pct`; reject setups below `MIN_LIGHT_OK_PCT` (90) | `cooling.py`, `optimizer.py`, `schemas.py` | `crops.csv`: `dli_min_mol_m2_day`; `crops.py` DLI | |
 | 4 | New setups `nir_screen_wet_pad`, `agrivoltaic_fixed`, `agrivoltaic_louver` | `cooling.py`, `schemas.py` | `setups.csv` columns and rows; `settings.csv`: `electricity_sell_qar_kwh`; `economics.py` electricity revenue (new keyword arguments with defaults) | |
 | 5 | Shared rule-based controller `decide(hour_row, crop, state) -> {screen_pct, reason}`, 10 % steps, thresholds in `settings.csv` | `controller.py` | `settings.csv` thresholds | |
-| 6 | Operate simulator page: one day at 10-minute steps, fixed shade vs smart screen, Play button, CSV export, "Simulation using satellite climate data for this site. Not live sensor data." | `pages/operate_simulator.py` | | Arabic for the banner |
+| 6 | Operate simulator page: one day at 10-minute steps, fixed shade vs smart screen, Play button, CSV export, "Simulation using satellite climate data for this site. Not live sensor data." | `views/operate.py` (added to the top bar in `app.py`) | | Arabic for the banner |
 | 7 | Dust: haze light loss, cleaning interval (7/14/30 days), Open-Meteo dust-storm exposure | `climate.py`, `optimizer.py` | `settings.csv` rates, thresholds, costs; `economics.py` cleaning cost and water | |
 | 8 | Stretch: area scan, up to 25 points | `app.py` | | |
 | 9 | Wire everything through the dashboard, agent, checker, i18n, README and these docs | `app.py`, docs | README credits | `agent.py`, `checker.py`, Arabic |

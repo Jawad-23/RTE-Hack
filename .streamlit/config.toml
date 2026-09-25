@@ -1,0 +1,11 @@
+# Croptions design system colours (ui-demo/Croptions Design System.dc.html)
+[theme]
+base = "light"
+primaryColor = "#1E5B3F"
+backgroundColor = "#F5F0E6"
+secondaryBackgroundColor = "#FFFDF8"
+textColor = "#1E2A22"
+
+[client]
+toolbarMode = "minimal"
+showSidebarNavigation = false

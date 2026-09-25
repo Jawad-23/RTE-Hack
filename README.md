@@ -27,16 +27,19 @@ The first run for a new pin fetches 5 years of hourly data from NASA POWER (can 
 
 | Path | What | Owner |
 | --- | --- | --- |
-| `app.py` | Streamlit app: map, inputs, results dashboard, chat | Repo owner |
+| `app.py` | Entry point: top bar, page navigation, language switch, the "Ask Croptions" dialog | Repo owner |
+| `views/` | The five pages: Home, Plan, Results, Compare sites, Assumptions | Repo owner |
+| `ui/` | Design tokens and CSS (`theme.py`), HTML components, Plotly charts, page state, chart summaries (`insights.py`) | Repo owner |
+| `.streamlit/config.toml`, `assets/` | Theme colours and logo from the Croptions design system | Repo owner |
 | `planner/schemas.py` | Shared column names, setups, statuses, units | Repo owner |
 | `planner/climate.py` | NASA POWER fetch → 8,760-hour typical year, cached | Repo owner |
 | `planner/cooling.py` | Wet-bulb physics and inside temperature per setup | Repo owner |
 | `planner/optimizer.py` | Runs every crop × setup, filters, ranks: `plan()` | Repo owner |
-| `planner/crops.py`, `solar.py`, `economics.py`, `data/*.csv` | Crop check, solar sizing, economics, data tables | Mustafa |
+| `planner/crops.py`, `solar.py`, `economics.py`, `data/*.csv` | Crop check, solar sizing, economics, data tables (`demo_sites.csv` holds the example pins) | Mustafa |
 | `planner/agent.py`, `checker.py`, `chat_ui.py`, `i18n/`, `styles/rtl.css` | Claude agent, number checker, English/Arabic chat | Salih |
 | `tests/` | One test file per module | everyone |
 | `docs/` | Problem, plan, team tasks, hackathon brief ([start here](docs/README.md)) | |
-| `ui-demo/` | Croptions UI prototype and design system (open `Croptions.dc.html`) | |
+| `ui-demo/` | Croptions UI prototype and design system the app is styled on (open `Croptions.dc.html`) | |
 
 Every value in `data/*.csv` is currently labelled `estimate`, and the app says so. Costs in particular decide which setup wins, so treat recommendations as illustrative until those rows have real sources.
 

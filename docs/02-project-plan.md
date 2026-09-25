@@ -28,6 +28,8 @@ We submit four things:
 | Must-have | Results screen with recommendation and comparison table | What judges see | Working |
 | Must-have | LLM explanation with number checker | Responsible AI criterion | Working; needs an API key to test live |
 | Stretch | Chat follow-ups ("what if I double the budget?") | Shows the agent re-running tools | Working (same agent) |
+| Must-have | Look and feel of the Croptions prototype (5 pages, English/Arabic, phone width) | What judges see first | Done on `jawad/redesign` |
+| Stretch | Compare two sites side by side | The "same heat, different air" demo moment | Done on `jawad/redesign` |
 
 ### Stage 2: smarter shading and dust (planned, in this order)
 
@@ -138,7 +140,11 @@ The one rule that matters: if the full pipeline is not working by Friday 17:00, 
 
 ```
 RTE-Hack/
-├── app.py                  # Streamlit app: map, inputs, results, chat
+├── app.py                  # entry: top bar, navigation, language, assistant dialog
+├── views/                  # pages: home, plan, results, compare, assumptions
+├── ui/                     # theme (design tokens, CSS), components, charts, state, insights
+├── .streamlit/config.toml  # theme colours
+├── assets/logo.svg
 ├── planner/
 │   ├── schemas.py          # shared names, units, constants
 │   ├── climate.py          # NASA POWER fetch + typical year + cache
@@ -157,6 +163,7 @@ RTE-Hack/
 │   ├── prices.csv          # crop prices (estimates until sourced)
 │   ├── setups.csv          # build/running costs and cooling parameters
 │   ├── settings.csv        # electricity, solar cost, performance ratio
+│   ├── demo_sites.csv      # example pins (Al Khor, Al Karaana)
 │   └── cache/              # cached climate per pin (not committed)
 ├── tests/                  # one test file per module
 ├── docs/                   # these planning docs
@@ -165,7 +172,7 @@ RTE-Hack/
 └── LICENSE                 # MIT
 ```
 
-Planned in stage 2: `planner/controller.py` and `pages/operate_simulator.py`.
+Planned in stage 2: `planner/controller.py` and `views/operate.py` (pages live in `views/`, not `pages/`, because the app uses its own top navigation).
 
 | Layer | Tool |
 | --- | --- |
@@ -266,6 +273,7 @@ Pick and test both demo pins on Friday night, and screenshot the results in case
 7. **Coverage only checks the crop's maximum temperature**, over all 8,760 hours. Cold winter nights inside a greenhouse are not checked.
 8. **Economics:** no discounting, panel degradation, labour, land, financing or equipment replacement. The budget only limits build cost.
 9. **Typical year:** averaging 5 years smooths out heatwaves, so extremes are under-represented.
-10. **Arabic:** the recommendation's reason sentence and crop names are still English, and the Arabic labels were written without a native speaker.
+10. **Arabic:** most labels come from the designer's prototype; the ones added for the app (chat, charts, compare) were written without a native speaker and need review.
+11. **Prototype features not built:** editing assumptions inside the app (values are read-only; edit `data/*.csv`), PDF export (the app downloads the plan as JSON), place search on the map, and the offline/error preview toggles.
 
 What is **not** faked: the app never uses made-up climate data. The synthetic climate years exist only in `tests/`.

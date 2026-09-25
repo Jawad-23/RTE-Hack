@@ -1,4 +1,4 @@
-"""English/Arabic chat panel. Owned by Salih."""
+"""English/Arabic chat panel, shown in the "Ask Croptions" dialog. Owned by Salih."""
 
 from __future__ import annotations
 
@@ -20,14 +20,21 @@ def _bubble(text: str, lang: str) -> None:
         st.markdown(text)
 
 
-def render(plan: dict | None, lang: str) -> None:
-    """Current plan + language -> draws the chat panel in the Streamlit page."""
-    st.subheader(t("chat_title", lang))
+def render(plan: dict | None, lang: str, preset: str | None = None) -> None:
+    """Current plan + language (+ an optional question to send at once) -> draws the chat."""
     chat = st.session_state.setdefault("chat", [])
+    head, new = st.columns([4, 1], vertical_alignment="center")
+    head.caption(f"● {t('reply_in', lang)} · {t('chat_footer', lang)}")
+    if chat and new.button(t("new_chat", lang), key="chat_new", use_container_width=True):
+        chat.clear()
+        st.rerun()
 
     ready, why = agent.llm_ready()
     if not ready:
         st.info(t(why, lang))
+
+    if not chat:
+        st.markdown(f"**{t('chat_hello', lang)}**  \n{t('chat_hello_sub', lang)}")
 
     for msg in chat:
         with st.chat_message(msg["role"]):
@@ -42,14 +49,14 @@ def render(plan: dict | None, lang: str) -> None:
                         for line in msg["tool_log"]:
                             st.code(line, language=None)
 
-    question = None
-    if not chat:
+    question = preset
+    if not chat and not question:
         cols = st.columns(2)
         for i, key in enumerate(SUGGESTIONS):
             if cols[i % 2].button(t(key, lang), key=f"suggest_{key}_{lang}", use_container_width=True):
                 question = t(key, lang)
 
-    typed = st.chat_input(t("chat_placeholder", lang))
+    typed = st.chat_input(t("chat_placeholder", lang), key="chat_input")
     question = typed or question
     if not question:
         return
@@ -64,4 +71,4 @@ def render(plan: dict | None, lang: str) -> None:
     })
     if result["plan"] is not None:
         st.session_state["plan"] = result["plan"]
-    st.rerun()
+    st.rerun()  # full rerun redraws the dashboard; the dialog reopens because chat_open stays True

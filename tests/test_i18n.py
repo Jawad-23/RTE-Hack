@@ -31,4 +31,4 @@ def test_template_placeholders_match():
 def test_missing_key_falls_back_with_warning():
     with pytest.warns(UserWarning):
         assert t("no_such_key", "ar") == "no_such_key"
-    assert t("analyse", "xx") == t("analyse", "en")
+    assert t("brand", "xx") == t("brand", "en")
