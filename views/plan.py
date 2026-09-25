@@ -92,29 +92,37 @@ with map_col:
             ss["pin"] = new_pin
             st.rerun()
 
+    def _query_lang(q: str) -> str:
+        return "ar" if any("؀" <= c <= "ۿ" for c in q) else "en"
+
     with st.expander(t("search_place", lang)):
         q = st.text_input(t("search_place", lang), placeholder=t("search_placeholder", lang), key="plan_search_q")
-        if st.button(t("search_btn", lang), use_container_width=True):
+        col_search, _ = st.columns([1, 2])
+        if col_search.button(t("search_btn", lang), use_container_width=True):
             if q:
                 try:
                     r = requests.get(
                         "https://nominatim.openstreetmap.org/search",
-                        params={"q": q, "format": "json", "limit": 5},
+                        params={"q": q, "format": "json", "limit": 5, "accept-language": _query_lang(q)},
                         headers={"User-Agent": "Croptions/1.0"},
                         timeout=10,
                     )
                     r.raise_for_status()
-                    places = r.json()
-                    if not places:
-                        st.warning(t("search_no_results", lang))
-                    else:
-                        for p in places:
-                            label = f"{p['display_name']} — {float(p['lat']):.4f}, {float(p['lon']):.4f}"
-                            if st.button(label, key=f"plan_geo_{p['place_id']}", use_container_width=True):
-                                ss["pin"] = (round(float(p["lat"]), 4), round(float(p["lon"]), 4))
-                                st.rerun()
+                    ss["_search_results"] = r.json()
                 except Exception:
+                    ss["_search_results"] = []
                     st.error(t("search_error", lang))
+
+        places = ss.get("_search_results", [])
+        if places:
+            for p in places:
+                label = f"{p['display_name']} — {float(p['lat']):.4f}, {float(p['lon']):.4f}"
+                if st.button(label, key=f"plan_geo_{p['place_id']}", use_container_width=True):
+                    ss["pin"] = (round(float(p["lat"]), 4), round(float(p["lon"]), 4))
+                    ss.pop("_search_results", None)
+                    st.rerun()
+        elif "_search_results" in ss and not places:
+            st.warning(t("search_no_results", lang))
 
     with st.expander(t("enter_coords", lang)):
         c1, c2, c3 = st.columns([1, 1, 1], vertical_alignment="bottom")
