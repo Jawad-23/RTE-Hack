@@ -46,6 +46,7 @@
   "chat_hello_sub": "I explain the numbers and can re-run them. Write in English or Arabic.",
   "chat_no_base_url": "Set LLM_BASE_URL in your .env file to your open-source model server. The dashboard works without it.",
   "chat_no_key": "The assistant needs an ANTHROPIC_API_KEY in your .env file, or an open-source model (see README). The dashboard works without it.",
+  "chat_no_llm_key": "The assistant needs LLM_API_KEY (your OpenRouter key) in .env or in the app's Secrets. The dashboard works without it.",
   "chat_open": "Ask Croptions",
   "chat_placeholder": "Ask about this plan, e.g. what if my budget is half?",
   "chat_thinking": "Checking the plan and running the tools…",

@@ -23,13 +23,30 @@ from planner.schemas import PRIORITIES
 
 load_dotenv()
 
-# All LLM settings in one place; override them in .env.
-PROVIDER = os.getenv("LLM_PROVIDER", "anthropic")
+
+def _cfg(name: str, default: str = "") -> str:
+    """A setting from the environment (.env), else from Streamlit secrets (Streamlit Cloud), else the default."""
+    value = os.getenv(name)
+    if value:
+        return value
+    try:
+        import streamlit as st
+
+        return str(st.secrets.get(name, default))
+    except Exception:  # no secrets file, or not running under Streamlit
+        return default
+
+
+# All LLM settings in one place; override them in .env or in the app's Secrets.
+PROVIDER = _cfg("LLM_PROVIDER", "anthropic")
 # Claude: Sonnet 5 does not accept a temperature setting, so none is sent; every number is checked instead.
-MODEL = os.getenv("LLM_MODEL", "claude-sonnet-5" if PROVIDER == "anthropic" else "qwen2.5:7b-instruct")
+MODEL = _cfg("LLM_MODEL", "claude-sonnet-5" if PROVIDER == "anthropic" else "qwen2.5:7b-instruct")
 # OpenAI-compatible: default is a local Ollama server. Open models do take temperature 0.
-BASE_URL = os.getenv("LLM_BASE_URL", "http://localhost:11434/v1")
-API_KEY = os.getenv("LLM_API_KEY", "")  # only needed for hosted providers
+BASE_URL = _cfg("LLM_BASE_URL", "http://localhost:11434/v1")
+API_KEY = _cfg("LLM_API_KEY", "")  # only needed for hosted providers
+# OpenRouter only: models to try, in order, if LLM_MODEL is unavailable (free models come and go).
+FALLBACK_MODELS = [m.strip() for m in _cfg("LLM_FALLBACK_MODELS", "").split(",") if m.strip()]
+APP_URL = _cfg("APP_URL", "https://croptions.streamlit.app")
 TEMPERATURE = 0.0
 MAX_TOKENS = 4096
 MAX_TOOL_ROUNDS = 5
@@ -88,8 +105,10 @@ _client = None
 def llm_ready() -> tuple[bool, str]:
     """Is an LLM configured? -> (ready, i18n key explaining what is missing)."""
     if PROVIDER == "anthropic":
-        return (bool(os.getenv("ANTHROPIC_API_KEY")), "chat_no_key")
+        return (bool(_cfg("ANTHROPIC_API_KEY")), "chat_no_key")
     if PROVIDER == "openai_compatible":
+        if "openrouter.ai" in BASE_URL and not API_KEY:
+            return (False, "chat_no_llm_key")
         return (bool(BASE_URL), "chat_no_base_url")
     return (False, "chat_bad_provider")
 
@@ -104,7 +123,7 @@ def call_llm(system: str, messages: list, tools: list, tool_choice: dict | None 
     import anthropic
 
     if _client is None:
-        _client = anthropic.Anthropic()
+        _client = anthropic.Anthropic(api_key=_cfg("ANTHROPIC_API_KEY") or None)
     kwargs = {"tool_choice": tool_choice} if tool_choice else {}
     return _client.messages.create(model=MODEL, max_tokens=MAX_TOKENS, system=system, messages=messages, tools=tools, **kwargs)
 
@@ -175,6 +194,10 @@ def _call_openai_compatible(system: str, messages: list, tools: list, tool_choic
     if tool_choice and tool_choice.get("type") == "none":
         payload["tool_choice"] = "none"
     headers = {"Authorization": f"Bearer {API_KEY}"} if API_KEY else {}
+    if "openrouter.ai" in BASE_URL:
+        headers |= {"HTTP-Referer": APP_URL, "X-Title": "Croptions"}  # shows the app name in OpenRouter
+        if FALLBACK_MODELS:
+            payload["models"] = [MODEL, *FALLBACK_MODELS]  # OpenRouter tries these in order
     resp = requests.post(f"{BASE_URL.rstrip('/')}/chat/completions", json=payload, headers=headers, timeout=REQUEST_TIMEOUT_S)
     resp.raise_for_status()
     return from_openai_response(resp.json())

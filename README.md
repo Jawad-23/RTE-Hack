@@ -49,6 +49,18 @@ The chat uses Claude with two tools that run our own planner (`run_plan`, `compa
 
 **Claude (default):** put `ANTHROPIC_API_KEY=...` in `.env`.
 
+**Free open models through OpenRouter (recommended for the demo):** create a key at [openrouter.ai/keys](https://openrouter.ai/keys), then put these lines in `.env`, or on Streamlit Cloud in the app's **Settings → Secrets** (TOML: `LLM_API_KEY = "sk-or-..."`):
+
+```
+LLM_PROVIDER=openai_compatible
+LLM_BASE_URL=https://openrouter.ai/api/v1
+LLM_MODEL=qwen/qwen3.8-27b:free
+LLM_FALLBACK_MODELS=nvidia/nemotron-3-super-120b-a12b:free,openrouter/free
+LLM_API_KEY=sk-or-...
+```
+
+Free models change often and have tight daily limits; `LLM_FALLBACK_MODELS` lets OpenRouter switch to the next one. If every request fails with "no endpoints found", allow free endpoints under OpenRouter **Settings → Privacy**.
+
 **Open-source model instead:** any server with an OpenAI-compatible `/chat/completions` API works. For a local model with [Ollama](https://ollama.com):
 
 ```bash

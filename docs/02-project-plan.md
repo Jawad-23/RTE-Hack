@@ -246,7 +246,7 @@ Pick and test both demo pins on Friday night, and screenshot the results in case
 | --- | --- | --- |
 | NASA POWER hourly (temperature, humidity, sunlight, wind) | Code written and unit-tested; **never run against the real API** (blocked in the build environment) | Run `python -m planner.climate 25.29 51.53` on a laptop |
 | Claude API | Code written and tested with a fake model; **never called live** | An `ANTHROPIC_API_KEY` in `.env` |
-| Open-source LLM (Ollama, llama.cpp, vLLM, Groq, OpenRouter) | Code written and tested against a fake OpenAI-compatible server; **never run with a real model** | Install Ollama and `ollama pull qwen2.5:7b-instruct`, or a hosted endpoint and key |
+| Open-source LLM through OpenRouter (free models) | Code written and tested against a fake OpenAI-compatible server, including reading the key from Streamlit Secrets; **never called live** (OpenRouter is blocked in the build environment) | Add the OpenRouter key to the app's Secrets and ask the chat a question |
 | Map (Leaflet scripts and OpenStreetMap tiles) | Not loaded in the build environment; typed coordinates work | A normal internet connection |
 | FAO EcoCrop | **No download or API.** Crop limits in `crops.csv` were typed in as estimates | Look up each crop and fill `source` |
 | FAOSTAT | **No API.** Prices in `prices.csv` were typed in as estimates | Look up each price and fill `source` |

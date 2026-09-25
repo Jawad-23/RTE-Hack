@@ -128,7 +128,10 @@ LLM settings (top of `agent.py`, overridable in `.env`):
 | `LLM_PROVIDER` | `anthropic` | or `openai_compatible` for an open-source model |
 | `LLM_MODEL` | `claude-sonnet-5`, or `qwen2.5:7b-instruct` for open models | `claude-haiku-4-5` saves credits |
 | `LLM_BASE_URL` | `http://localhost:11434/v1` (Ollama) | any `/chat/completions` server |
-| `LLM_API_KEY` | empty | only for hosted open-model services |
+| `LLM_API_KEY` | empty | only for hosted open-model services (OpenRouter: `sk-or-...`) |
+| `LLM_FALLBACK_MODELS` | empty | OpenRouter only: comma-separated models to try next, e.g. `nvidia/nemotron-3-super-120b-a12b:free,openrouter/free` |
+
+Settings are read from `.env` first, then from Streamlit **Secrets** (how the live app gets them). The team's live app uses OpenRouter's free `qwen/qwen3.8-27b:free`.
 
 Claude gets no temperature (Sonnet 5 rejects it); open models get temperature 0. `MAX_TOKENS = 4096`, `MAX_TOOL_ROUNDS = 5`. Only `call_llm()` talks to a model, and both providers return the same response shape.
 

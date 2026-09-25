@@ -100,3 +100,35 @@ def test_llm_ready(monkeypatch):
     assert agent.llm_ready() == (False, "chat_no_key")
     monkeypatch.setattr(agent, "PROVIDER", "nope")
     assert agent.llm_ready()[0] is False
+
+
+def test_openrouter_sends_app_headers_and_fallbacks(monkeypatch):
+    sent = {}
+
+    class Resp:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"choices": [{"finish_reason": "stop", "message": {"content": "ok"}}]}
+
+    def fake_post(url, json=None, headers=None, timeout=None):
+        sent.update(url=url, body=json, headers=headers)
+        return Resp()
+
+    monkeypatch.setattr(agent, "BASE_URL", "https://openrouter.ai/api/v1")
+    monkeypatch.setattr(agent, "MODEL", "qwen/qwen3.8-27b:free")
+    monkeypatch.setattr(agent, "FALLBACK_MODELS", ["openrouter/free"])
+    monkeypatch.setattr(agent, "API_KEY", "sk-or-test")
+    monkeypatch.setattr(agent.requests, "post", fake_post)
+    agent._call_openai_compatible("SYS", [{"role": "user", "content": "hi"}], agent.TOOLS, None)
+    assert sent["url"] == "https://openrouter.ai/api/v1/chat/completions"
+    assert sent["headers"]["Authorization"] == "Bearer sk-or-test" and sent["headers"]["X-Title"] == "Croptions"
+    assert sent["body"]["models"] == ["qwen/qwen3.8-27b:free", "openrouter/free"]
+
+
+def test_openrouter_without_key_is_not_ready(monkeypatch):
+    monkeypatch.setattr(agent, "PROVIDER", "openai_compatible")
+    monkeypatch.setattr(agent, "BASE_URL", "https://openrouter.ai/api/v1")
+    monkeypatch.setattr(agent, "API_KEY", "")
+    assert agent.llm_ready() == (False, "chat_no_llm_key")
