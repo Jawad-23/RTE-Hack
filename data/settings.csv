@@ -1,0 +1,4 @@
+key,value,unit,source
+electricity_price_qar_kwh,0.13,QAR/kWh,PLACEHOLDER estimate
+solar_capex_qar_kw,2500,QAR/kW,PLACEHOLDER estimate
+performance_ratio,0.8,fraction,typical value
