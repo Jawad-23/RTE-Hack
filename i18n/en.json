@@ -51,7 +51,7 @@
   "longitude": "Longitude",
   "use_coords": "Use these coordinates",
   "chat_placeholder": "Ask about this plan, e.g. what if my budget is half?",
-  "chat_no_key": "The assistant needs an ANTHROPIC_API_KEY in your .env file. The dashboard works without it.",
+  "chat_no_key": "The assistant needs an ANTHROPIC_API_KEY in your .env file, or an open-source model (see README). The dashboard works without it.",
   "chat_error": "The assistant is unavailable right now. The plan and dashboard above are still correct.",
   "chat_thinking": "Checking the plan and running the tools…",
   "verified": "Verified: every number comes from the plan",
@@ -63,5 +63,7 @@
   "suggest_crop": "Which crop fits this site best?",
   "safe_answer_rec": "The recommendation is {setup} for {crop}: it keeps the crop below its heat limit {coverage}% of the year, costs {capex} QAR to build and pays back in {payback} years.",
   "safe_answer_none": "No setup works for these inputs. {reason}",
-  "safe_answer_no_plan": "Choose a site on the map and press Analyse first, then ask me about the plan."
+  "safe_answer_no_plan": "Choose a site on the map and press Analyse first, then ask me about the plan.",
+  "chat_no_base_url": "Set LLM_BASE_URL in your .env file to your open-source model server. The dashboard works without it.",
+  "chat_bad_provider": "LLM_PROVIDER in .env must be 'anthropic' or 'openai_compatible'. The dashboard works without the assistant."
 }

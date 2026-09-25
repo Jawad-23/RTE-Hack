@@ -1,13 +1,20 @@
-"""AI agent: Claude plans with our tools and explains; the checker blocks invented numbers. Owned by Salih.
+"""AI agent: an LLM plans with our tools and explains; the checker blocks invented numbers. Owned by Salih.
 
-Only call_llm() talks to the Claude API, so the model can be swapped for an open-weight one later.
+Only call_llm() talks to an LLM. It supports two providers, chosen in .env:
+- LLM_PROVIDER=anthropic (default): the Claude API.
+- LLM_PROVIDER=openai_compatible: any open-weight model behind an OpenAI-compatible chat API
+  (Ollama, llama.cpp server, vLLM, LM Studio, or hosted ones such as Groq or OpenRouter).
+Both return the same response shape, so the rest of the agent does not care which one runs.
 """
 
 from __future__ import annotations
 
 import json
+import os
 import re
+from types import SimpleNamespace
 
+import requests
 from dotenv import load_dotenv
 
 from i18n import t
@@ -16,11 +23,17 @@ from planner.schemas import PRIORITIES
 
 load_dotenv()
 
-# All LLM settings in one place. Sonnet 5 does not accept a temperature setting; determinism
-# comes from the tools instead: every number in a reply is checked against tool output.
-MODEL = "claude-sonnet-5"
+# All LLM settings in one place; override them in .env.
+PROVIDER = os.getenv("LLM_PROVIDER", "anthropic")
+# Claude: Sonnet 5 does not accept a temperature setting, so none is sent; every number is checked instead.
+MODEL = os.getenv("LLM_MODEL", "claude-sonnet-5" if PROVIDER == "anthropic" else "qwen2.5:7b-instruct")
+# OpenAI-compatible: default is a local Ollama server. Open models do take temperature 0.
+BASE_URL = os.getenv("LLM_BASE_URL", "http://localhost:11434/v1")
+API_KEY = os.getenv("LLM_API_KEY", "")  # only needed for hosted providers
+TEMPERATURE = 0.0
 MAX_TOKENS = 4096
 MAX_TOOL_ROUNDS = 5
+REQUEST_TIMEOUT_S = 180  # local models on a laptop CPU can be slow
 
 ARABIC = re.compile(r"[؀-ۿ]")
 
@@ -72,8 +85,21 @@ TOOLS = [
 _client = None
 
 
+def llm_ready() -> tuple[bool, str]:
+    """Is an LLM configured? -> (ready, i18n key explaining what is missing)."""
+    if PROVIDER == "anthropic":
+        return (bool(os.getenv("ANTHROPIC_API_KEY")), "chat_no_key")
+    if PROVIDER == "openai_compatible":
+        return (bool(BASE_URL), "chat_no_base_url")
+    return (False, "chat_bad_provider")
+
+
 def call_llm(system: str, messages: list, tools: list, tool_choice: dict | None = None):
-    """The only function that talks to the Claude API. Returns the SDK Message."""
+    """The only function that talks to an LLM. Returns an object with .stop_reason and .content blocks (Anthropic shape)."""
+    if PROVIDER == "openai_compatible":
+        return _call_openai_compatible(system, messages, tools, tool_choice)
+    if PROVIDER != "anthropic":
+        raise ValueError(f"Unknown LLM_PROVIDER {PROVIDER!r}; use 'anthropic' or 'openai_compatible'")
     global _client
     import anthropic
 
@@ -81,6 +107,77 @@ def call_llm(system: str, messages: list, tools: list, tool_choice: dict | None 
         _client = anthropic.Anthropic()
     kwargs = {"tool_choice": tool_choice} if tool_choice else {}
     return _client.messages.create(model=MODEL, max_tokens=MAX_TOKENS, system=system, messages=messages, tools=tools, **kwargs)
+
+
+def _field(block, name, default=None):
+    """Read a content block field whether it is an SDK object, a SimpleNamespace or a dict."""
+    return block.get(name, default) if isinstance(block, dict) else getattr(block, name, default)
+
+
+def to_openai_messages(system: str, messages: list) -> list[dict]:
+    """Our Anthropic-shaped history -> OpenAI chat messages (system, user, assistant with tool_calls, tool)."""
+    out = [{"role": "system", "content": system}]
+    for m in messages:
+        content = m["content"]
+        if isinstance(content, str):
+            out.append({"role": m["role"], "content": content})
+            continue
+        if m["role"] == "user":  # a list here means tool results
+            for block in content:
+                if _field(block, "type") == "tool_result":
+                    out.append({"role": "tool", "tool_call_id": _field(block, "tool_use_id"), "content": str(_field(block, "content"))})
+            continue
+        text = "\n".join(_field(b, "text", "") for b in content if _field(b, "type") == "text")
+        calls = [
+            {"id": _field(b, "id"), "type": "function", "function": {"name": _field(b, "name"), "arguments": json.dumps(_field(b, "input", {}))}}
+            for b in content if _field(b, "type") == "tool_use"
+        ]
+        msg = {"role": "assistant", "content": text or None}
+        if calls:
+            msg["tool_calls"] = calls
+        out.append(msg)
+    return out
+
+
+def from_openai_response(data: dict):
+    """OpenAI chat completion JSON -> Anthropic-shaped response (stop_reason + text / tool_use blocks)."""
+    choice = data["choices"][0]
+    msg = choice.get("message", {})
+    blocks = []
+    if msg.get("content"):
+        blocks.append(SimpleNamespace(type="text", text=msg["content"]))
+    for i, call in enumerate(msg.get("tool_calls") or []):
+        fn = call.get("function", {})
+        try:
+            args = json.loads(fn.get("arguments") or "{}")
+        except json.JSONDecodeError:
+            args = {"_invalid_json": fn.get("arguments")}  # the tool call then fails and the model is told why
+        blocks.append(SimpleNamespace(type="tool_use", id=call.get("id") or f"call_{i}", name=fn.get("name"), input=args))
+    finish = choice.get("finish_reason")
+    if any(b.type == "tool_use" for b in blocks):
+        stop = "tool_use"
+    elif finish == "length":
+        stop = "max_tokens"
+    else:
+        stop = "end_turn"
+    return SimpleNamespace(stop_reason=stop, content=blocks)
+
+
+def _call_openai_compatible(system: str, messages: list, tools: list, tool_choice: dict | None):
+    """POST /chat/completions to an OpenAI-compatible server (Ollama, llama.cpp, vLLM, Groq, OpenRouter...)."""
+    payload = {
+        "model": MODEL,
+        "messages": to_openai_messages(system, messages),
+        "tools": [{"type": "function", "function": {"name": x["name"], "description": x["description"], "parameters": x["input_schema"]}} for x in tools],
+        "temperature": TEMPERATURE,
+        "max_tokens": MAX_TOKENS,
+    }
+    if tool_choice and tool_choice.get("type") == "none":
+        payload["tool_choice"] = "none"
+    headers = {"Authorization": f"Bearer {API_KEY}"} if API_KEY else {}
+    resp = requests.post(f"{BASE_URL.rstrip('/')}/chat/completions", json=payload, headers=headers, timeout=REQUEST_TIMEOUT_S)
+    resp.raise_for_status()
+    return from_openai_response(resp.json())
 
 
 def detect_language(text: str) -> str:
