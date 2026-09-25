@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<title>Croptions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+.leaflet-container{font-family:inherit;} .leaflet-top{top:64px;}
+html,body{margin:0;padding:0;background:#E9E2D3;}
+*{box-sizing:border-box;}
+a{color:#1E5B3F;text-decoration:underline;text-underline-offset:2px;}
+a:hover{color:#123826;}
+button,input,select,textarea{font-family:inherit;}
+@keyframes cr-pulse{0%,100%{opacity:.55}50%{opacity:1}}
+@keyframes cr-spin{to{transform:rotate(360deg)}}
+@keyframes cr-rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+</style>
+</helmet>
+<div dir="{{ dir }}" lang="{{ lang }}" style="position:fixed; inset:0; background:#E9E2D3; display:flex; justify-content:center; align-items:center; font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif; color:#1E2A22; font-size:15px; line-height:1.5;">
+<sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}"><div style="position:absolute; top:16px; inset-inline-start:16px; display:flex; flex-direction:column; gap:6px; align-items:flex-start;"><span style="font-size:12px; color:#5E6558;">{{ t.viewport }}</span><div role="group" aria-label="{{ t.viewport }}" style="display:flex; background:#FFFDF8; border-radius:10px; padding:3px; gap:2px;">
+    <button onClick="{{ setDesktop }}" style="height:30px; padding:0 10px; border:0; border-radius:8px; font-size:13px; cursor:pointer; background:{{ vD.bg }}; color:{{ vD.fg }};">{{ t.desktop }}</button>
+    <button onClick="{{ setMobile }}" style="height:30px; padding:0 10px; border:0; border-radius:8px; font-size:13px; cursor:pointer; background:{{ vM.bg }}; color:{{ vM.fg }};">{{ t.mobile }}</button>
+  </div></div></sc-if>
+<div style="position:relative; width:{{ L.frameW }}; height:{{ L.frameH }}; border-radius:{{ L.frameR }}; background:#F5F0E6; display:flex; flex-direction:column; overflow:hidden; box-shadow:{{ L.frameShadow }};">
+
+<header style="display:flex; align-items:center; gap:{{ L.barGap }}; padding:0 {{ L.barPad }}; height:64px; background:#FFFDF8; border-bottom:1px solid #E6DDCB; flex-shrink:0;">
+  <button onClick="{{ goLanding }}" aria-label="Croptions" style="display:flex; align-items:center; gap:10px; background:none; border:0; padding:4px; cursor:pointer; color:#1E2A22; border-radius:10px;" style-focus="outline:3px solid #2B78B0; outline-offset:2px;">
+    <span style="width:30px; height:30px; border-radius:9px; background:#1E5B3F; display:grid; place-items:center;"><span style="width:12px; height:12px; border-radius:50%; background:#EBDDBF;"></span></span>
+    <span style="font-weight:700; font-size:18px; letter-spacing:-0.01em;">{{ t.brand }}</span>
+  </button>
+  <sc-if value="{{ navInline }}" hint-placeholder-val="{{ true }}">
+    <nav style="display:flex; gap:4px; margin-inline-start:16px;">
+      <sc-for list="{{ nav }}" as="n" hint-placeholder-count="4">
+        <button onClick="{{ n.go }}" aria-current="{{ n.current }}" style="height:38px; padding:0 14px; border-radius:10px; border:0; cursor:pointer; font-size:15px; font-weight:500; white-space:nowrap; background:{{ n.bg }}; color:{{ n.fg }};" style-focus="outline:3px solid #2B78B0; outline-offset:1px;">{{ n.label }}</button>
+      </sc-for>
+    </nav>
+  </sc-if>
+  <div style="flex:1;"></div>
+  <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}"><div role="group" aria-label="{{ t.viewport }}" style="display:flex; background:#EFE8DA; border-radius:10px; padding:3px; gap:2px;">
+    <button onClick="{{ setDesktop }}" style="height:30px; padding:0 10px; border:0; border-radius:8px; font-size:13px; cursor:pointer; background:{{ vD.bg }}; color:{{ vD.fg }};">{{ t.desktop }}</button>
+    <button onClick="{{ setMobile }}" style="height:30px; padding:0 10px; border:0; border-radius:8px; font-size:13px; cursor:pointer; background:{{ vM.bg }}; color:{{ vM.fg }};">{{ t.mobile }}</button>
+  </div></sc-if>
+  <div role="group" aria-label="Language / اللغة" style="display:flex; background:#EFE8DA; border-radius:10px; padding:3px; gap:2px;">
+    <button onClick="{{ setEn }}" lang="en" style="height:32px; padding:0 12px; border:0; border-radius:8px; font-size:14px; font-weight:500; cursor:pointer; background:{{ lEn.bg }}; color:{{ lEn.fg }};" style-focus="outline:3px solid #2B78B0;">English</button>
+    <button onClick="{{ setAr }}" lang="ar" style="height:32px; padding:0 12px; border:0; border-radius:8px; font-size:14px; font-weight:500; cursor:pointer; font-family:'IBM Plex Sans Arabic',sans-serif; background:{{ lAr.bg }}; color:{{ lAr.fg }};" style-focus="outline:3px solid #2B78B0;">العربية</button>
+  </div>
+</header>
+<sc-if value="{{ navStrip }}" hint-placeholder-val="{{ false }}">
+  <nav style="display:flex; gap:4px; padding:8px 12px; background:#FFFDF8; border-bottom:1px solid #E6DDCB; overflow-x:auto; flex-shrink:0;">
+    <sc-for list="{{ nav }}" as="n" hint-placeholder-count="4">
+      <button onClick="{{ n.go }}" style="flex-shrink:0; height:36px; padding:0 12px; border-radius:10px; border:0; font-size:14px; font-weight:500; background:{{ n.bg }}; color:{{ n.fg }};">{{ n.label }}</button>
+    </sc-for>
+  </nav>
+</sc-if>
+
+<sc-if value="{{ offline }}" hint-placeholder-val="{{ false }}">
+  <div role="status" style="flex-shrink:0; display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px {{ L.barPad }}; background:#FBF1CF; border-bottom:1px solid #EBD58D; color:#5C4600; font-size:14px;"><span aria-hidden="true" style="width:18px; height:18px; border-radius:5px; background:#C99A12; color:#FFFDF8; display:grid; place-items:center; font-size:11px; font-weight:700;">!</span><strong>{{ t.off_title }}</strong><span>{{ t.off_sub }}</span></div>
+</sc-if>
+<main ref="{{ scrollRef }}" style="flex:1; overflow-y:auto; overflow-x:hidden; position:relative; z-index:0; isolation:isolate;">
+
+<sc-if value="{{ scr.results }}" hint-placeholder-val="{{ true }}">
+<div data-screen-label="Results" style="max-width:1360px; margin:0 auto; padding:{{ L.pad }}; display:flex; flex-direction:column; gap:{{ L.gap }};">
+
+  <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:16px;">
+    <div style="display:flex; flex-direction:column; gap:2px;">
+      <div style="font-size:14px; color:#5E6558;">{{ t.results_for }}</div>
+      <h2 style="margin:0; font-size:22px; font-weight:600;">{{ t.site_a }}</h2>
+      <div dir="ltr" style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#5E6558; text-align:start; unicode-bidi:isolate;">25.69° N, 51.50° E</div>
+    </div>
+    <div style="display:flex; flex-wrap:wrap; gap:8px;">
+      <button onClick="{{ exportPdf }}" style="height:44px; padding:0 16px; border-radius:12px; border:1px solid #CFC3AA; background:#FFFDF8; color:#1E2A22; font-size:15px; font-weight:500; cursor:pointer;" style-hover="background:#F7F1E4;" style-focus="outline:3px solid #2B78B0; outline-offset:2px;">{{ t.export_pdf }}</button>
+      <button onClick="{{ share }}" style="height:44px; padding:0 16px; border-radius:12px; border:1px solid #CFC3AA; background:#FFFDF8; color:#1E2A22; font-size:15px; font-weight:500; cursor:pointer;" style-hover="background:#F7F1E4;" style-focus="outline:3px solid #2B78B0; outline-offset:2px;">{{ t.share }}</button>
+      <button onClick="{{ goCompare }}" style="height:44px; padding:0 16px; border-radius:12px; border:0; background:#1E5B3F; color:#FFFDF8; font-size:15px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:8px;" style-hover="background:#174A33;" style-focus="outline:3px solid #2B78B0; outline-offset:2px;">{{ t.compare_other }} <span aria-hidden="true">{{ arrow }}</span></button>
+    </div>
+  </div>
+
+  <section aria-labelledby="verdict" style="background:#1E5B3F; color:#FFFDF8; border-radius:24px; padding:{{ L.cardPadLg }}; display:flex; flex-direction:column; gap:18px; box-shadow:0 12px 32px -16px rgba(20,50,35,.45);">
+    <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px;">
+      <span style="font-size:14px; font-weight:500; color:#CFE0D3;">{{ t.recommendation }}</span>
+      <span title="{{ t.verified_tip }}" style="display:inline-flex; align-items:center; gap:6px; background:#EBDDBF; color:#1E3B2B; font-size:13px; font-weight:600; padding:3px 10px 3px 6px; border-radius:999px;">
+        <span aria-hidden="true" style="width:16px; height:16px; border-radius:50%; background:#1E5B3F; color:#EBDDBF; display:grid; place-items:center; font-size:10px;">✓</span>{{ t.verified }}
+      </span>
+    </div>
+    <h1 id="verdict" style="margin:0; font-size:{{ L.verdictSize }}; line-height:1.2; font-weight:600; letter-spacing:-0.015em; text-wrap:balance; max-width:22em;">{{ t.verdict }} <span style="color:#EBDDBF;">{{ t.verdict_pay }}</span></h1>
+    <div style="font-size:15px; color:#CFE0D3;">{{ t.run_summary }}</div>
+    <div style="display:flex; flex-wrap:wrap; gap:8px;">
+      <button onClick="{{ askWhy }}" style="height:44px; padding:0 16px; border-radius:12px; border:0; background:#FFFDF8; color:#1E5B3F; font-size:15px; font-weight:600; cursor:pointer;" style-focus="outline:3px solid #9CC9EA; outline-offset:2px;">{{ t.ask_why }}</button>
+      <button onClick="{{ scrollToTable }}" style="height:44px; padding:0 16px; border-radius:12px; border:1px solid rgba(255,253,248,.35); background:transparent; color:#FFFDF8; font-size:15px; font-weight:500; cursor:pointer;" style-hover="background:rgba(255,253,248,.08);" style-focus="outline:3px solid #9CC9EA; outline-offset:2px;">{{ t.see_setups }}</button>
+    </div>
+  </section>
+
+  <section aria-label="{{ t.key_numbers }}" style="display:grid; grid-template-columns:{{ L.kpiCols }}; gap:12px;">
+    <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="6">
+      <div id="{{ k.id }}" style="background:#FFFDF8; border-radius:16px; padding:16px 18px; display:flex; flex-direction:column; gap:6px; box-shadow:0 1px 2px rgba(60,45,20,.06),0 6px 18px -10px rgba(60,45,20,.18); outline:{{ k.ring }}; outline-offset:2px; transition:outline-color .3s;">
+        <div style="font-size:14px; color:#5E6558;">{{ k.label }}</div>
+        <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
+          <div style="height:32px; width:70%; border-radius:8px; background:#ECE4D4; animation:cr-pulse 1.2s ease-in-out infinite;"></div>
+          <div style="height:12px; width:90%; border-radius:6px; background:#F1EADD; animation:cr-pulse 1.2s ease-in-out infinite;"></div>
+        </sc-if>
+        <sc-if value="{{ notLoading }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex; align-items:baseline; gap:6px; flex-wrap:wrap;">
+            <span dir="ltr" style="font-size:28px; font-weight:600; letter-spacing:-0.02em; color:{{ k.color }}; font-variant-numeric:tabular-nums;">{{ k.value }}</span>
+            <span style="font-size:14px; color:#5E6558; font-weight:500;">{{ k.unit }}</span>
+          </div>
+          <div style="font-size:13px; color:#5E6558; line-height:1.4;">{{ k.note }}</div>
+        </sc-if>
+      </div>
+    </sc-for>
+  </section>
+
+  <section id="calendar" aria-labelledby="calh" style="background:#FFFDF8; border-radius:20px; padding:{{ L.cardPad }}; display:flex; flex-direction:column; gap:16px; box-shadow:0 1px 2px rgba(60,45,20,.06),0 6px 18px -10px rgba(60,45,20,.18);">
+    <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-end; gap:12px;">
+      <div>
+        <h3 id="calh" style="margin:0; font-size:18px; font-weight:600;">{{ t.cal_title }}</h3>
+        <div style="font-size:14px; color:#5E6558;">{{ t.cal_sub }}</div>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:14px;">
+        <sc-for list="{{ legend }}" as="g" hint-placeholder-count="3">
+          <span style="display:inline-flex; align-items:center; gap:6px; font-size:14px;">
+            <span aria-hidden="true" style="width:22px; height:22px; border-radius:6px; background:{{ g.bg }}; color:{{ g.fg }}; display:grid; place-items:center; font-size:12px; font-weight:700;">{{ g.icon }}</span>{{ g.label }}
+          </span>
+        </sc-for>
+      </div>
+    </div>
+    <div style="overflow-x:auto; margin:0 -4px; padding:0 4px 4px;">
+      <div role="table" aria-label="{{ t.cal_title }}" style="display:grid; grid-template-columns:{{ L.calFirst }} repeat(12,minmax(44px,1fr)); gap:4px; min-width:{{ L.calMin }};">
+        <div role="columnheader"></div>
+        <sc-for list="{{ months }}" as="mo" hint-placeholder-count="12">
+          <div role="columnheader" style="font-size:12px; color:#5E6558; text-align:center; padding-bottom:4px; white-space:nowrap;">{{ mo }}</div>
+        </sc-for>
+        <sc-for list="{{ calendar }}" as="row" hint-placeholder-count="5">
+          <div role="rowheader" style="font-size:14px; font-weight:500; display:flex; align-items:center; gap:6px;">{{ row.name }}<sc-if value="{{ row.rec }}" hint-placeholder-val="{{ false }}"><span style="font-size:11px; font-weight:600; color:#1E5B3F; background:#E3EDE5; padding:1px 6px; border-radius:6px;">{{ t.chosen }}</span></sc-if></div>
+          <sc-for list="{{ row.cells }}" as="c" hint-placeholder-count="12">
+            <div role="cell" title="{{ c.tip }}" aria-label="{{ c.tip }}" style="height:36px; border-radius:8px; background:{{ c.bg }}; color:{{ c.fg }}; display:grid; place-items:center; font-size:13px; font-weight:700;">{{ c.icon }}</div>
+          </sc-for>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section id="setups" ref="{{ tableRef }}" aria-labelledby="seth" style="background:#FFFDF8; border-radius:20px; padding:{{ L.cardPad }}; display:flex; flex-direction:column; gap:16px; box-shadow:0 1px 2px rgba(60,45,20,.06),0 6px 18px -10px rgba(60,45,20,.18);">
+    <div>
+      <h3 id="seth" style="margin:0; font-size:18px; font-weight:600;">{{ t.cmp_title }}</h3>
+      <div style="font-size:14px; color:#5E6558;">{{ t.cmp_sub }}</div>
+    </div>
+    <div style="overflow-x:auto;">
+      <div role="table" aria-label="{{ t.cmp_title }}" style="min-width:{{ L.tableMin }}; font-size:15px; display:flex; flex-direction:column; gap:4px;">
+        <div role="row" style="display:grid; grid-template-columns:minmax(230px,1.6fr) repeat(6,minmax(100px,1fr)); border-bottom:1px solid #E6DDCB;">
+          <sc-for list="{{ cols }}" as="col" hint-placeholder-count="7">
+            <div role="columnheader" style="text-align:start; font-size:13px; font-weight:500; color:#5E6558; padding:8px 12px;">{{ col }}</div>
+          </sc-for>
+        </div>
+        <sc-for list="{{ setups }}" as="s" hint-placeholder-count="4">
+          <div role="row" style="display:grid; grid-template-columns:minmax(230px,1.6fr) repeat(6,minmax(100px,1fr)); background:{{ s.rowBg }}; border-radius:12px; border:{{ s.border }};">
+            <div role="rowheader" style="padding:14px 12px; font-weight:600;">
+              <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <span aria-hidden="true" style="width:18px; height:0; border-top:3px {{ s.dashCss }} {{ s.color }};"></span>{{ s.name }}
+                <sc-if value="{{ s.rec }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px; font-weight:600; color:#FFFDF8; background:#1E5B3F; padding:2px 8px; border-radius:999px;">{{ t.recommended }}</span></sc-if>
+              </div>
+              <sc-if value="{{ s.warn }}" hint-placeholder-val="{{ false }}">
+                <div style="display:inline-flex; align-items:center; gap:6px; margin-top:6px; font-size:13px; font-weight:600; color:#7A3A00; background:#FBE3CC; padding:3px 10px 3px 6px; border-radius:8px;"><span aria-hidden="true" style="width:16px; height:16px; border-radius:4px; background:#E0782A; color:#FFFDF8; display:grid; place-items:center; font-size:11px;">!</span>{{ t.fails_humid }}</div>
+              </sc-if>
+            </div>
+            <div role="cell" style="padding:14px 12px; font-variant-numeric:tabular-nums; display:flex; align-items:center; gap:4px;"><span dir="ltr">{{ s.months }}</span> {{ t.of12 }}</div>
+            <div role="cell" style="padding:14px 12px; font-variant-numeric:tabular-nums; display:flex; align-items:center; gap:8px;"><span dir="ltr" style="min-width:40px;">{{ s.cov }} %</span><span style="flex:1; min-width:40px; height:6px; border-radius:3px; background:#EFE8DA; overflow:hidden;"><span style="display:block; height:100%; width:{{ s.covW }}; background:{{ s.covColor }};"></span></span></div>
+            <div role="cell" style="padding:14px 12px; font-variant-numeric:tabular-nums; display:flex; align-items:center; gap:4px;"><span dir="ltr">{{ s.cost }}</span> {{ t.qar }}</div>
+            <div role="cell" style="padding:14px 12px; font-variant-numeric:tabular-nums; display:flex; align-items:center; gap:4px;"><span dir="ltr">{{ s.profit }}</span> {{ t.qar }}</div>
+            <div role="cell" style="padding:14px 12px; font-variant-numeric:tabular-nums; display:flex; align-items:center; gap:4px;"><span dir="ltr">{{ s.payback }}</span> {{ t.years }}</div>
+            <div role="cell" style="padding:14px 12px; font-variant-numeric:tabular-nums; display:flex; align-items:center; gap:4px; font-weight:600;"><span dir="ltr">{{ s.p10 }}</span> {{ t.qar }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section id="chart-temp" aria-labelledby="tmph" style="background:#FFFDF8; border-radius:20px; padding:{{ L.cardPad }}; display:flex; flex-direction:column; gap:12px; box-shadow:0 1px 2px rgba(60,45,20,.06),0 6px 18px -10px rgba(60,45,20,.18); outline:{{ ringTemp }}; outline-offset:2px;">
+    <div style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:12px; align-items:flex-end;">
+      <div>
+        <h3 id="tmph" style="margin:0; font-size:18px; font-weight:600;">{{ t.temp_title }}</h3>
+        <div style="font-size:14px; color:#5E6558;">{{ t.temp_sub }}</div>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:14px;">
+        <sc-for list="{{ lineLegend }}" as="g" hint-placeholder-count="5">
+          <span style="display:inline-flex; align-items:center; gap:6px; font-size:13px;"><span aria-hidden="true" style="width:22px; height:0; border-top:{{ g.w }} {{ g.dashCss }} {{ g.color }};"></span>{{ g.label }}</span>
+        </sc-for>
+      </div>
+    </div>
+    <svg viewBox="{{ tc.vb }}" role="img" aria-label="{{ t.temp_sr }}" style="width:100%; height:auto; display:block;">
+      <sc-for list="{{ tc.grid }}" as="gl" hint-placeholder-count="0"><line x1="{{ gl.x1 }}" x2="{{ gl.x2 }}" y1="{{ gl.y }}" y2="{{ gl.y }}" stroke="#EFE8DA" stroke-width="1"></line><text x="{{ gl.tx }}" y="{{ gl.ty }}" text-anchor="{{ gl.anchor }}" font-size="12" fill="#5E6558" font-family="IBM Plex Sans">{{ gl.label }}</text></sc-for>
+      <rect x="{{ tc.band.x }}" y="{{ tc.band.y }}" width="{{ tc.band.w }}" height="{{ tc.band.h }}" fill="#F6D9D4" opacity="0.5"></rect>
+      <line x1="{{ tc.limit.x1 }}" x2="{{ tc.limit.x2 }}" y1="{{ tc.limit.y }}" y2="{{ tc.limit.y }}" stroke="#B3261E" stroke-width="1.5" stroke-dasharray="6 4"></line>
+      <text x="{{ tc.limit.tx }}" y="{{ tc.limit.ty }}" text-anchor="{{ tc.limit.anchor }}" font-size="12" font-weight="600" fill="#9E2A1F" font-family="IBM Plex Sans, IBM Plex Sans Arabic">{{ t.limit_label }}</text>
+      <sc-for list="{{ tc.lines }}" as="ln" hint-placeholder-count="0"><path d="{{ ln.d }}" fill="none" stroke="{{ ln.color }}" stroke-width="{{ ln.sw }}" stroke-dasharray="{{ ln.dash }}" stroke-linecap="round" stroke-linejoin="round"></path></sc-for>
+      <sc-for list="{{ tc.xl }}" as="xl" hint-placeholder-count="0"><text x="{{ xl.x }}" y="{{ xl.y }}" text-anchor="middle" font-size="12" fill="#5E6558" font-family="IBM Plex Sans, IBM Plex Sans Arabic">{{ xl.label }}</text></sc-for>
+    </svg>
+    <p style="margin:0; font-size:14px; color:#5E6558;">{{ t.temp_sr }}</p>
+  </section>
+
+  <div style="display:grid; grid-template-columns:{{ L.chartCols }}; gap:{{ L.gap }};">
+    <section id="chart-solar" aria-labelledby="solh" style="background:#FFFDF8; border-radius:20px; padding:{{ L.cardPad }}; display:flex; flex-direction:column; gap:12px; box-shadow:0 1px 2px rgba(60,45,20,.06),0 6px 18px -10px rgba(60,45,20,.18); outline:{{ ringSolar }}; outline-offset:2px;">
+      <div>
+        <h3 id="solh" style="margin:0; font-size:18px; font-weight:600;">{{ t.solar_title }}</h3>
+        <div style="font-size:14px; color:#5E6558;">{{ t.solar_sub }}</div>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:14px;">
+        <span style="display:inline-flex; align-items:center; gap:6px; font-size:13px;"><span aria-hidden="true" style="width:14px; height:14px; border-radius:4px; background:#F4DC8C; border:2px solid #C99A12;"></span>{{ t.solar_prod }}</span>
+        <span style="display:inline-flex; align-items:center; gap:6px; font-size:13px;"><span aria-hidden="true" style="width:22px; height:0; border-top:3px dashed #2B78B0;"></span>{{ t.cool_need }}</span>
+      </div>
+      <svg viewBox="{{ sc.vb }}" role="img" aria-label="{{ t.solar_sr }}" style="width:100%; height:auto; display:block;">
+        <sc-for list="{{ sc.grid }}" as="gl" hint-placeholder-count="0"><line x1="{{ gl.x1 }}" x2="{{ gl.x2 }}" y1="{{ gl.y }}" y2="{{ gl.y }}" stroke="#EFE8DA"></line><text x="{{ gl.tx }}" y="{{ gl.ty }}" text-anchor="{{ gl.anchor }}" font-size="12" fill="#5E6558" font-family="IBM Plex Sans">{{ gl.label }}</text></sc-for>
+        <path d="{{ sc.area }}" fill="#F4DC8C" opacity="0.75"></path>
+        <path d="{{ sc.solar }}" fill="none" stroke="#C99A12" stroke-width="2.5"></path>
+        <path d="{{ sc.cool }}" fill="none" stroke="#2B78B0" stroke-width="3" stroke-dasharray="7 5" stroke-linecap="round"></path>
+        <sc-for list="{{ sc.xl }}" as="xl" hint-placeholder-count="0"><text x="{{ xl.x }}" y="{{ xl.y }}" text-anchor="middle" font-size="12" fill="#5E6558" font-family="IBM Plex Sans">{{ xl.label }}</text></sc-for>
+      </svg>
+      <p style="margin:0; font-size:16px; font-weight:600; color:#1E5B3F;">{{ t.solar_caption }}</p>
+    </section>
+
+    <section id="chart-profit" aria-labelledby="proh" style="background:#FFFDF8; border-radius:20px; padding:{{ L.cardPad }}; display:flex; flex-direction:column; gap:12px; box-shadow:0 1px 2px rgba(60,45,20,.06),0 6px 18px -10px rgba(60,45,20,.18); outline:{{ ringProfit }}; outline-offset:2px;">
+      <div>
+        <h3 id="proh" style="margin:0; font-size:18px; font-weight:600;">{{ t.profit_title }}</h3>
+        <div style="font-size:14px; color:#5E6558;">{{ t.profit_sub }}</div>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:14px;">
+        <sc-for list="{{ setupLegend }}" as="g" hint-placeholder-count="4">
+          <span style="display:inline-flex; align-items:center; gap:6px; font-size:13px;"><span aria-hidden="true" style="width:22px; height:0; border-top:{{ g.w }} {{ g.dashCss }} {{ g.color }};"></span>{{ g.label }}</span>
+        </sc-for>
+      </div>
+      <svg viewBox="{{ pc.vb }}" role="img" aria-label="{{ t.profit_sr }}" style="width:100%; height:auto; display:block;">
+        <sc-for list="{{ pc.grid }}" as="gl" hint-placeholder-count="0"><line x1="{{ gl.x1 }}" x2="{{ gl.x2 }}" y1="{{ gl.y }}" y2="{{ gl.y }}" stroke="{{ gl.stroke }}" stroke-width="{{ gl.sw }}"></line><text x="{{ gl.tx }}" y="{{ gl.ty }}" text-anchor="{{ gl.anchor }}" font-size="12" fill="#5E6558" font-family="IBM Plex Sans">{{ gl.label }}</text></sc-for>
+        <sc-for list="{{ pc.lines }}" as="ln" hint-placeholder-count="0"><path d="{{ ln.d }}" fill="none" stroke="{{ ln.color }}" stroke-width="{{ ln.sw }}" stroke-dasharray="{{ ln.dash }}" stroke-linecap="round"></path></sc-for>
+        <circle cx="{{ pc.pb.x }}" cy="{{ pc.pb.y }}" r="6" fill="#FFFDF8" stroke="#1E5B3F" stroke-width="3"></circle>
+        <text x="{{ pc.pb.x }}" y="{{ pc.pb.ty }}" text-anchor="middle" font-size="12" font-weight="600" fill="#1E5B3F" font-family="IBM Plex Sans, IBM Plex Sans Arabic">{{ t.payback_point }}</text>
+        <sc-for list="{{ pc.xl }}" as="xl" hint-placeholder-count="0"><text x="{{ xl.x }}" y="{{ xl.y }}" text-anchor="middle" font-size="12" fill="#5E6558" font-family="IBM Plex Sans">{{ xl.label }}</text></sc-for>
+      </svg>
+      <p style="margin:0; font-size:14px; color:#5E6558;">{{ t.profit_sr }}</p>
+    </section>
+  </div>
+
+  <div style="display:grid; grid-template-columns:{{ L.chartCols }}; gap:{{ L.gap }}; align-items:start;">
+    <section style="background:#FFFDF8; border-radius:20px; box-shadow:0 1px 2px rgba(60,45,20,.06),0 6px 18px -10px rgba(60,45,20,.18);">
+      <button onClick="{{ toggleAssum }}" aria-expanded="{{ assumOpen }}" style="width:100%; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:{{ L.cardPad }}; background:none; border:0; cursor:pointer; text-align:start; color:#1E2A22; border-radius:20px;" style-focus="outline:3px solid #2B78B0;">
+        <span><span style="display:block; font-size:18px; font-weight:600;">{{ t.assumptions }}</span><span style="display:block; font-size:14px; color:#5E6558;">{{ t.assum_sub }}</span></span>
+        <span aria-hidden="true" style="width:32px; height:32px; border-radius:10px; background:#EFE8DA; display:grid; place-items:center; transform:{{ assumRot }}; transition:transform .2s;">⌄</span>
+      </button>
+      <sc-if value="{{ assumOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:0 {{ L.cardPadX }} {{ L.cardPadX }}; display:flex; flex-direction:column; gap:14px;">
+          <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px;">
+            <sc-for list="{{ assum }}" as="a" hint-placeholder-count="5">
+              <label style="display:flex; flex-direction:column; gap:6px; font-size:14px; color:#3D463C;">{{ a.label }}
+                <span style="display:flex; align-items:center; border:1px solid #CFC3AA; border-radius:10px; background:#FFFFFF; height:44px; padding:0 12px; gap:8px;">
+                  <input type="number" step="any" value="{{ a.value }}" onChange="{{ a.onChange }}" dir="ltr" style="flex:1; min-width:0; border:0; outline:0; font-size:15px; background:transparent; color:#1E2A22; text-align:start;">
+                  <span style="font-size:13px; color:#5E6558; white-space:nowrap;">{{ a.unit }}</span>
+                </span>
+              </label>
+            </sc-for>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button onClick="{{ recalc }}" style="height:44px; padding:0 18px; border-radius:12px; border:0; background:#1E5B3F; color:#FFFDF8; font-size:15px; font-weight:600; cursor:pointer;" style-hover="background:#174A33;" style-focus="outline:3px solid #2B78B0; outline-offset:2px;">{{ t.recalc }}</button>
+            <button onClick="{{ goSettings }}" style="height:44px; padding:0 14px; border-radius:12px; border:0; background:transparent; color:#1E5B3F; font-size:15px; font-weight:500; cursor:pointer;" style-hover="background:#EEF4EE;">{{ t.all_assum }}</button>
+          </div>
+        </div>
+      </sc-if>
+    </section>
+
+    <section style="background:#FFFDF8; border-radius:20px; box-shadow:0 1px 2px rgba(60,45,20,.06),0 6px 18px -10px rgba(60,45,20,.18);">
+      <button onClick="{{ toggleSrc }}" aria-expanded="{{ srcOpen }}" style="width:100%; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:{{ L.cardPad }}; background:none; border:0; cursor:pointer; text-align:start; color:#1E2A22; border-radius:20px;" style-focus="outline:3px solid #2B78B0;">
+        <span><span style="display:block; font-size:18px; font-weight:600;">{{ t.sources }}</span><span style="display:block; font-size:14px; color:#5E6558;">{{ t.sources_sub }}</span></span>
+        <span aria-hidden="true" style="width:32px; height:32px; border-radius:10px; background:#EFE8DA; display:grid; place-items:center; transform:{{ srcRot }}; transition:transform .2s;">⌄</span>
+      </button>
+      <sc-if value="{{ srcOpen }}" hint-placeholder-val="{{ true }}">
+        <ul style="list-style:none; margin:0; padding:0 {{ L.cardPadX }} {{ L.cardPadX }}; display:flex; flex-direction:column;">
+          <sc-for list="{{ sources }}" as="src" hint-placeholder-count="4">
+            <li style="display:flex; justify-content:space-between; gap:12px; padding:12px 0; border-top:1px solid #EFE8DA; flex-wrap:wrap;">
+              <span><a href="{{ src.url }}" target="_blank" rel="noopener" style="font-weight:600;">{{ src.name }}</a><span style="display:block; font-size:14px; color:#5E6558;">{{ src.desc }}</span></span>
+              <span style="font-size:13px; color:#5E6558; white-space:nowrap;">{{ t.fetched }} <span dir="ltr">25 Sep 2026</span></span>
+            </li>
+          </sc-for>
+        </ul>
+      </sc-if>
+    </section>
+  </div>
+  <div style="height:72px;"></div>
+</div>
+</sc-if>
+
+<sc-if value="{{ scr.landing }}" hint-placeholder-val="{{ false }}">
+<div data-screen-label="Landing" style="display:flex; flex-direction:column; min-height:100%;">
+  <section style="max-width:1280px; width:100%; margin:0 auto; padding:{{ L.heroPad }}; display:grid; grid-template-columns:{{ L.heroCols }}; gap:{{ L.heroGap }}; align-items:center;">
+    <div style="display:flex; flex-direction:column; gap:24px;">
+      <span style="align-self:flex-start; font-size:14px; font-weight:500; color:#1E5B3F; background:#E3EDE5; padding:4px 12px; border-radius:999px;">{{ t.l_eyebrow }}</span>
+      <h1 style="margin:0; font-size:{{ L.heroSize }}; line-height:1.08; font-weight:600; letter-spacing:-0.025em; text-wrap:balance;">{{ t.l_hero }}</h1>
+      <p style="margin:0; font-size:18px; color:#4A5247; max-width:34em; text-wrap:pretty;">{{ t.l_sub }}</p>
+      <div style="display:flex; flex-wrap:wrap; gap:10px;">
+        <button onClick="{{ goSetup }}" style="height:52px; padding:0 24px; border-radius:14px; border:0; background:#1E5B3F; color:#FFFDF8; font-size:16px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:10px;" style-hover="background:#174A33;" style-focus="outline:3px solid #2B78B0; outline-offset:2px;">{{ t.l_plan }} <span aria-hidden="true">{{ arrow }}</span></button>
+        <button onClick="{{ goDemo }}" style="height:52px; padding:0 22px; border-radius:14px; border:1px solid #CFC3AA; background:#FFFDF8; color:#1E2A22; font-size:16px; font-weight:500; cursor:pointer;" style-hover="background:#F7F1E4;" style-focus="outline:3px solid #2B78B0; outline-offset:2px;">{{ t.l_demo }}</button>
+      </div>
+    </div>
+    <div aria-hidden="true" style="aspect-ratio:4/3.4; border-radius:28px; background:repeating-linear-gradient(135deg,#E8DFCC 0 10px,#EFE8DA 10px 20px); display:flex; align-items:flex-end; padding:18px; box-shadow:0 20px 50px -30px rgba(60,45,20,.5);">
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#6F6652; background:#FFFDF8; padding:4px 10px; border-radius:8px;" dir="ltr">photo: greenhouse on desert site, early light</span>
+    </div>
+  </section>
+  <section style="max-width:1280px; width:100%; margin:0 auto; padding:0 {{ L.padX }} 64px; display:grid; grid-template-columns:{{ L.valueCols }}; gap:16px;">
+    <sc-for list="{{ values }}" as="v" hint-placeholder-count="3">
+      <div style="background:#FFFDF8; border-radius:20px; padding:24px; display:flex; flex-direction:column; gap:10px; box-shadow:0 1px 2px rgba(60,45,20,.06),0 6px 18px -10px rgba(60,45,20,.18);">
+        <span aria-hidden="true" style="width:40px; height:40px; border-radius:12px; background:{{ v.bg }}; display:grid; place-items:center;"><span style="width:14px; height:14px; border-radius:{{ v.shape }}; background:{{ v.fg }};"></span></span>
+        <h3 style="margin:0; font-size:19px; font-weight:600;">{{ v.title }}</h3>
+        <p style="margin:0; font-size:15px; color:#4A5247; text-wrap:pretty;">{{ v.text }}</p>
+      </div>
+    </sc-for>
+  </section>
+  <footer style="margin-top:auto; border-top:1px solid #E6DDCB; background:#FFFDF8;">
+    <div style="max-width:1280px; margin:0 auto; padding:24px {{ L.padX }}; display:flex; flex-wrap:wrap; align-items:center; gap:16px 28px; font-size:14px; color:#4A5247;">
+      <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid #CFC3AA; border-radius:999px; padding:4px 12px; font-weight:600; color:#1E2A22;"><span aria-hidden="true" style="width:8px; height:8px; border-radius:50%; background:#1E5B3F;"></span>{{ t.l_oss }}</span>
+      <span>{{ t.l_data }} <span dir="ltr">NASA POWER · Open-Meteo · FAO</span></span>
+      <a href="https://github.com" target="_blank" rel="noopener" style="font-weight:600;">GitHub</a>
+      <a href="Croptions Design System.dc.html" style="font-weight:600;">{{ t.ds_link }}</a>
+      <span style="margin-inline-start:auto;">© 2026 {{ t.brand }}</span>
+    </div>
+  </footer>
+</div>
+</sc-if>
+
+<sc-if value="{{ scr.setup }}" hint-placeholder-val="{{ false }}">
+<div data-screen-label="Plan setup" style="height:{{ L.setupH }}; display:flex; flex-direction:{{ L.setupDir }};">
+  <aside style="width:{{ L.panelW }}; flex-shrink:0; background:#FFFDF8; border-inline-end:1px solid #E6DDCB; overflow-y:auto; padding:24px; display:flex; flex-direction:column; gap:20px; order:{{ L.panelOrder }};">
+    <div>
+      <h2 style="margin:0; font-size:22px; font-weight:600;">{{ t.p_title }}</h2>
+      <p style="margin:4px 0 0; font-size:15px; color:#5E6558;">{{ t.p_sub }}</p>
+    </div>
+    <div style="border-radius:14px; padding:12px 14px; background:{{ pinBox.bg }}; border:1px solid {{ pinBox.border }}; display:flex; gap:10px; align-items:flex-start;">
+      <span aria-hidden="true" style="width:20px; height:20px; flex-shrink:0; border-radius:50% 50% 50% 0; transform:rotate(-45deg); background:{{ pinBox.dot }}; margin-top:2px;"></span>
+      <div style="min-width:0;">
+        <div style="font-size:14px; font-weight:600;">{{ pinBox.title }}</div>
+        <div dir="ltr" style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#5E6558; text-align:start;">{{ pinBox.coords }}</div>
+        <sc-if value="{{ pinBox.err }}" hint-placeholder-val="{{ false }}"><div role="alert" style="font-size:14px; color:#9E2A1F; margin-top:4px; display:flex; gap:6px;"><span aria-hidden="true" style="font-weight:700;">✕</span>{{ t.p_outside }}</div></sc-if>
+      </div>
+    </div>
+    <label style="display:flex; flex-direction:column; gap:6px; font-size:14px; font-weight:500;">{{ t.p_size }}
+      <span style="display:flex; align-items:center; border:1px solid #CFC3AA; border-radius:12px; background:#FFFFFF; height:48px; padding:0 14px; gap:8px;"><input type="number" value="{{ form.size }}" onChange="{{ setSize }}" dir="ltr" style="flex:1; min-width:0; border:0; outline:0; font-size:16px; background:transparent; text-align:start;"><span style="font-size:14px; color:#5E6558;">{{ t.m2 }}</span></span>
+    </label>
+    <label style="display:flex; flex-direction:column; gap:6px; font-size:14px; font-weight:500;">{{ t.p_budget }}
+      <span style="display:flex; align-items:center; border:1px solid #CFC3AA; border-radius:12px; background:#FFFFFF; height:48px; padding:0 14px; gap:8px;"><input type="number" value="{{ form.budget }}" onChange="{{ setBudget }}" dir="ltr" style="flex:1; min-width:0; border:0; outline:0; font-size:16px; background:transparent; text-align:start;"><span style="font-size:14px; color:#5E6558;">{{ t.qar }}</span></span>
+    </label>
+    <div style="display:flex; flex-direction:column; gap:6px; position:relative;">
+      <label for="cropq" style="font-size:14px; font-weight:500;">{{ t.p_crop }} <span style="color:#5E6558; font-weight:400;">{{ t.optional }}</span></label>
+      <input id="cropq" value="{{ cropQ }}" onChange="{{ setCropQ }}" onFocus="{{ openCrop }}" placeholder="{{ t.p_crop_ph }}" autocomplete="off" style="height:48px; border:1px solid #CFC3AA; border-radius:12px; background:#FFFFFF; padding:0 14px; font-size:16px; outline:0; color:#1E2A22;" style-focus="border-color:#1E5B3F; box-shadow:0 0 0 3px rgba(43,120,176,.35);">
+      <sc-if value="{{ cropOpen }}" hint-placeholder-val="{{ false }}">
+        <div role="listbox" style="position:absolute; top:78px; inset-inline:0; z-index:5; background:#FFFDF8; border:1px solid #E6DDCB; border-radius:12px; box-shadow:0 12px 30px -12px rgba(60,45,20,.35); padding:6px; max-height:220px; overflow:auto;">
+          <sc-for list="{{ cropOpts }}" as="o" hint-placeholder-count="0">
+            <button role="option" onClick="{{ o.pick }}" style="width:100%; text-align:start; padding:10px 12px; border:0; background:transparent; border-radius:8px; font-size:15px; cursor:pointer; color:#1E2A22;" style-hover="background:#F2F7F2;">{{ o.label }}</button>
+          </sc-for>
+          <sc-if value="{{ cropNone }}" hint-placeholder-val="{{ false }}"><div style="padding:10px 12px; font-size:14px; color:#5E6558;">{{ t.p_nocrop }}</div></sc-if>
+        </div>
+      </sc-if>
+    </div>
+    <fieldset style="border:0; padding:0; margin:0; display:flex; flex-direction:column; gap:8px;">
+      <legend style="font-size:14px; font-weight:500; padding:0; margin-bottom:6px;">{{ t.p_priority }}</legend>
+      <sc-for list="{{ priorities }}" as="p" hint-placeholder-count="3">
+        <button role="radio" aria-checked="{{ p.on }}" onClick="{{ p.pick }}" style="display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:12px; border:{{ p.border }}; background:{{ p.bg }}; cursor:pointer; text-align:start; color:#1E2A22;" style-focus="outline:3px solid #2B78B0;">
+          <span aria-hidden="true" style="width:20px; height:20px; border-radius:50%; border:2px solid {{ p.ring }}; display:grid; place-items:center; flex-shrink:0;"><span style="width:10px; height:10px; border-radius:50%; background:{{ p.dot }};"></span></span>
+          <span><span style="display:block; font-size:15px; font-weight:600;">{{ p.label }}</span><span style="display:block; font-size:13px; color:#5E6558;">{{ p.note }}</span></span>
+        </button>
+      </sc-for>
+    </fieldset>
+    <button onClick="{{ analyse }}" disabled="{{ cantAnalyse }}" style="height:52px; border-radius:14px; border:0; background:{{ analyseBg }}; color:#FFFDF8; font-size:16px; font-weight:600; cursor:{{ analyseCursor }}; display:flex; align-items:center; justify-content:center; gap:10px; flex-shrink:0;" style-focus="outline:3px solid #2B78B0; outline-offset:2px;">{{ t.p_analyse }} <span aria-hidden="true">{{ arrow }}</span></button>
+    <sc-if value="{{ cantAnalyse }}" hint-placeholder-val="{{ true }}"><div style="font-size:13px; color:#5E6558; margin-top:-12px; text-align:center;">{{ t.p_need_pin }}</div></sc-if>
+  </aside>
+  <div style="flex:1; position:relative; min-height:{{ L.mapMin }}; order:{{ L.mapOrder }};">
+    <div ref="{{ mapRef }}" style="position:absolute; inset:0; background:#DCD3BF;"></div>
+    <div style="position:absolute; top:16px; inset-inline:16px; z-index:500; display:flex; gap:8px; align-items:flex-start; pointer-events:none;">
+      <div style="flex:1; max-width:420px; position:relative; pointer-events:auto;">
+        <input value="{{ placeQ }}" onChange="{{ setPlaceQ }}" placeholder="{{ t.p_search }}" aria-label="{{ t.p_search }}" style="width:100%; height:48px; border-radius:14px; border:1px solid #E6DDCB; background:#FFFDF8; padding:0 16px; font-size:16px; outline:0; box-shadow:0 8px 24px -12px rgba(0,0,0,.35); color:#1E2A22;" style-focus="box-shadow:0 0 0 3px rgba(43,120,176,.45);">
+        <sc-if value="{{ placeOpen }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:6px; background:#FFFDF8; border-radius:12px; border:1px solid #E6DDCB; padding:6px; box-shadow:0 12px 30px -12px rgba(0,0,0,.35);">
+            <sc-for list="{{ placeOpts }}" as="o" hint-placeholder-count="0">
+              <button onClick="{{ o.pick }}" style="width:100%; display:flex; justify-content:space-between; gap:12px; text-align:start; padding:10px 12px; border:0; background:transparent; border-radius:8px; font-size:15px; cursor:pointer; color:#1E2A22;" style-hover="background:#F2F7F2;"><span>{{ o.label }}</span><span dir="ltr" style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#5E6558;">{{ o.coords }}</span></button>
+            </sc-for>
+            <sc-if value="{{ placeNone }}" hint-placeholder-val="{{ false }}"><div style="padding:10px 12px; font-size:14px; color:#5E6558;">{{ t.p_noplace }}</div></sc-if>
+          </div>
+        </sc-if>
+      </div>
+      <div role="group" aria-label="{{ t.p_layer }}" style="display:flex; background:#FFFDF8; border-radius:12px; padding:4px; gap:2px; box-shadow:0 8px 24px -12px rgba(0,0,0,.35); pointer-events:auto; flex-shrink:0;">
+        <button onClick="{{ setSat }}" style="height:40px; padding:0 12px; border:0; border-radius:9px; font-size:14px; font-weight:500; cursor:pointer; background:{{ lySat.bg }}; color:{{ lySat.fg }};">{{ t.p_sat }}</button>
+        <button onClick="{{ setTer }}" style="height:40px; padding:0 12px; border:0; border-radius:9px; font-size:14px; font-weight:500; cursor:pointer; background:{{ lyTer.bg }}; color:{{ lyTer.fg }};">{{ t.p_ter }}</button>
+      </div>
+    </div>
+    <sc-if value="{{ noPin }}" hint-placeholder-val="{{ true }}">
+      <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:500; background:rgba(30,42,34,.88); color:#FFFDF8; padding:12px 18px; border-radius:14px; font-size:15px; display:flex; align-items:center; gap:10px; pointer-events:none; max-width:calc(100% - 32px);"><span aria-hidden="true" style="width:14px; height:14px; border-radius:50% 50% 50% 0; transform:rotate(-45deg); background:#EBDDBF; flex-shrink:0;"></span>{{ t.p_empty }}</div>
+    </sc-if>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ scr.analysis }}" hint-placeholder-val="{{ false }}">
+<div data-screen-label="Analysis" style="min-height:100%; display:grid; place-items:center; padding:{{ L.pad }};">
+  <div style="width:100%; max-width:620px; display:flex; flex-direction:column; gap:24px;">
+    <div style="display:flex; flex-direction:column; gap:6px;">
+      <span style="font-size:14px; color:#5E6558;">{{ t.a_for }} <span dir="ltr" style="font-family:'IBM Plex Mono',monospace;">{{ pinCoords }}</span></span>
+      <h2 style="margin:0; font-size:28px; font-weight:600; letter-spacing:-0.015em;">{{ t.a_title }}</h2>
+      <div style="height:6px; border-radius:3px; background:#E6DDCB; overflow:hidden; margin-top:10px;" role="progressbar" aria-valuenow="{{ progPct }}" aria-valuemin="0" aria-valuemax="100"><div style="height:100%; width:{{ progW }}; background:#1E5B3F; border-radius:3px; transition:width .9s ease;"></div></div>
+    </div>
+    <sc-if value="{{ dataDown }}" hint-placeholder-val="{{ false }}">
+      <div role="status" style="padding:12px 14px; border-radius:12px; background:#FBF1CF; border:1px solid #EBD58D; font-size:14px; color:#5C4600; display:flex; gap:10px;"><span aria-hidden="true" style="width:20px; height:20px; flex-shrink:0; border-radius:5px; background:#C99A12; color:#FFFDF8; display:grid; place-items:center; font-size:12px; font-weight:700;">!</span><span><strong>{{ t.e_data }}</strong> {{ t.e_data_sub }}</span></div>
+    </sc-if>
+    <ol style="list-style:none; margin:0; padding:0; background:#FFFDF8; border-radius:20px; box-shadow:0 1px 2px rgba(60,45,20,.06),0 6px 18px -10px rgba(60,45,20,.18);">
+      <sc-for list="{{ steps }}" as="s" hint-placeholder-count="6">
+        <li style="display:flex; gap:14px; align-items:flex-start; padding:16px 20px; border-top:{{ s.bt }}; opacity:{{ s.op }}; transition:opacity .4s;">
+          <sc-if value="{{ s.done }}" hint-placeholder-val="{{ false }}"><span aria-label="{{ t.st_done }}" style="width:24px; height:24px; flex-shrink:0; border-radius:50%; background:#1E5B3F; color:#FFFDF8; display:grid; place-items:center; font-size:12px;">✓</span></sc-if>
+          <sc-if value="{{ s.running }}" hint-placeholder-val="{{ false }}"><span aria-label="{{ t.st_run }}" style="width:24px; height:24px; flex-shrink:0; border-radius:50%; border:3px solid #D6E3D8; border-top-color:#1E5B3F; animation:cr-spin 1s linear infinite;"></span></sc-if>
+          <sc-if value="{{ s.pending }}" hint-placeholder-val="{{ true }}"><span aria-label="{{ t.st_wait }}" style="width:24px; height:24px; flex-shrink:0; border-radius:50%; border:2px dashed #CFC3AA;"></span></sc-if>
+          <div style="flex:1; min-width:0;">
+            <div style="font-size:16px; font-weight:{{ s.fw }};">{{ s.label }}</div>
+            <sc-if value="{{ s.showNote }}" hint-placeholder-val="{{ false }}"><div style="font-size:14px; color:#5E6558; animation:cr-rise .3s ease-out;">{{ s.note }}</div></sc-if>
+          </div>
+        </li>
+      </sc-for>
+    </ol>
+    <div style="font-size:14px; color:#5E6558; text-align:center;">{{ t.a_foot }}</div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ scr.compare }}" hint-placeholder-val="{{ false }}">
+<div data-screen-label="Compare sites" style="max-width:1360px; margin:0 auto; padding:{{ L.pad }}; display:flex; flex-direction:column; gap:{{ L.gap }};">
+  <div>
+    <h2 style="margin:0; font-size:26px; font-weight:600; letter-spacing:-0.015em;">{{ t.c_title }}</h2>
+    <p style="margin:4px 0 0; font-size:15px; color:#5E6558;">{{ t.c_sub }}</p>
+  </div>
+  <div style="display:grid; grid-template-columns:{{ L.cmpCols }}; gap:{{ L.gap }}; align-items:stretch;">
+    <sc-for list="{{ sites }}" as="s" hint-placeholder-count="2">
+      <sc-if value="{{ s.isStrip }}" hint-placeholder-val="{{ false }}">
+        <div style="order:{{ s.order }}; background:#1E2A22; color:#FFFDF8; border-radius:24px; padding:24px 20px; display:flex; flex-direction:column; justify-content:center; gap:14px; text-align:center;">
+          <div aria-hidden="true" style="display:flex; justify-content:center; gap:8px;"><span style="width:12px; height:12px; border-radius:50%; background:#E0782A;"></span><span style="width:12px; height:12px; border-radius:50%; background:#E0782A;"></span></div>
+          <div style="font-size:22px; font-weight:600; line-height:1.25; text-wrap:balance;">{{ t.c_strip1 }}</div>
+          <div style="font-size:16px; color:#D9D2C2; text-wrap:balance;">{{ t.c_strip2 }}</div>
+          <div style="font-size:14px; color:#B9B2A2; text-wrap:pretty;">{{ t.c_strip3 }}</div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ s.isSite }}" hint-placeholder-val="{{ true }}">
+        <article style="order:{{ s.order }}; background:#FFFDF8; border-radius:24px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 1px 2px rgba(60,45,20,.06),0 10px 28px -14px rgba(60,45,20,.28);">
+          <div style="padding:22px 24px; display:flex; flex-direction:column; gap:6px; border-bottom:1px solid #EFE8DA;">
+            <span style="align-self:flex-start; font-size:13px; font-weight:600; padding:3px 10px; border-radius:999px; background:{{ s.tagBg }}; color:{{ s.tagFg }};">{{ s.tag }}</span>
+            <h3 style="margin:0; font-size:21px; font-weight:600;">{{ s.name }}</h3>
+            <div dir="ltr" style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#5E6558; text-align:start;">{{ s.coords }}</div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; border-bottom:1px solid #EFE8DA;">
+            <div style="padding:18px 24px; border-inline-end:1px solid #EFE8DA;">
+              <div style="font-size:14px; color:#5E6558;">{{ t.c_peak }}</div>
+              <div style="display:flex; align-items:center; gap:8px; margin-top:4px;"><span aria-hidden="true" style="width:12px; height:12px; border-radius:3px; background:#C0392B;"></span><span dir="ltr" style="font-size:32px; font-weight:600; letter-spacing:-0.02em;">43 °C</span></div>
+              <div style="font-size:13px; color:#5E6558;">{{ t.c_same }}</div>
+            </div>
+            <div style="padding:18px 24px; background:{{ s.humBg }};">
+              <div style="font-size:14px; color:#5E6558;">{{ t.c_hum }}</div>
+              <div style="display:flex; align-items:center; gap:8px; margin-top:4px;"><span aria-hidden="true" style="width:12px; height:12px; border-radius:50% 50% 50% 0; transform:rotate(-45deg); background:#2B78B0;"></span><span dir="ltr" style="font-size:32px; font-weight:600; letter-spacing:-0.02em; color:#1F5F8C;">{{ s.hum }} %</span></div>
+              <div style="font-size:13px; color:#1F5F8C; font-weight:500;">{{ s.humLabel }}</div>
+            </div>
+          </div>
+          <div style="padding:22px 24px; display:flex; flex-direction:column; gap:12px; background:{{ s.verdictBg }}; color:{{ s.verdictFg }};">
+            <div style="font-size:14px; font-weight:500; opacity:.85;">{{ t.recommendation }}</div>
+            <div style="font-size:{{ L.cmpVerdict }}; font-weight:600; line-height:1.25; letter-spacing:-0.01em; text-wrap:balance;">{{ s.verdict }}</div>
+          </div>
+          <div style="padding:8px 24px 20px; display:flex; flex-direction:column;">
+            <sc-for list="{{ s.rows }}" as="r" hint-placeholder-count="4">
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid #EFE8DA; font-size:15px;">
+                <span style="color:#4A5247;">{{ r.label }}</span>
+                <span style="display:flex; align-items:center; gap:8px; font-weight:600; font-variant-numeric:tabular-nums;"><sc-if value="{{ r.warn }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex; align-items:center; gap:4px; font-size:12px; font-weight:600; color:#7A3A00; background:#FBE3CC; padding:2px 8px 2px 4px; border-radius:6px;"><span aria-hidden="true" style="width:14px; height:14px; border-radius:3px; background:#E0782A; color:#FFFDF8; display:grid; place-items:center; font-size:10px;">!</span>{{ t.fails_humid }}</span></sc-if><span dir="ltr">{{ r.value }}</span></span>
+              </div>
+            </sc-for>
+            <div style="margin-top:16px; display:flex; flex-direction:column; gap:6px;">
+              <div style="font-size:14px; color:#4A5247;">{{ t.c_padcov }}</div>
+              <div style="display:flex; align-items:center; gap:10px;"><span style="flex:1; height:10px; border-radius:5px; background:#EFE8DA; overflow:hidden;"><span style="display:block; height:100%; width:{{ s.padW }}; background:{{ s.padColor }}; border-radius:5px;"></span></span><span dir="ltr" style="font-weight:600; min-width:44px;">{{ s.padCov }} %</span></div>
+            </div>
+          </div>
+        </article>
+      </sc-if>
+    </sc-for>
+  </div>
+  <div style="display:flex; flex-wrap:wrap; gap:8px;">
+    <button onClick="{{ goSetup }}" style="height:44px; padding:0 16px; border-radius:12px; border:1px solid #CFC3AA; background:#FFFDF8; color:#1E2A22; font-size:15px; font-weight:500; cursor:pointer;" style-hover="background:#F7F1E4;">{{ t.c_change }}</button>
+    <button onClick="{{ askEvap }}" style="height:44px; padding:0 16px; border-radius:12px; border:0; background:#1E5B3F; color:#FFFDF8; font-size:15px; font-weight:600; cursor:pointer;" style-hover="background:#174A33;">{{ t.c_ask }}</button>
+  </div>
+  <div style="height:72px;"></div>
+</div>
+</sc-if>
+
+<sc-if value="{{ scr.settings }}" hint-placeholder-val="{{ false }}">
+<div data-screen-label="Assumptions" style="max-width:1100px; margin:0 auto; padding:{{ L.pad }}; display:flex; flex-direction:column; gap:{{ L.gap }};">
+  <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-end; gap:12px;">
+    <div>
+      <h2 style="margin:0; font-size:26px; font-weight:600; letter-spacing:-0.015em;">{{ t.set_title }}</h2>
+      <p style="margin:4px 0 0; font-size:15px; color:#5E6558;">{{ t.set_note }}</p>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button onClick="{{ resetDefaults }}" style="height:44px; padding:0 16px; border-radius:12px; border:1px solid #CFC3AA; background:#FFFDF8; color:#1E2A22; font-size:15px; font-weight:500; cursor:pointer;" style-hover="background:#F7F1E4;">{{ t.reset }}</button>
+      <button onClick="{{ saveSettings }}" style="height:44px; padding:0 18px; border-radius:12px; border:0; background:#1E5B3F; color:#FFFDF8; font-size:15px; font-weight:600; cursor:pointer;" style-hover="background:#174A33;">{{ t.save_recalc }}</button>
+    </div>
+  </div>
+  <div role="tablist" style="display:flex; gap:4px; background:#EFE8DA; padding:4px; border-radius:12px; align-self:flex-start; max-width:100%; overflow-x:auto;">
+    <sc-for list="{{ setTabs }}" as="tb" hint-placeholder-count="3">
+      <button role="tab" aria-selected="{{ tb.sel }}" onClick="{{ tb.go }}" style="height:38px; padding:0 14px; border:0; border-radius:9px; font-size:15px; font-weight:500; cursor:pointer; white-space:nowrap; background:{{ tb.bg }}; color:{{ tb.fg }}; box-shadow:{{ tb.sh }};">{{ tb.label }}</button>
+    </sc-for>
+  </div>
+  <div style="background:#FFFDF8; border-radius:20px; padding:{{ L.cardPad }}; box-shadow:0 1px 2px rgba(60,45,20,.06),0 6px 18px -10px rgba(60,45,20,.18); overflow-x:auto;">
+    <div role="table" style="min-width:560px; display:flex; flex-direction:column;">
+      <div role="row" style="display:grid; grid-template-columns:{{ tableCols }}; gap:12px; padding:0 0 10px; border-bottom:1px solid #E6DDCB;">
+        <sc-for list="{{ setHead }}" as="h" hint-placeholder-count="4"><div role="columnheader" style="font-size:13px; font-weight:500; color:#5E6558;">{{ h }}</div></sc-for>
+      </div>
+      <sc-for list="{{ setRows }}" as="r" hint-placeholder-count="5">
+        <div role="row" style="display:grid; grid-template-columns:{{ tableCols }}; gap:12px; padding:10px 0; border-bottom:1px solid #EFE8DA; align-items:center;">
+          <div role="rowheader" style="font-weight:600; font-size:15px;">{{ r.name }}</div>
+          <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="2">
+            <label role="cell" style="display:flex; align-items:center; border:1px solid {{ c.border }}; border-radius:10px; background:#FFFFFF; height:42px; padding:0 12px; gap:6px;">
+              <span style="position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0);">{{ c.a11y }}</span>
+              <input type="number" step="any" value="{{ c.value }}" onChange="{{ c.onChange }}" dir="ltr" style="flex:1; min-width:0; border:0; outline:0; font-size:15px; background:transparent; text-align:start;">
+              <span style="font-size:13px; color:#5E6558; white-space:nowrap;">{{ c.unit }}</span>
+            </label>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+    <div style="font-size:13px; color:#5E6558; margin-top:12px; display:flex; gap:8px; align-items:center;"><span aria-hidden="true" style="width:8px; height:8px; border-radius:50%; background:#2B78B0;"></span>{{ t.changed_note }}</div>
+  </div>
+  <section style="background:#FFFDF8; border-radius:20px; padding:{{ L.cardPad }}; display:flex; flex-direction:column; gap:12px; border:1px dashed #CFC3AA;">
+    <div>
+      <h3 style="margin:0; font-size:17px; font-weight:600;">{{ t.demo_states }}</h3>
+      <div style="font-size:14px; color:#5E6558;">{{ t.demo_states_sub }}</div>
+    </div>
+    <sc-for list="{{ stateToggles }}" as="s" hint-placeholder-count="3">
+      <button role="switch" aria-checked="{{ s.on }}" onClick="{{ s.go }}" style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border:0; background:transparent; cursor:pointer; text-align:start; color:#1E2A22; font-size:15px;">
+        <span>{{ s.label }}</span>
+        <span aria-hidden="true" style="width:44px; height:26px; border-radius:13px; background:{{ s.track }}; position:relative; flex-shrink:0; transition:background .2s;"><span style="position:absolute; top:3px; inset-inline-start:{{ s.knob }}; width:20px; height:20px; border-radius:50%; background:#FFFDF8; box-shadow:0 1px 3px rgba(0,0,0,.3); transition:inset-inline-start .2s;"></span></span>
+      </button>
+    </sc-for>
+  </section>
+  <div style="height:72px;"></div>
+</div>
+</sc-if>
+
+</main>
+
+<sc-if value="{{ fabShow }}" hint-placeholder-val="{{ true }}">
+  <button onClick="{{ openChat }}" aria-label="{{ t.chat_open }}" style="position:absolute; bottom:{{ L.fabB }}; inset-inline-end:{{ L.fabB }}; z-index:20; height:{{ L.fabH }}; padding:{{ L.fabPad }}; border-radius:999px; border:0; background:#1E5B3F; color:#FFFDF8; font-size:15px; font-weight:600; display:flex; align-items:center; gap:10px; cursor:pointer; box-shadow:0 12px 28px -10px rgba(20,50,35,.6);" style-hover="background:#174A33;" style-focus="outline:3px solid #2B78B0; outline-offset:3px;">
+    <span aria-hidden="true" style="width:28px; height:28px; border-radius:50%; background:#EBDDBF; display:grid; place-items:center;"><span style="width:10px; height:10px; border-radius:50%; background:#1E5B3F;"></span></span><sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">{{ t.chat_open }}</sc-if>
+  </button>
+</sc-if>
+
+<sc-if value="{{ chatOpen }}" hint-placeholder-val="{{ false }}">
+<aside role="dialog" aria-label="{{ t.bot_name }}" data-screen-label="Chat" style="position:absolute; top:{{ L.drawerTop }}; bottom:0; inset-inline-end:0; width:{{ L.drawerW }}; z-index:30; background:#FFFDF8; border-inline-start:1px solid #E6DDCB; box-shadow:0 0 40px -12px rgba(60,45,20,.35); display:flex; flex-direction:column; animation:cr-rise .2s ease-out;">
+  <div style="display:flex; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid #EFE8DA; flex-shrink:0;">
+    <span aria-hidden="true" style="width:38px; height:38px; border-radius:50%; background:#1E5B3F; display:grid; place-items:center; flex-shrink:0;"><span style="width:13px; height:13px; border-radius:50%; background:#EBDDBF;"></span></span>
+    <div style="flex:1; min-width:0;">
+      <div style="font-weight:600; font-size:16px;">{{ t.bot_name }}</div>
+      <div style="font-size:13px; color:#5E6558; display:flex; align-items:center; gap:6px;"><span aria-hidden="true" style="width:7px; height:7px; border-radius:50%; background:{{ botDot }};"></span>{{ replyLangLabel }}</div>
+    </div>
+    <button onClick="{{ newChat }}" style="height:36px; padding:0 12px; border-radius:10px; border:1px solid #CFC3AA; background:#FFFDF8; color:#1E2A22; font-size:14px; font-weight:500; cursor:pointer;" style-hover="background:#F7F1E4;" style-focus="outline:3px solid #2B78B0;">{{ t.new_chat }}</button>
+    <button onClick="{{ closeChat }}" aria-label="{{ t.close }}" style="width:36px; height:36px; border-radius:10px; border:0; background:#EFE8DA; color:#1E2A22; font-size:18px; cursor:pointer;" style-focus="outline:3px solid #2B78B0;">×</button>
+  </div>
+
+  <sc-if value="{{ aiDown }}" hint-placeholder-val="{{ false }}">
+    <div role="alert" style="margin:12px 16px 0; padding:12px 14px; border-radius:12px; background:#F1ECE2; border:1px solid #DCD2BE; font-size:14px; color:#3D463C; display:flex; gap:10px;"><span aria-hidden="true" style="width:20px; height:20px; flex-shrink:0; border-radius:50%; border:2px solid #8C826C; display:grid; place-items:center; font-size:11px; font-weight:700; color:#5E6558;">i</span><span><strong style="display:block;">{{ t.ai_down }}</strong>{{ t.ai_down_sub }}</span></div>
+  </sc-if>
+
+  <div ref="{{ chatRef }}" style="flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px;">
+    <sc-if value="{{ chatEmpty }}" hint-placeholder-val="{{ true }}">
+      <div style="margin:auto 0; display:flex; flex-direction:column; gap:16px; padding:8px 0;">
+        <div>
+          <div style="font-size:20px; font-weight:600; line-height:1.3;">{{ t.chat_hello }}</div>
+          <div style="font-size:15px; color:#5E6558; margin-top:4px;">{{ t.chat_hello_sub }}</div>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:flex-start; gap:8px;">
+          <sc-for list="{{ prompts }}" as="p" hint-placeholder-count="4">
+            <button onClick="{{ p.go }}" style="text-align:start; padding:10px 14px; border-radius:14px; border:1px solid #D6E3D8; background:#F2F7F2; color:#1E4A34; font-size:15px; font-weight:500; cursor:pointer; line-height:1.35;" style-hover="background:#E3EDE5;" style-focus="outline:3px solid #2B78B0;">{{ p.text }}</button>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-for list="{{ msgs }}" as="msg" hint-placeholder-count="0">
+      <sc-if value="{{ msg.isUser }}" hint-placeholder-val="{{ false }}">
+        <div dir="{{ msg.dir }}" style="align-self:{{ msg.align }}; max-width:85%; background:#1E5B3F; color:#FFFDF8; padding:10px 14px; border-radius:18px; border-end-end-radius:6px; font-size:15px; animation:cr-rise .2s ease-out; unicode-bidi:plaintext;">{{ msg.text }}</div>
+      </sc-if>
+      <sc-if value="{{ msg.isTool }}" hint-placeholder-val="{{ false }}">
+        <div dir="{{ msg.dir }}" style="align-self:stretch; border:1px solid #E6DDCB; background:#FAF6EE; border-radius:12px; font-size:14px; animation:cr-rise .2s ease-out;">
+          <button onClick="{{ msg.toggle }}" aria-expanded="{{ msg.open }}" style="width:100%; display:flex; align-items:center; gap:10px; padding:8px 12px; background:none; border:0; cursor:pointer; color:#3D463C; font-size:14px; text-align:start;">
+            <sc-if value="{{ msg.running }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="width:16px; height:16px; flex-shrink:0; border-radius:50%; border:2px solid #CFC3AA; border-top-color:#1E5B3F; animation:cr-spin .8s linear infinite;"></span></sc-if>
+            <sc-if value="{{ msg.done }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="width:16px; height:16px; flex-shrink:0; border-radius:50%; background:#1E5B3F; color:#FFFDF8; display:grid; place-items:center; font-size:10px;">✓</span></sc-if>
+            <span style="flex:1;">{{ msg.text }}</span>
+            <span aria-hidden="true" style="color:#8C826C; transform:{{ msg.rot }};">⌄</span>
+          </button>
+          <sc-if value="{{ msg.open }}" hint-placeholder-val="{{ false }}">
+            <div dir="ltr" style="padding:0 12px 10px; font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:#5E6558; text-align:start; white-space:pre-wrap;">{{ msg.detail }}</div>
+          </sc-if>
+        </div>
+      </sc-if>
+      <sc-if value="{{ msg.isAi }}" hint-placeholder-val="{{ false }}">
+        <div dir="{{ msg.dir }}" style="align-self:stretch; display:flex; flex-direction:column; gap:8px; animation:cr-rise .25s ease-out;">
+          <div style="background:#F3EEE3; padding:12px 14px; border-radius:18px; border-start-start-radius:6px; font-size:15px; line-height:1.65;">
+            <sc-for list="{{ msg.parts }}" as="p" hint-placeholder-count="0"><sc-if value="{{ p.isText }}" hint-placeholder-val="{{ false }}"><span>{{ p.text }}</span></sc-if><sc-if value="{{ p.isChip }}" hint-placeholder-val="{{ false }}"><button onClick="{{ p.go }}" title="{{ p.tip }}" style="display:inline-flex; unicode-bidi:isolate; white-space:nowrap; align-items:center; gap:4px; margin:0 2px; padding:0 8px; height:24px; vertical-align:baseline; border-radius:7px; border:1px solid #B9D3C0; background:#FFFDF8; color:#1E5B3F; font-size:14px; font-weight:600; cursor:pointer; font-variant-numeric:tabular-nums;" style-hover="background:#E3EDE5;" style-focus="outline:2px solid #2B78B0;">{{ p.text }}<span aria-hidden="true" style="font-size:11px; opacity:.7;">↗</span></button></sc-if></sc-for>
+          </div>
+          <sc-if value="{{ msg.verified }}" hint-placeholder-val="{{ false }}">
+            <span title="{{ msg.vTip }}" style="align-self:flex-start; display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600; color:#1E5B3F;"><span aria-hidden="true" style="width:15px; height:15px; border-radius:50%; background:#1E5B3F; color:#FFFDF8; display:grid; place-items:center; font-size:9px;">✓</span>{{ msg.vLabel }}</span>
+          </sc-if>
+        </div>
+      </sc-if>
+      <sc-if value="{{ msg.isPlan }}" hint-placeholder-val="{{ false }}">
+        <div dir="{{ msg.dir }}" style="align-self:stretch; border-radius:16px; background:#1E5B3F; color:#FFFDF8; padding:14px 16px; display:flex; flex-direction:column; gap:10px; animation:cr-rise .25s ease-out;">
+          <div style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:#CFE0D3;"><span aria-hidden="true" style="width:16px; height:16px; border-radius:50%; background:#EBDDBF; color:#1E5B3F; display:grid; place-items:center; font-size:10px;">✓</span>{{ msg.title }}</div>
+          <div style="font-size:15px; font-weight:500;">{{ msg.text }}</div>
+          <button onClick="{{ msg.go }}" style="align-self:flex-start; height:38px; padding:0 14px; border-radius:10px; border:0; background:#FFFDF8; color:#1E5B3F; font-size:14px; font-weight:600; cursor:pointer;" style-focus="outline:3px solid #9CC9EA;">{{ msg.btn }}</button>
+        </div>
+      </sc-if>
+      <sc-if value="{{ msg.isUnsure }}" hint-placeholder-val="{{ false }}">
+        <div dir="{{ msg.dir }}" role="note" style="align-self:stretch; border-radius:16px; background:#F1ECE2; border:1px dashed #A99E86; padding:12px 14px; display:flex; gap:10px; animation:cr-rise .25s ease-out;">
+          <span aria-hidden="true" style="width:22px; height:22px; flex-shrink:0; border-radius:50%; border:2px solid #8C826C; color:#5E6558; display:grid; place-items:center; font-size:12px; font-weight:700;">?</span>
+          <div><div style="font-weight:600; font-size:15px;">{{ msg.title }}</div><div style="font-size:14px; color:#4A5247; margin-top:2px;">{{ msg.text }}</div></div>
+        </div>
+      </sc-if>
+    </sc-for>
+  </div>
+
+  <div style="border-top:1px solid #EFE8DA; padding:12px 16px 14px; display:flex; flex-direction:column; gap:8px; flex-shrink:0;">
+    <form onSubmit="{{ submit }}" style="display:flex; align-items:center; gap:8px; border:1px solid #CFC3AA; border-radius:14px; background:#FFFFFF; padding:4px; padding-inline-start:14px;">
+      <input value="{{ input }}" onChange="{{ onInput }}" dir="auto" placeholder="{{ t.chat_ph }}" aria-label="{{ t.chat_ph }}" style="flex:1; min-width:0; border:0; outline:0; font-size:16px; height:40px; background:transparent; color:#1E2A22; text-align:start; unicode-bidi:plaintext;">
+      <button type="submit" aria-label="{{ t.send }}" disabled="{{ sendDisabled }}" style="height:40px; padding:0 14px; border-radius:10px; border:0; background:{{ sendBg }}; color:#FFFDF8; font-size:14px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px;">{{ t.send }}<span aria-hidden="true">{{ arrow }}</span></button>
+    </form>
+    <div style="font-size:12.5px; color:#5E6558; text-align:center;">{{ t.chat_footer }}</div>
+  </div>
+</aside>
+</sc-if>
+
+<sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+  <div role="status" style="position:absolute; bottom:24px; left:50%; transform:translateX(-50%); background:#1E2A22; color:#FFFDF8; padding:12px 18px; border-radius:12px; font-size:15px; display:flex; align-items:center; gap:10px; box-shadow:0 10px 30px -10px rgba(0,0,0,.4); animation:cr-rise .25s ease-out; z-index:40; max-width:calc(100% - 32px);"><span aria-hidden="true" style="width:18px; height:18px; border-radius:50%; background:#7FB38F; color:#1E2A22; display:grid; place-items:center; font-size:11px;">✓</span>{{ toast }}</div>
+</sc-if>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const MO_EN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MO_AR=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+const T={
+en:{brand:'Croptions',desktop:'Desktop',mobile:'Mobile',viewport:'Preview size',nav_home:'Home',nav_plan:'Plan',nav_results:'Results',nav_compare:'Compare sites',nav_settings:'Assumptions',
+results_for:'Results for',site_a:'Al Khor, coastal site',export_pdf:'Export plan as PDF',share:'Share link',compare_other:'Compare with another site',
+recommendation:'Recommendation',verified:'Verified',verified_tip:'Every number was checked against the calculations',
+verdict:'Grow tomatoes in a solar-powered chiller greenhouse.',verdict_pay:'Pays for itself in 3.4 years.',
+run_summary:'2,000 m² · Budget 250,000 QAR · Priority: Highest profit',ask_why:'Ask why',see_setups:'See all four setups',key_numbers:'Key numbers',
+k_cov:'Heat coverage',k_cov_n:'of hours below the 32 °C tomato limit',k_cost:'Build cost',k_cost_n:'Greenhouse, chiller and solar array',k_profit:'Profit per year',k_profit_n:'After running costs, from year 1',k_pay:'Payback',k_pay_n:'Within your 250,000 QAR budget',k_water:'Water use',k_water_n:'Drip irrigation plus chiller top-up',k_solar:'Solar size',k_solar_n:'About 290 m² of panels',
+qar:'QAR',years:'years',lday:'L/day',kw:'kW',
+cal_title:'Crop calendar',cal_sub:'Solar chiller greenhouse, month by month',chosen:'Chosen',good:'Good',risky:'Risky',impossible:'Not possible',
+cmp_title:'Setup comparison',cmp_sub:'All four setups on the same 2,000 m² site',recommended:'Recommended',fails_humid:'Fails in humid summer',of12:'of 12',
+c_setup:'Setup',c_months:'Months it can grow',c_cov:'Heat coverage',c_cost:'Build cost',c_profit:'Profit per year',c_pay:'Payback',c_p10:'10-year profit',
+s_open:'Open field',s_shade:'Shade net',s_pad:'Wet-pad greenhouse',s_chill:'Solar chiller greenhouse',outside:'Outside air',
+temp_title:'Inside temperature vs the heat limit',temp_sub:'Average daily maximum, by month',limit_label:'Tomato heat limit 32 °C',
+temp_sr:'Only the solar chiller greenhouse stays below 32 °C all year. The wet-pad greenhouse rises above the limit from June to September, when coastal humidity stops evaporative cooling.',
+solar_title:'A typical summer day',solar_sub:'Solar power produced vs cooling energy needed, 15 July',solar_prod:'Solar power produced (kW)',cool_need:'Cooling energy needed (kW)',solar_caption:'The sun powers its own cooling.',
+solar_sr:'Solar output peaks at 46 kW around 12:00, and cooling demand peaks at 38 kW around 14:00. Output covers demand from 08:00 to 17:00; a small battery covers the evening.',
+profit_title:'Cumulative profit over 10 years',profit_sub:'Starts at minus the build cost; crosses zero at payback',payback_point:'Payback 3.4 yrs',
+profit_sr:'The solar chiller greenhouse costs the most to build but reaches 455,000 QAR after 10 years, the highest of the four setups. It crosses zero at 3.4 years.',
+assumptions:'Assumptions',assum_sub:'Edit any value and recalculate',recalc:'Recalculate',all_assum:'Edit all assumptions',
+a_price:'Tomato farm-gate price',a_elec:'Electricity cost',a_pad:'Pad cooling efficiency',a_water:'Water cost',a_yield:'Tomato yield',
+sources:'Data sources',sources_sub:'Every number traces back to these',fetched:'Fetched',
+src_nasa:'Daily temperature and sunlight, 2005–2025',src_om:'Hourly humidity and wind for this site',src_fao:'Crop heat and cold limits (ECOCROP)',src_faostat:'Producer prices for Qatar and the GCC',
+toast_pdf:'Plan exported as PDF',toast_share:'Link copied to clipboard',toast_recalc:'Plan recalculated with your assumptions',
+hours:'h'},
+ar:{brand:'كروبشنز',desktop:'سطح المكتب',mobile:'الجوال',viewport:'حجم المعاينة',nav_home:'الرئيسية',nav_plan:'التخطيط',nav_results:'النتائج',nav_compare:'مقارنة المواقع',nav_settings:'الافتراضات',
+results_for:'النتائج لموقع',site_a:'الخور، موقع ساحلي',export_pdf:'تصدير الخطة PDF',share:'مشاركة الرابط',compare_other:'مقارنة بموقع آخر',
+recommendation:'التوصية',verified:'تم التحقق',verified_tip:'تمت مطابقة كل رقم مع الحسابات',
+verdict:'ازرع الطماطم في بيت محمي مبرَّد بالطاقة الشمسية.',verdict_pay:'يسترد تكلفته خلال 3.4 سنوات.',
+run_summary:'2,000 م² · الميزانية 250,000 ر.ق · الأولوية: أعلى ربح',ask_why:'اسأل عن السبب',see_setups:'عرض الأنظمة الأربعة',key_numbers:'الأرقام الرئيسية',
+k_cov:'تغطية الحرارة',k_cov_n:'من الساعات تحت حد الطماطم ⁦32 °C⁩',k_cost:'تكلفة الإنشاء',k_cost_n:'البيت المحمي والمبرِّد والألواح الشمسية',k_profit:'الربح السنوي',k_profit_n:'بعد تكاليف التشغيل، من السنة الأولى',k_pay:'فترة الاسترداد',k_pay_n:'ضمن ميزانيتك البالغة 250,000 ر.ق',k_water:'استهلاك المياه',k_water_n:'ري بالتنقيط مع تعويض المبرِّد',k_solar:'حجم النظام الشمسي',k_solar_n:'نحو 290 م² من الألواح',
+qar:'ر.ق',years:'سنوات',lday:'لتر/يوم',kw:'كيلوواط',
+cal_title:'تقويم المحاصيل',cal_sub:'البيت المحمي المبرَّد بالطاقة الشمسية، شهراً بشهر',chosen:'المختار',good:'مناسب',risky:'فيه مخاطرة',impossible:'غير ممكن',
+cmp_title:'مقارنة الأنظمة',cmp_sub:'الأنظمة الأربعة على الموقع نفسه بمساحة 2,000 م²',recommended:'موصى به',fails_humid:'يفشل في الصيف الرطب',of12:'من 12',
+c_setup:'النظام',c_months:'أشهر الزراعة',c_cov:'تغطية الحرارة',c_cost:'تكلفة الإنشاء',c_profit:'الربح السنوي',c_pay:'الاسترداد',c_p10:'ربح 10 سنوات',
+s_open:'حقل مكشوف',s_shade:'شبك تظليل',s_pad:'بيت محمي بالتبريد التبخيري',s_chill:'بيت محمي مبرَّد بالطاقة الشمسية',outside:'الهواء الخارجي',
+temp_title:'درجة الحرارة الداخلية مقابل حد الحرارة',temp_sub:'متوسط الحرارة العظمى اليومية حسب الشهر',limit_label:'حد تحمّل الطماطم ⁦32 °C⁩',
+temp_sr:'البيت المحمي المبرَّد بالطاقة الشمسية وحده يبقى تحت ⁦32 °C⁩ طوال العام. أما البيت المحمي بالتبريد التبخيري فيتجاوز الحد من يونيو إلى سبتمبر، حين تمنع الرطوبة الساحلية التبريد التبخيري.',
+solar_title:'يوم صيفي نموذجي',solar_sub:'الطاقة الشمسية المنتَجة مقابل طاقة التبريد المطلوبة، 15 يوليو',solar_prod:'الطاقة الشمسية المنتَجة (كيلوواط)',cool_need:'طاقة التبريد المطلوبة (كيلوواط)',solar_caption:'الشمس تغذّي تبريدها بنفسها.',
+solar_sr:'يبلغ الإنتاج الشمسي ذروته 46 كيلوواط قرابة الساعة 12:00، ويبلغ الطلب على التبريد ذروته 38 كيلوواط قرابة 14:00. يغطي الإنتاج الطلب من 08:00 إلى 17:00، وتغطي بطارية صغيرة فترة المساء.',
+profit_title:'الربح التراكمي على مدى 10 سنوات',profit_sub:'يبدأ بسالب تكلفة الإنشاء ويتجاوز الصفر عند الاسترداد',payback_point:'الاسترداد 3.4 سنوات',
+profit_sr:'البيت المحمي المبرَّد بالطاقة الشمسية هو الأعلى تكلفة في الإنشاء، لكنه يصل إلى 455,000 ر.ق بعد 10 سنوات، وهو الأعلى بين الأنظمة الأربعة. ويتجاوز الصفر عند 3.4 سنوات.',
+assumptions:'الافتراضات',assum_sub:'عدّل أي قيمة ثم أعد الحساب',recalc:'إعادة الحساب',all_assum:'تعديل كل الافتراضات',
+a_price:'سعر الطماطم عند المزرعة',a_elec:'تكلفة الكهرباء',a_pad:'كفاءة وسائد التبريد',a_water:'تكلفة المياه',a_yield:'إنتاجية الطماطم',
+sources:'مصادر البيانات',sources_sub:'كل رقم يعود إلى هذه المصادر',fetched:'تاريخ الجلب',
+src_nasa:'الحرارة والإشعاع الشمسي اليومي، 2005–2025',src_om:'الرطوبة والرياح كل ساعة لهذا الموقع',src_fao:'حدود تحمّل المحاصيل للحرارة والبرودة (ECOCROP)',src_faostat:'أسعار المنتجين في قطر ودول الخليج',
+toast_pdf:'تم تصدير الخطة بصيغة PDF',toast_share:'تم نسخ الرابط',toast_recalc:'تمت إعادة حساب الخطة وفق افتراضاتك',
+hours:'س'}
+};
+Object.assign(T.en,{chat_open:'Ask Croptions',bot_name:'Croptions Assistant',new_chat:'New chat',close:'Close',reply_in:'Replies in English',
+chat_hello:'Ask me anything about this plan.',chat_hello_sub:'I explain the numbers and can re-run them. Write in English or Arabic.',
+chat_ph:'Ask about crops, costs or cooling…',send:'Send',chat_footer:'The AI explains and compares; you make the final decision.',
+v_label:'Verified against calculations',v_tip:'Each number here matches the plan calculations',plan_title:'Plan updated',view_new:'View new results',
+ai_down:'The AI assistant is unavailable right now.',ai_down_sub:'The plan is still complete; the explanation is unavailable right now.',
+chip_tip:'Show where this number comes from',unsure_title:'Not enough data for this location to answer confidently.'});
+Object.assign(T.ar,{chat_open:'اسأل كروبشنز',bot_name:'مساعد كروبشنز',new_chat:'محادثة جديدة',close:'إغلاق',reply_in:'يرد بالعربية',
+chat_hello:'اسألني أي شيء عن هذه الخطة.',chat_hello_sub:'أشرح الأرقام ويمكنني إعادة حسابها. اكتب بالعربية أو الإنجليزية.',
+chat_ph:'اسأل عن المحاصيل أو التكاليف أو التبريد…',send:'إرسال',chat_footer:'الذكاء الاصطناعي يشرح ويقارن، والقرار النهائي لك.',
+v_label:'تمت المطابقة مع الحسابات',v_tip:'كل رقم هنا يطابق حسابات الخطة',plan_title:'تم تحديث الخطة',view_new:'عرض النتائج الجديدة',
+ai_down:'المساعد الذكي غير متاح حالياً.',ai_down_sub:'الخطة لا تزال مكتملة، لكن الشرح غير متاح في الوقت الحالي.',
+chip_tip:'اعرض مصدر هذا الرقم',unsure_title:'لا تتوفر بيانات كافية لهذا الموقع للإجابة بثقة.'});
+Object.assign(T.en,{l_eyebrow:'Farm planning for hot, arid regions',l_hero:'Turn desert sun into farms that grow and pay off.',
+l_sub:'Drop a pin on the map. Croptions tells you what to grow and when, which setup survives the heat, how much solar power it needs, and how many years until it pays for itself.',
+l_plan:'Plan a farm',l_demo:'See a demo',l_oss:'Open source',l_data:'Data from',
+v1:'What to grow',v1t:'Every crop checked month by month against 20 years of local climate data.',
+v2:'Which setup survives the heat',v2t:'Open field, shade net, wet-pad or solar chiller greenhouse, simulated hour by hour.',
+v3:'When it pays off',v3t:'Build cost, yearly profit and payback in QAR, sized to your budget.',
+p_title:'Plan a farm',p_sub:'Pick a site on the map, then tell us about the farm.',p_nopin:'No site selected',p_pinned:'Selected site',p_outside:'This location is outside our supported data (Middle East and North Africa).',
+p_size:'Farm size',p_budget:'Budget',p_crop:'Preferred crop',optional:'(optional)',p_crop_ph:'Any crop, or search…',p_nocrop:'No matching crop',
+p_priority:'What matters most?',pr_profit:'Highest profit',pr_profit_n:'Most money over 10 years',pr_fast:'Fastest payback',pr_fast_n:'Earn back the build cost soonest',pr_water:'Least water',pr_water_n:'Lowest litres per day',
+p_analyse:'Analyse this site',p_need_pin:'Drop a pin on the map first',p_search:'Search for a place',p_noplace:'No places found',p_layer:'Map style',p_sat:'Satellite',p_ter:'Terrain',
+p_empty:'Click the map to drop a pin, or search for a place.',m2:'m²',
+a_for:'Analysing',a_title:'Working out the best plan for this site',a_foot:'This usually takes under a minute. Every step uses real data.',
+st_done:'Done',st_run:'In progress',st_wait:'Waiting',
+s1:'Fetching 20 years of climate data',s1n:'175,320 hourly readings from NASA POWER and Open-Meteo',
+s2:'Checking crops month by month',s2n:'5 crops × 12 months against FAO heat limits',
+s3:'Simulating 8,760 hours of cooling',s3n:'4 setups, one full year, hour by hour',
+s4:'Sizing solar panels',s4n:'48 kW array covers peak cooling at 14:00',
+s5:'Calculating payback',s5n:'10-year cash flow for each setup',
+s6:'Writing the explanation',s6n:'Plain-language summary in English and Arabic',
+e_data:'Using saved data for this site.',e_data_sub:'The climate service is unavailable; results use data saved on 12 Sep 2026.'});
+Object.assign(T.ar,{l_eyebrow:'تخطيط المزارع في المناطق الحارة والجافة',l_hero:'حوِّل شمس الصحراء إلى مزارع تُثمر وتسترد تكلفتها.',
+l_sub:'ضع دبوساً على الخريطة، ويخبرك كروبشنز بما تزرعه ومتى، وأي نظام يصمد أمام الحرارة، وكم تحتاج من الطاقة الشمسية، وكم سنة حتى تسترد المزرعة تكلفتها.',
+l_plan:'خطِّط لمزرعة',l_demo:'شاهد عرضاً توضيحياً',l_oss:'مفتوح المصدر',l_data:'البيانات من',
+v1:'ماذا تزرع',v1t:'فحص كل محصول شهراً بشهر مقابل بيانات مناخ محلية لعشرين سنة.',
+v2:'أي نظام يصمد أمام الحرارة',v2t:'حقل مكشوف أو شبك تظليل أو تبريد تبخيري أو بيت محمي مبرَّد بالطاقة الشمسية، بمحاكاة ساعة بساعة.',
+v3:'متى تسترد التكلفة',v3t:'تكلفة الإنشاء والربح السنوي وفترة الاسترداد بالريال القطري، حسب ميزانيتك.',
+p_title:'خطِّط لمزرعة',p_sub:'اختر موقعاً على الخريطة، ثم أخبرنا عن المزرعة.',p_nopin:'لم يتم اختيار موقع',p_pinned:'الموقع المختار',p_outside:'هذا الموقع خارج نطاق البيانات المدعومة (الشرق الأوسط وشمال أفريقيا).',
+p_size:'مساحة المزرعة',p_budget:'الميزانية',p_crop:'المحصول المفضل',optional:'(اختياري)',p_crop_ph:'أي محصول، أو ابحث…',p_nocrop:'لا يوجد محصول مطابق',
+p_priority:'ما الأهم بالنسبة لك؟',pr_profit:'أعلى ربح',pr_profit_n:'أكبر عائد على مدى 10 سنوات',pr_fast:'أسرع استرداد',pr_fast_n:'استرداد تكلفة الإنشاء في أقرب وقت',pr_water:'أقل استهلاك للمياه',pr_water_n:'أقل عدد من اللترات يومياً',
+p_analyse:'حلِّل هذا الموقع',p_need_pin:'ضع دبوساً على الخريطة أولاً',p_search:'ابحث عن مكان',p_noplace:'لم يتم العثور على أماكن',p_layer:'نمط الخريطة',p_sat:'قمر صناعي',p_ter:'تضاريس',
+p_empty:'انقر على الخريطة لوضع دبوس، أو ابحث عن مكان.',m2:'م²',
+a_for:'جارٍ تحليل',a_title:'نحدد أفضل خطة لهذا الموقع',a_foot:'يستغرق هذا عادةً أقل من دقيقة. كل خطوة تستخدم بيانات حقيقية.',
+st_done:'اكتمل',st_run:'قيد التنفيذ',st_wait:'في الانتظار',
+s1:'جلب بيانات المناخ لعشرين سنة',s1n:'175,320 قراءة كل ساعة من NASA POWER وOpen-Meteo',
+s2:'فحص المحاصيل شهراً بشهر',s2n:'5 محاصيل × 12 شهراً مقابل حدود الحرارة من FAO',
+s3:'محاكاة 8,760 ساعة من التبريد',s3n:'4 أنظمة، سنة كاملة، ساعة بساعة',
+s4:'تحديد حجم الألواح الشمسية',s4n:'نظام 48 كيلوواط يغطي ذروة التبريد عند 14:00',
+s5:'حساب فترة الاسترداد',s5n:'تدفق نقدي لعشر سنوات لكل نظام',
+s6:'كتابة الشرح',s6n:'ملخص بلغة واضحة بالعربية والإنجليزية',
+e_data:'نستخدم البيانات المحفوظة لهذا الموقع.',e_data_sub:'خدمة المناخ غير متاحة، والنتائج مبنية على بيانات محفوظة بتاريخ 12 سبتمبر 2026.'});
+T.en.ds_link='Design system'; T.ar.ds_link='نظام التصميم';
+Object.assign(T.en,{c_title:'Compare two sites',c_sub:'Same crop, same farm size, same budget. Both sites reach 43 °C in summer.',
+c_strip1:'Same heat, different air.',c_strip2:'Evaporative cooling fails in humid air.',c_strip3:'Wet pads cool by up to 14 °C in dry air, but only about 3 °C when summer humidity is above 70 %.',
+c_peak:'Summer peak',c_same:'Same at both sites',c_hum:'Summer humidity',c_dry:'Dry air',c_wet:'Humid air',t_inland:'Dry inland',t_coast:'Humid coast',
+site_b:'Al Karaana, inland site',v_inland:'Grow tomatoes in a wet-pad greenhouse. Pays for itself in 2.1 years.',v_coast:'Grow tomatoes in a solar-powered chiller greenhouse. Pays for itself in 3.4 years.',
+c_best:'Best setup',c_padcool:'Wet-pad cooling',c_padcov:'Wet-pad greenhouse heat coverage',c_change:'Change sites',c_ask:'Ask why the results differ',
+set_title:'Assumptions',set_note:'Default values come from FAO and FAOSTAT. Changes apply to every plan you run.',reset:'Reset to defaults',save_recalc:'Save and recalculate',
+tab_limits:'Crop heat limits',tab_costs:'Setup costs',tab_prices:'Crop prices',h_crop:'Crop',h_min:'Minimum',h_max:'Heat limit',h_lethal:'Crop loss above',h_build:'Build cost',h_run:'Running cost',h_price:'Farm-gate price',h_yield:'Yield',
+changed_note:'Edited values are outlined in blue.',toast_reset:'All values reset to FAO defaults',toast_saved:'Assumptions saved. Plan recalculated.',
+demo_states:'Prototype states',demo_states_sub:'Turn on to preview error and offline states.',ds_offline:'Offline, showing cached data',ds_data:'Climate data service unavailable',ds_ai:'AI assistant unavailable',
+off_title:'You are offline.',off_sub:'Showing the plan saved on this device on 25 Sep 2026. Changes will sync when you reconnect.'});
+Object.assign(T.ar,{c_title:'مقارنة موقعين',c_sub:'المحصول نفسه والمساحة نفسها والميزانية نفسها. كلا الموقعين يصل إلى ⁦43 °C⁩ صيفاً.',
+c_strip1:'الحرارة نفسها، والهواء مختلف.',c_strip2:'التبريد التبخيري يفشل في الهواء الرطب.',c_strip3:'تبرّد الوسائد الرطبة حتى ⁦14 °C⁩ في الهواء الجاف، لكن بنحو ⁦3 °C⁩ فقط حين تتجاوز رطوبة الصيف ⁦70 %⁩.',
+c_peak:'ذروة الصيف',c_same:'متساوية في الموقعين',c_hum:'رطوبة الصيف',c_dry:'هواء جاف',c_wet:'هواء رطب',t_inland:'داخلي جاف',t_coast:'ساحلي رطب',
+site_b:'الكرعانة، موقع داخلي',v_inland:'ازرع الطماطم في بيت محمي بالتبريد التبخيري. يسترد تكلفته خلال 2.1 سنة.',v_coast:'ازرع الطماطم في بيت محمي مبرَّد بالطاقة الشمسية. يسترد تكلفته خلال 3.4 سنوات.',
+c_best:'أفضل نظام',c_padcool:'تبريد الوسائد الرطبة',c_padcov:'تغطية الحرارة في البيت المحمي بالتبريد التبخيري',c_change:'تغيير المواقع',c_ask:'اسأل لماذا تختلف النتائج',
+set_title:'الافتراضات',set_note:'القيم الافتراضية مأخوذة من FAO وFAOSTAT. تنطبق التغييرات على كل خطة تُعدّها.',reset:'استعادة القيم الافتراضية',save_recalc:'حفظ وإعادة الحساب',
+tab_limits:'حدود حرارة المحاصيل',tab_costs:'تكاليف الأنظمة',tab_prices:'أسعار المحاصيل',h_crop:'المحصول',h_min:'الحد الأدنى',h_max:'حد الحرارة',h_lethal:'تلف المحصول فوق',h_build:'تكلفة الإنشاء',h_run:'تكلفة التشغيل',h_price:'السعر عند المزرعة',h_yield:'الإنتاجية',
+changed_note:'القيم المعدّلة محاطة بإطار أزرق.',toast_reset:'تمت استعادة جميع القيم الافتراضية من FAO',toast_saved:'تم حفظ الافتراضات وإعادة حساب الخطة.',
+demo_states:'حالات النموذج الأولي',demo_states_sub:'فعّلها لمعاينة حالات الخطأ وعدم الاتصال.',ds_offline:'غير متصل، عرض البيانات المحفوظة',ds_data:'خدمة بيانات المناخ غير متاحة',ds_ai:'المساعد الذكي غير متاح',
+off_title:'أنت غير متصل بالإنترنت.',off_sub:'نعرض الخطة المحفوظة على هذا الجهاز بتاريخ 25 سبتمبر 2026. ستتم مزامنة التغييرات عند عودة الاتصال.'});
+const DEF={limits:{tomato:[10,32,38],cucumber:[12,35,40],lettuce:[5,24,30],pepper:[12,33,38],strawberry:[5,26,32]},
+costs:{open:[9,2],shade:[22,3],pad:[70,9],chill:[118,14]},prices:{tomato:[6.5,18],cucumber:[5.2,22],lettuce:[8,9],pepper:[9.5,12],strawberry:[24,4]}};
+const clone=o=>JSON.parse(JSON.stringify(o));
+const PLACES=[{en:'Al Khor, Qatar',ar:'الخور، قطر',lat:25.69,lng:51.50},{en:'Al Karaana, Qatar',ar:'الكرعانة، قطر',lat:25.01,lng:51.05},{en:'Doha, Qatar',ar:'الدوحة، قطر',lat:25.29,lng:51.53},
+{en:'Dukhan, Qatar',ar:'دخان، قطر',lat:25.43,lng:50.78},{en:'Al Ain, UAE',ar:'العين، الإمارات',lat:24.21,lng:55.74},{en:'Riyadh, Saudi Arabia',ar:'الرياض، السعودية',lat:24.71,lng:46.68},
+{en:'Muscat, Oman',ar:'مسقط، عُمان',lat:23.59,lng:58.41},{en:'Aswan, Egypt',ar:'أسوان، مصر',lat:24.09,lng:32.90},{en:'Oslo, Norway',ar:'أوسلو، النرويج',lat:59.91,lng:10.75}];
+const inRegion=p=>p.lat>10&&p.lat<38&&p.lng>-18&&p.lng<63;
+const fc=p=>`${Math.abs(p.lat).toFixed(4)}° ${p.lat>=0?'N':'S'}, ${Math.abs(p.lng).toFixed(4)}° ${p.lng>=0?'E':'W'}`;
+const PROMPTS={en:[['grow','What can I grow here?'],['half','What if my budget is half?'],['evap','Why won’t evaporative cooling work here?'],['payback','How many years until it pays back?']],
+ar:[['grow','ماذا يمكنني أن أزرع هنا؟'],['half','ماذا لو كانت ميزانيتي النصف؟'],['evap','لماذا لا يصلح التبريد التبخيري هنا؟'],['payback','كم سنة حتى تسترد المزرعة تكلفتها؟']]};
+const SCRIPT={
+grow:{en:{tool:'Checking 5 crops against 20 years of climate data',detail:'crop_calendar(site="Al Khor", setup="solar_chiller")\n→ 5 crops × 12 months · done in 1.2 s',
+  a:'At Al Khor, tomatoes are the strongest choice. In a solar chiller greenhouse they grow {11 of 12 months|calendar} with {96 %|k-cov} heat coverage, earning about {69,000 QAR|k-profit} a year. Cucumber is a close second; lettuce and strawberry struggle from June to September.'},
+ ar:{tool:'فحص 5 محاصيل مقابل بيانات مناخ 20 سنة',detail:'crop_calendar(site="Al Khor", setup="solar_chiller")\n→ 5 crops × 12 months · done in 1.2 s',
+  a:'في الخور، الطماطم هي الخيار الأقوى. في البيت المحمي المبرَّد بالطاقة الشمسية تُزرع {11 من 12 شهراً|calendar} بتغطية حرارية {⁦96 %⁩|k-cov}، وتحقق نحو {69,000 ر.ق|k-profit} سنوياً. يأتي الخيار في المرتبة الثانية، بينما يعاني الخس والفراولة من يونيو إلى سبتمبر.'}},
+half:{en:{tool:'Re-running payback with budget 125,000 QAR',detail:'payback(budget=125000, area="auto", setup="solar_chiller")\n→ area 1,050 m² · payback 3.6 yrs',
+  a:'With 125,000 QAR the full solar chiller greenhouse no longer fits. I resized it to {1,050 m²|k-cost}, which keeps coverage at {96 %|k-cov} and pays back in {3.6 years|chart-profit}. A shade net would cover the full area but only grows {6 months|setups} a year.',
+  plan:'Solar chiller greenhouse, 1,050 m², budget 125,000 QAR'},
+ ar:{tool:'إعادة حساب الاسترداد بميزانية 125,000 ر.ق',detail:'payback(budget=125000, area="auto", setup="solar_chiller")\n→ area 1,050 m² · payback 3.6 yrs',
+  a:'بميزانية 125,000 ر.ق لم يعد البيت المحمي المبرَّد الكامل ممكناً. عدّلت المساحة إلى {1,050 م²|k-cost}، مما يحافظ على التغطية عند {⁦96 %⁩|k-cov} ويسترد التكلفة خلال {3.6 سنوات|chart-profit}. أما شبك التظليل فيغطي المساحة كاملة لكنه يزرع {6 أشهر|setups} فقط في السنة.',
+  plan:'بيت محمي مبرَّد بالطاقة الشمسية، 1,050 م²، ميزانية 125,000 ر.ق'}},
+evap:{en:{tool:'Comparing summer humidity, June to September',detail:'humidity_profile(source="Open-Meteo", hourly, months=6..9)\n→ Aug mean RH 72 % · pad ΔT 3.1 °C',
+  a:'Evaporative cooling works by evaporating water into the air. At Al Khor, humidity averages {72 %|chart-temp} in August, so the air is already close to saturated and the pads cool by only about {3 °C|chart-temp}. That keeps the wet-pad greenhouse above the tomato limit from June to September, reaching {37 °C|chart-temp} inside.'},
+ ar:{tool:'مقارنة رطوبة الصيف من يونيو إلى سبتمبر',detail:'humidity_profile(source="Open-Meteo", hourly, months=6..9)\n→ Aug mean RH ⁦72 %⁩ · pad ΔT ⁦3.1 °C⁩',
+  a:'يعمل التبريد التبخيري بتبخير الماء في الهواء. في الخور يبلغ متوسط الرطوبة {⁦72 %⁩|chart-temp} في أغسطس، فيكون الهواء قريباً من التشبع ولا تبرّد الوسائد إلا بنحو {⁦3 °C⁩|chart-temp}. لذلك يبقى البيت المحمي بالتبريد التبخيري فوق حد الطماطم من يونيو إلى سبتمبر، وتصل الحرارة داخله إلى {⁦37 °C⁩|chart-temp}.'}},
+payback:{en:{tool:'Recalculating cash flow over 10 years',detail:'cashflow(setup="solar_chiller", years=10)\n→ break-even at 3.4 yrs',
+  a:'The solar chiller greenhouse costs {235,000 QAR|k-cost} to build and earns {69,000 QAR|k-profit} a year, so it pays for itself in {3.4 years|k-pay}. After 10 years you would be ahead by about {455,000 QAR|chart-profit}.'},
+ ar:{tool:'إعادة حساب التدفق النقدي على 10 سنوات',detail:'cashflow(setup="solar_chiller", years=10)\n→ break-even at 3.4 yrs',
+  a:'تبلغ تكلفة إنشاء البيت المحمي المبرَّد {235,000 ر.ق|k-cost} ويحقق {69,000 ر.ق|k-profit} سنوياً، لذا يسترد تكلفته خلال {3.4 سنوات|k-pay}. وبعد 10 سنوات تكون قد ربحت نحو {455,000 ر.ق|chart-profit}.'}},
+unsure:{en:{tool:'Looking up soil and groundwater data for this site',detail:'soil_salinity(lat=25.69, lon=51.50)\n→ no records within 25 km',
+  u:'I don’t have soil or groundwater salinity data for this site. A local lab test would settle it before you choose a crop.'},
+ ar:{tool:'البحث عن بيانات التربة والمياه الجوفية لهذا الموقع',detail:'soil_salinity(lat=25.69, lon=51.50)\n→ no records within 25 km',
+  u:'لا أملك بيانات عن ملوحة التربة أو المياه الجوفية لهذا الموقع. يمكن لفحص في مختبر محلي أن يحسم الأمر قبل اختيار المحصول.'}}
+};
+const intentOf=s=>{s=s.toLowerCase();
+  if(/budget|half|cheap|ميزاني|النصف/.test(s))return'half';
+  if(/evap|humid|pad|تبخير|رطوب/.test(s))return'evap';
+  if(/pay|year|return|profit|استرد|سنة|ربح/.test(s))return'payback';
+  if(/grow|crop|plant|tomato|أزرع|محصول|زراع|طماطم/.test(s))return'grow';
+  return'unsure';};
+const SETUPS=[
+ {id:'open',k:'s_open',color:'#A0834E',dash:'2 5',dashCss:'dotted',sw:2.5,months:5,cov:41,cost:18000,profit:22000,payback:0.8,
+  temps:[23,25,29,34,40,43,44,43,40,36,30,25]},
+ {id:'shade',k:'s_shade',color:'#6E7F5E',dash:'9 5',dashCss:'dashed',sw:2.5,months:6,cov:52,cost:45000,profit:31000,payback:1.5,
+  temps:[21,23,27,31,37,40,41,40,37,33,27,23]},
+ {id:'pad',k:'s_pad',color:'#2B78B0',dash:'',dashCss:'solid',sw:2.5,months:7,cov:63,cost:140000,profit:38000,payback:3.7,warn:true,
+  temps:[18,19,22,25,29,34,37,37,34,28,23,19]},
+ {id:'chill',k:'s_chill',color:'#1E5B3F',dash:'',dashCss:'solid',sw:4,months:11,cov:96,cost:235000,profit:69000,payback:3.4,rec:true,
+  temps:[18,19,21,23,25,27,28,28,27,24,21,19]}
+];
+const CAL=[['tomato','gggggrxrgggg',1],['cucumber','gggggrrrgggg'],['lettuce','ggggrxxxrggg'],['pepper','ggggrrxrrggg'],['strawberry','gggrxxxxxrgg']];
+const CROP={en:{tomato:'Tomato',cucumber:'Cucumber',lettuce:'Lettuce',pepper:'Bell pepper',strawberry:'Strawberry'},ar:{tomato:'طماطم',cucumber:'خيار',lettuce:'خس',pepper:'فلفل رومي',strawberry:'فراولة'}};
+const ST={g:{bg:'#DDEBDF',fg:'#1E5B3F',icon:'✓',k:'good'},r:{bg:'#FBEBC8',fg:'#7A5200',icon:'!',k:'risky'},x:{bg:'#F6D9D4',fg:'#9E2A1F',icon:'✕',k:'impossible'}};
+const f=n=>n.toLocaleString('en-US');
+
+class Component extends DCLogic {
+  state={winW:window.innerWidth,lang:'en',view:(window.innerWidth<760?'m':'d'),screen:'results',assumOpen:false,srcOpen:true,loading:false,toast:null,highlight:null,
+    assum:{price:6.5,elec:0.32,pad:80,water:4.4,yield:18},pin:null,layer:'sat',placeQ:'',placeOpen:false,cropQ:'',cropOpen:false,form:{size:2000,budget:250000,priority:'profit'},step:0,dataDown:false,offline:false,setTab:'limits',vals:clone(DEF),
+    chatOpen:false,msgs:[],input:'',busy:false,replyLang:null,aiDown:false,openTools:{}};
+  scrollRef=React.createRef(); tableRef=React.createRef(); chatRef=React.createRef();
+  openChat=()=>this.setState({chatOpen:true});
+  onResize=()=>this.setState({winW:window.innerWidth});
+  mapRef=React.createRef();
+  componentDidMount(){window.addEventListener('resize',this.onResize); this.syncMap();}
+  componentWillUnmount(){window.removeEventListener('resize',this.onResize); clearInterval(this._an);}
+  syncMap(){
+    const el=this.mapRef.current;
+    if(!el){this._mapEl=null; return;}
+    if(!window.L){setTimeout(()=>this.syncMap(),300); return;}
+    if(this._mapEl!==el){
+      this._mapEl=el; const L=window.L;
+      const map=L.map(el,{zoomControl:false,attributionControl:true}).setView(this.state.pin?[this.state.pin.lat,this.state.pin.lng]:[25.35,51.2],this.state.pin?10:8);
+      L.control.zoom({position:'topright'}).addTo(map);
+      this._layers={sat:L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Esri'}),
+        ter:L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',{attribution:'Esri'})};
+      this._layers[this.state.layer].addTo(map); this._curLayer=this.state.layer;
+      this._icon=L.divIcon({className:'',iconSize:[34,34],iconAnchor:[17,34],html:'<div style="width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#1E5B3F;border:3px solid #FFFDF8;box-shadow:0 6px 14px rgba(0,0,0,.4);display:grid;place-items:center"><div style="width:10px;height:10px;border-radius:50%;background:#EBDDBF"></div></div>'});
+      map.on('click',e=>this.setPin({lat:e.latlng.lat,lng:e.latlng.lng}));
+      this._map=map; this._marker=null;
+      setTimeout(()=>map.invalidateSize(),100);
+    }
+    const map=this._map;
+    if(this._curLayer!==this.state.layer){map.removeLayer(this._layers[this._curLayer]); this._layers[this.state.layer].addTo(map); this._curLayer=this.state.layer;}
+    const p=this.state.pin;
+    if(p){ if(!this._marker) this._marker=window.L.marker([p.lat,p.lng],{icon:this._icon}).addTo(map); else this._marker.setLatLng([p.lat,p.lng]); }
+    else if(this._marker){map.removeLayer(this._marker); this._marker=null;}
+  }
+  setPin(pin,fly){this.setState({pin,placeQ:'',placeOpen:false}); if(fly&&this._map) this._map.flyTo([pin.lat,pin.lng],11,{duration:1.2});}
+  analyse(){
+    this.go('analysis'); this.setState({step:0}); clearInterval(this._an);
+    this._an=setInterval(()=>{const n=this.state.step+1; if(n>6){clearInterval(this._an); setTimeout(()=>this.go('results'),500);} else this.setState({step:n});},1100);
+  }
+  componentDidUpdate(pp,ps){ this.syncMap(); if(ps.view!==this.state.view&&this._map) setTimeout(()=>this._map&&this._map.invalidateSize(),100); if(ps.msgs!==this.state.msgs&&this.chatRef.current){const c=this.chatRef.current; c.scrollTo({top:c.scrollHeight,behavior:'smooth'});} }
+  jump(target){
+    const m=this.state.view==='m';
+    this.setState({screen:'results',highlight:target,chatOpen:m?false:this.state.chatOpen});
+    setTimeout(()=>{const s=this.scrollRef.current,el=s&&s.querySelector('#'+target); if(el) s.scrollTo({top:el.offsetTop-24,behavior:'smooth'});},60);
+    clearTimeout(this._h); this._h=setTimeout(()=>this.setState({highlight:null}),2400);
+  }
+  send(text){
+    text=(text||'').trim(); if(!text||this.state.busy||this.state.aiDown) return;
+    const lang=/[\u0600-\u06FF]/.test(text)?'ar':'en', key=intentOf(text), sc=SCRIPT[key][lang], id=Date.now();
+    this.setState(s=>({input:'',busy:true,replyLang:lang,msgs:[...s.msgs,{type:'user',text,lang},{type:'tool',id,text:sc.tool,detail:sc.detail,lang,running:true}]}));
+    setTimeout(()=>{
+      const add=[];
+      if(sc.a) add.push({type:'ai',lang,raw:sc.a});
+      if(sc.u) add.push({type:'unsure',lang,text:sc.u});
+      if(sc.plan) add.push({type:'plan',lang,text:sc.plan});
+      this.setState(s=>({busy:false,msgs:[...s.msgs.map(x=>x.id===id?{...x,running:false}:x),...add]}));
+    },1300);
+  }
+  go(screen){this.setState({screen}); if(this.scrollRef.current) this.scrollRef.current.scrollTop=0;}
+  flash(msg){clearTimeout(this._t); this.setState({toast:msg}); this._t=setTimeout(()=>this.setState({toast:null}),2600);}
+  axes(W,H,P,rtl){const X=x=>rtl?W-x:x; return {X,ya:rtl?W-P.l+8:P.l-8,anchor:rtl?'start':'end'};}
+  tempChart(W,rtl,months,t){
+    const H=280,P={l:44,r:44,t:16,b:32},lo=15,hi=46,{X,ya,anchor}=this.axes(W,H,P,rtl);
+    const xs=i=>X(P.l+i*(W-P.l-P.r)/11), ys=v=>P.t+(hi-v)/(hi-lo)*(H-P.t-P.b);
+    const path=a=>a.map((v,i)=>(i?'L':'M')+xs(i).toFixed(1)+' '+ys(v).toFixed(1)).join(' ');
+    const grid=[20,25,30,35,40,45].map(v=>({x1:P.l,x2:W-P.r,y:ys(v),tx:ya,ty:ys(v)+4,anchor,label:v+'°'}));
+    const lines=SETUPS.map(s=>({d:path(s.temps),color:s.color,sw:s.sw,dash:s.dash}));
+    const step=W<500?2:1;
+    return {vb:`0 0 ${W} ${H}`,grid,lines,band:{x:P.l,y:ys(hi),w:W-P.l-P.r,h:ys(32)-ys(hi)},
+      limit:{x1:P.l,x2:W-P.r,y:ys(32),tx:rtl?W-P.l-6:P.l+6,ty:ys(32)-6,anchor:rtl?'end':'start'},
+      xl:months.map((m,i)=>({x:xs(i),y:H-8,label:i%step?'':m}))};
+  }
+  solarChart(W,rtl){
+    const H=240,P={l:40,r:40,t:14,b:30},hi=50,{X,ya,anchor}=this.axes(W,H,P,rtl);
+    const xs=h=>X(P.l+h*(W-P.l-P.r)/24), ys=v=>P.t+(hi-v)/hi*(H-P.t-P.b);
+    const sol=[],cool=[];
+    for(let h=0;h<=24;h+=0.5){const s=h>5.5&&h<19?46*Math.pow(Math.sin(Math.PI*(h-5.5)/13.5),1.3):0; sol.push([h,s]);
+      const c=9+29*Math.pow(Math.max(0,Math.sin(Math.PI*(h-6)/17)),1.6); cool.push([h,c]);}
+    const p=a=>a.map(([h,v],i)=>(i?'L':'M')+xs(h).toFixed(1)+' '+ys(v).toFixed(1)).join(' ');
+    const sp=p(sol);
+    return {vb:`0 0 ${W} ${H}`,solar:sp,area:sp+` L${xs(24)} ${ys(0)} L${xs(0)} ${ys(0)} Z`,cool:p(cool),
+      grid:[0,10,20,30,40,50].map(v=>({x1:P.l,x2:W-P.r,y:ys(v),tx:ya,ty:ys(v)+4,anchor,label:v})),
+      xl:[0,6,12,18,24].map(h=>({x:xs(h),y:H-8,label:String(h).padStart(2,'0')+':00'}))};
+  }
+  profitChart(W,rtl,t){
+    const H=240,P={l:52,r:52,t:14,b:30},lo=-250,hi=500,{X,ya,anchor}=this.axes(W,H,P,rtl);
+    const xs=y=>X(P.l+y*(W-P.l-P.r)/10), ys=v=>P.t+(hi-v)/(hi-lo)*(H-P.t-P.b);
+    const lines=SETUPS.map(s=>({color:s.color,sw:s.sw,dash:s.dash,d:[0,1,2,3,4,5,6,7,8,9,10].map((y,i)=>(i?'L':'M')+xs(y).toFixed(1)+' '+ys((-s.cost+s.profit*y)/1000).toFixed(1)).join(' ')}));
+    const grid=[-200,0,200,400].map(v=>({x1:P.l,x2:W-P.r,y:ys(v),tx:ya,ty:ys(v)+4,anchor,label:(v===0?'0':v+'k'),stroke:v===0?'#8C826C':'#EFE8DA',sw:v===0?1.5:1}));
+    return {vb:`0 0 ${W} ${H}`,lines,grid,pb:{x:xs(3.4),y:ys(0),ty:ys(0)+22},
+      xl:[0,2,4,6,8,10].map(y=>({x:xs(y),y:H-8,label:y+(t===T.ar?' س':' yr')}))};
+  }
+  renderVals(){
+    const {lang,view,screen}=this.state, t=T[lang], rtl=lang==='ar', m=view==='m';
+    const on={bg:'#1E5B3F',fg:'#FFFDF8'}, off={bg:'transparent',fg:'#3D463C'};
+    const tab=a=>a?{bg:'#E3EDE5',fg:'#1E5B3F'}:{bg:'transparent',fg:'#3D463C'};
+    const L=m?{frameW:'390px',frameH:'min(844px, calc(100vh - 24px))',frameR:'32px',frameShadow:'0 0 0 10px #1E2A22, 0 30px 60px -20px rgba(0,0,0,.4)',barPad:'12px',barGap:'8px',
+      pad:'16px',gap:'14px',kpiCols:'repeat(2,minmax(0,1fr))',chartCols:'minmax(0,1fr)',verdictSize:'26px',cardPad:'18px',cardPadX:'18px',cardPadLg:'22px',calFirst:'96px',calMin:'720px',tableMin:'760px',fabB:'16px',fabH:'56px',fabPad:'0 14px',drawerTop:'0',drawerW:'100%',heroPad:'28px 16px 32px',heroCols:'minmax(0,1fr)',heroGap:'28px',heroSize:'36px',padX:'16px',valueCols:'minmax(0,1fr)',
+      setupH:'auto',setupDir:'column',panelW:'100%',panelOrder:2,mapOrder:1,mapMin:'380px',cmpCols:'minmax(0,1fr)',cmpVerdict:'20px'}
+      :{frameW:'100%',frameH:'100%',frameR:'0',frameShadow:'none',barPad:'28px',barGap:'16px',
+      pad:'32px 40px',gap:'20px',kpiCols:'repeat(auto-fit,minmax(170px,1fr))',chartCols:'repeat(auto-fit,minmax(420px,1fr))',verdictSize:'40px',cardPad:'24px',cardPadX:'24px',cardPadLg:'36px',calFirst:'150px',calMin:'760px',tableMin:'860px',fabB:'24px',fabH:'52px',fabPad:'0 20px 0 14px',drawerTop:'64px',drawerW:'min(420px, 100%)',heroPad:'72px 40px 56px',heroCols:'repeat(auto-fit,minmax(380px,1fr))',heroGap:'56px',heroSize:'clamp(40px,4.6vw,64px)',padX:'40px',valueCols:'repeat(auto-fit,minmax(260px,1fr))',
+      setupH:'100%',setupDir:'row',panelW:'400px',panelOrder:1,mapOrder:2,mapMin:'0',cmpCols:this.state.winW<1000?'minmax(0,1fr)':'minmax(0,1fr) minmax(220px,280px) minmax(0,1fr)',cmpVerdict:'24px'};
+    const months=rtl?MO_AR:MO_EN, cm=CROP[lang];
+    const navDef=[['landing','nav_home'],['setup','nav_plan'],['results','nav_results'],['compare','nav_compare'],['settings','nav_settings']];
+    const nav=navDef.map(([s,k])=>({label:t[k],go:()=>this.go(s),current:screen===s?'page':undefined,...tab(screen===s)}));
+    const hl=this.state.highlight, ring=id=>hl===id?'3px solid #2B78B0':'3px solid transparent';
+    const K=[['k-cov','k_cov','96','%','k_cov_n'],['k-cost','k_cost','235,000',t.qar,'k_cost_n'],['k-profit','k_profit','69,000',t.qar,'k_profit_n'],['k-pay','k_pay','3.4',t.years,'k_pay_n'],['k-water','k_water','3,200',t.lday,'k_water_n',1],['k-solar','k_solar','48',t.kw,'k_solar_n']];
+    const kpis=K.map(([id,l,v,u,n,w])=>({id,label:t[l],value:v,unit:u,note:t[n],color:w?'#1F6699':'#1E2A22',ring:ring(id)}));
+    const calendar=CAL.map(([c,s,rec])=>({name:cm[c],rec:!!rec,cells:s.split('').map((ch,i)=>({...ST[ch],tip:`${cm[c]} · ${months[i]} · ${t[ST[ch].k]}`}))}));
+    const setups=SETUPS.map(s=>({name:t[s.k],color:s.color,dashCss:s.dashCss,rec:!!s.rec,warn:!!s.warn,months:s.months,cov:s.cov,covW:s.cov+'%',
+      covColor:s.cov>=90?'#1E5B3F':s.cov>=60?'#C99A12':'#E0782A',cost:f(s.cost),profit:f(s.profit),payback:s.payback,p10:f(s.profit*10-s.cost),
+      rowBg:s.rec?'#EAF2EB':'transparent',border:s.rec?'1.5px solid #9CC2A6':(hl==='setups'?'1.5px solid #9CC9EA':'1.5px solid transparent')}));
+    const setupLegend=SETUPS.map(s=>({label:t[s.k],color:s.color,dashCss:s.dashCss,w:s.sw+'px'}));
+    const W=m?380:760, W2=m?380:560;
+    const a=this.state.assum, setA=k=>e=>{const v=e.target.value; this.setState(st=>({assum:{...st.assum,[k]:v}}));};
+    const A=[['price','a_price',t.qar+' / kg'],['elec','a_elec',t.qar+' / kWh'],['pad','a_pad','%'],['water','a_water',t.qar+' / m³'],['yield','a_yield','kg / m² / '+(rtl?'سنة':'yr')]];
+    return {
+      t,lang,dir:rtl?'rtl':'ltr',L,isDesktop:!m,isMobile:m,navInline:!m&&this.state.winW>=1180,navStrip:m||this.state.winW<1180,arrow:rtl?'←':'→',
+      vD:view==='d'?on:off,vM:m?on:off,lEn:!rtl?on:off,lAr:rtl?on:off,
+      setDesktop:()=>this.setState({view:'d'}),setMobile:()=>this.setState({view:'m'}),
+      setEn:()=>this.setState({lang:'en'}),setAr:()=>this.setState({lang:'ar'}),
+      nav,scr:{[screen]:true},goLanding:()=>this.go('landing'),goCompare:()=>this.go('compare'),goSettings:()=>this.go('settings'),
+      scrollRef:this.scrollRef,tableRef:this.tableRef,
+      exportPdf:()=>this.flash(t.toast_pdf),share:()=>this.flash(t.toast_share),
+      askWhy:()=>this.openChat&&this.openChat(),
+      scrollToTable:()=>{const s=this.scrollRef.current,el=this.tableRef.current; if(s&&el) s.scrollTo({top:el.offsetTop-16,behavior:'smooth'});},
+      loading:this.state.loading,notLoading:!this.state.loading,kpis,
+      legend:['g','r','x'].map(k=>({...ST[k],label:t[ST[k].k]})),months,calendar,
+      cols:[t.c_setup,t.c_months,t.c_cov,t.c_cost,t.c_profit,t.c_pay,t.c_p10],setups,
+      lineLegend:[...setupLegend,{label:t.limit_label,color:'#B3261E',dashCss:'dashed',w:'2px'}],setupLegend,
+      tc:this.tempChart(W,rtl,months,t),sc:this.solarChart(W2,rtl),pc:this.profitChart(W2,rtl,t),
+      ringTemp:ring('chart-temp'),ringSolar:ring('chart-solar'),ringProfit:ring('chart-profit'),
+      assumOpen:this.state.assumOpen,assumRot:this.state.assumOpen?'rotate(180deg)':'none',toggleAssum:()=>this.setState(s=>({assumOpen:!s.assumOpen})),
+      srcOpen:this.state.srcOpen,srcRot:this.state.srcOpen?'rotate(180deg)':'none',toggleSrc:()=>this.setState(s=>({srcOpen:!s.srcOpen})),
+      assum:A.map(([k,l,u])=>({label:t[l],unit:u,value:a[k],onChange:setA(k)})),
+      recalc:()=>{this.setState({loading:true}); setTimeout(()=>{this.setState({loading:false}); this.flash(T[this.state.lang].toast_recalc);},1100);},
+      sources:[['NASA POWER','https://power.larc.nasa.gov','src_nasa'],['Open-Meteo','https://open-meteo.com','src_om'],['FAO ECOCROP','https://gaez.fao.org','src_fao'],['FAOSTAT','https://www.fao.org/faostat','src_faostat']].map(([n,u,d])=>({name:n,url:u,desc:t[d]})),
+      toast:this.state.toast,
+      ...this.chatVals(t,lang,m,rtl),
+      ...this.flowVals(t,lang,m,rtl,on,off),
+      ...this.moreVals(t,lang,m,rtl)
+    };
+  }
+  moreVals(t,lang,m,rtl){
+    const st=this.state;
+    const site=(o)=>({isSite:true,...o});
+    const q=t.qar,y=rtl?' سنة':' yrs';
+    const A=site({order:1,tag:t.t_inland,tagBg:'#F3EBD8',tagFg:'#6A5324',name:t.site_b,coords:'25.01° N, 51.05° E',hum:18,humLabel:t.c_dry,humBg:'#FFFDF8',
+      verdict:t.v_inland,verdictBg:'#E2EEF7',verdictFg:'#123E5E',padCov:91,padW:'91%',padColor:'#1E5B3F',
+      rows:[{label:t.c_best,value:t.s_pad},{label:t.c_padcool,value:'−14 °C'},{label:t.c_cost,value:'140,000 '+q},{label:t.c_pay,value:'2.1'+y}]});
+    const B=site({order:3,tag:t.t_coast,tagBg:'#E2EEF7',tagFg:'#1F5F8C',name:t.site_a,coords:'25.69° N, 51.50° E',hum:72,humLabel:t.c_wet,humBg:'#EEF5FB',
+      verdict:t.v_coast,verdictBg:'#1E5B3F',verdictFg:'#FFFDF8',padCov:63,padW:'63%',padColor:'#E0782A',
+      rows:[{label:t.c_best,value:t.s_chill},{label:t.c_padcool,value:'−3 °C',warn:true},{label:t.c_cost,value:'235,000 '+q},{label:t.c_pay,value:'3.4'+y}]});
+    const tab=st.setTab, V=st.vals[tab], D=DEF[tab];
+    const heads={limits:[t.h_crop,t.h_min,t.h_max,t.h_lethal],costs:[t.c_setup,t.h_build,t.h_run],prices:[t.h_crop,t.h_price,t.h_yield]}[tab];
+    const units={limits:['°C','°C','°C'],costs:[q+' / m²',q+' / m² / '+(rtl?'سنة':'yr')],prices:[q+' / kg','kg / m² / '+(rtl?'سنة':'yr')]}[tab];
+    const nameOf=k=>tab==='costs'?t[SETUPS.find(s=>s.id===k).k]:CROP[lang][k];
+    const setRows=Object.keys(V).map(k=>({name:nameOf(k),cells:V[k].map((v,i)=>({value:v,unit:units[i],a11y:nameOf(k)+' '+heads[i+1],border:String(v)!==String(D[k][i])?'#2B78B0':'#CFC3AA',
+      onChange:e=>{const nv=e.target.value; this.setState(s=>{const vals=clone(s.vals); vals[tab][k][i]=nv; return {vals};});}}))}));
+    const tg=(k,l)=>({label:t[l],on:st[k]?'true':'false',track:st[k]?'#1E5B3F':'#CFC3AA',knob:st[k]?'21px':'3px',go:()=>this.setState(s=>({[k]:!s[k]}))});
+    return {
+      sites:[A,{isStrip:true,order:2},B],
+      askEvap:()=>{this.setState({chatOpen:true}); setTimeout(()=>this.send(PROMPTS[this.state.lang][2][1]),250);},
+      setTabs:[['limits','tab_limits'],['costs','tab_costs'],['prices','tab_prices']].map(([k,l])=>({label:t[l],sel:tab===k?'true':'false',go:()=>this.setState({setTab:k}),
+        bg:tab===k?'#FFFDF8':'transparent',fg:tab===k?'#1E2A22':'#4A5247',sh:tab===k?'0 1px 3px rgba(60,45,20,.18)':'none'})),
+      setHead:heads,setRows,tableCols:`minmax(120px,1.2fr) repeat(${heads.length-1},minmax(140px,1fr))`,
+      resetDefaults:()=>{this.setState({vals:clone(DEF)}); this.flash(t.toast_reset);},saveSettings:()=>this.flash(t.toast_saved),
+      stateToggles:[tg('offline','ds_offline'),tg('dataDown','ds_data'),tg('aiDown','ds_ai')],offline:st.offline
+    };
+  }
+  flowVals(t,lang,m,rtl,on,off){
+    const st=this.state,p=st.pin,ok=p&&inRegion(p);
+    const q=st.placeQ.trim().toLowerCase(), places=q?PLACES.filter(x=>x.en.toLowerCase().includes(q)||x.ar.includes(st.placeQ.trim())):[];
+    const cq=st.cropQ.trim().toLowerCase(), crops=Object.keys(CROP.en).filter(k=>!cq||CROP.en[k].toLowerCase().includes(cq)||CROP.ar[k].includes(st.cropQ.trim()));
+    const pri=[['profit','pr_profit'],['fast','pr_fast'],['water','pr_water']];
+    const setF=k=>e=>{const v=e.target.value; this.setState(s=>({form:{...s.form,[k]:v}}));};
+    const stepKeys=['s1','s2','s3','s4','s5','s6'];
+    return {
+      mapRef:this.mapRef,goSetup:()=>this.go('setup'),goDemo:()=>{this.setState({pin:{lat:25.69,lng:51.50}}); this.analyse();},
+      values:[['v1','v1t','#E3EDE5','#1E5B3F','50%'],['v2','v2t','#E2EEF7','#2B78B0','4px'],['v3','v3t','#F3EBD8','#A0834E','50% 50% 0 50%']].map(([a,b,bg,fg,shape])=>({title:t[a],text:t[b],bg,fg,shape})),
+      pinBox:p?(ok?{bg:'#EEF4EE',border:'#C9DCCD',dot:'#1E5B3F',title:t.p_pinned,coords:fc(p),err:false}:{bg:'#FBEAE7',border:'#EBC0B8',dot:'#B3261E',title:t.p_pinned,coords:fc(p),err:true})
+        :{bg:'#F5F0E6',border:'#E6DDCB',dot:'#CFC3AA',title:t.p_nopin,coords:'— , —',err:false},
+      form:st.form,setSize:setF('size'),setBudget:setF('budget'),
+      cropQ:st.cropQ,cropOpen:st.cropOpen,openCrop:()=>this.setState({cropOpen:true}),setCropQ:e=>this.setState({cropQ:e.target.value,cropOpen:true}),
+      cropOpts:crops.map(k=>({label:CROP[lang][k],pick:()=>this.setState({cropQ:CROP[lang][k],cropOpen:false})})),cropNone:crops.length===0,
+      priorities:pri.map(([k,l])=>{const a=st.form.priority===k; return {label:t[l],note:t[l+'_n'],on:a?'true':'false',pick:()=>this.setState(s=>({form:{...s.form,priority:k}})),
+        border:a?'1.5px solid #1E5B3F':'1px solid #E6DDCB',bg:a?'#EEF4EE':'#FFFFFF',ring:a?'#1E5B3F':'#A99E86',dot:a?'#1E5B3F':'transparent'};}),
+      cantAnalyse:!ok,analyseBg:ok?'#1E5B3F':'#9AAE9F',analyseCursor:ok?'pointer':'not-allowed',analyse:()=>ok&&this.analyse(),
+      placeQ:st.placeQ,placeOpen:!!q,setPlaceQ:e=>this.setState({placeQ:e.target.value}),
+      placeOpts:places.map(x=>({label:x[lang],coords:`${x.lat.toFixed(2)}, ${x.lng.toFixed(2)}`,pick:()=>this.setPin({lat:x.lat,lng:x.lng},true)})),placeNone:!!q&&places.length===0,
+      lySat:st.layer==='sat'?on:off,lyTer:st.layer==='ter'?on:off,setSat:()=>this.setState({layer:'sat'}),setTer:()=>this.setState({layer:'ter'}),noPin:!p,
+      pinCoords:p?fc(p):fc({lat:25.69,lng:51.5}),dataDown:st.dataDown,progPct:Math.round(st.step/6*100),progW:(st.step/6*100)+'%',
+      steps:stepKeys.map((k,i)=>{const done=i<st.step,running=i===st.step; return {label:t[k],note:t[k+'n'],done,running,pending:!done&&!running,showNote:done||running,op:(done||running)?1:0.55,fw:running?600:500,bt:i?'1px solid #EFE8DA':'0'};})
+    };
+  }
+  chatVals(t,lang,m,rtl){
+    const st=this.state, rl=st.replyLang||lang;
+    const msgs=st.msgs.map((x,i)=>{
+      const tt=T[x.lang], dir=x.lang==='ar'?'rtl':'ltr', base={dir,align:'flex-end'};
+      if(x.type==='user') return {...base,isUser:true,text:x.text};
+      if(x.type==='tool'){const open=!!st.openTools[x.id]; return {...base,isTool:true,text:x.text,detail:x.detail,running:!!x.running,done:!x.running,open,rot:open?'rotate(180deg)':'none',
+        toggle:()=>this.setState(s=>({openTools:{...s.openTools,[x.id]:!s.openTools[x.id]}}))};}
+      if(x.type==='ai'){const parts=[];let last=0; x.raw.replace(/\{([^|}]+)\|([^}]+)\}/g,(mm,txt,tg,off)=>{parts.push({isText:true,text:x.raw.slice(last,off)}); parts.push({isChip:true,text:txt,tip:tt.chip_tip,go:()=>this.jump(tg)}); last=off+mm.length;}); parts.push({isText:true,text:x.raw.slice(last)});
+        return {...base,isAi:true,parts,verified:true,vLabel:tt.v_label,vTip:tt.v_tip};}
+      if(x.type==='plan') return {...base,isPlan:true,title:tt.plan_title,text:x.text,btn:tt.view_new,go:()=>{this.jump('k-cost'); this.flash(T[this.state.lang].plan_title);}};
+      if(x.type==='unsure') return {...base,isUnsure:true,title:tt.unsure_title,text:x.text};
+    });
+    return {
+      chatOpen:st.chatOpen,fabShow:!st.chatOpen,chatRef:this.chatRef,chatEmpty:st.msgs.length===0,msgs,
+      openChat:this.openChat,closeChat:()=>this.setState({chatOpen:false}),newChat:()=>this.setState({msgs:[],replyLang:null,openTools:{}}),
+      replyLangLabel:T[rl].reply_in,botDot:st.aiDown?'#A99E86':'#3F9A62',aiDown:st.aiDown,
+      prompts:PROMPTS[lang].map(([k,txt])=>({text:txt,go:()=>this.send(txt)})),
+      input:st.input,onInput:e=>this.setState({input:e.target.value}),
+      submit:e=>{e.preventDefault(); this.send(this.state.input);},
+      sendDisabled:!st.input.trim()||st.busy||st.aiDown,sendBg:(!st.input.trim()||st.busy||st.aiDown)?'#9AAE9F':'#1E5B3F'
+    };
+  }
+}
+</script>
+</body>
+</html>

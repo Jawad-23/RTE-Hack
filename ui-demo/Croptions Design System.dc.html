@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<title>Croptions — Design system</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>html,body{margin:0;background:#F5F0E6;} *{box-sizing:border-box;} a{color:#1E5B3F;} a:hover{color:#123826;} @keyframes cr-pulse{0%,100%{opacity:.55}50%{opacity:1}} @keyframes cr-spin{to{transform:rotate(360deg)}}</style>
+</helmet>
+<div style="font-family:'IBM Plex Sans','IBM Plex Sans Arabic',sans-serif; color:#1E2A22; font-size:15px; line-height:1.5; max-width:1280px; margin:0 auto; padding:48px 40px 96px; display:flex; flex-direction:column; gap:56px;">
+
+<header style="display:flex; flex-direction:column; gap:8px;">
+  <div style="display:flex; align-items:center; gap:10px;"><span style="width:34px; height:34px; border-radius:10px; background:#1E5B3F; display:grid; place-items:center;"><span style="width:13px; height:13px; border-radius:50%; background:#EBDDBF;"></span></span><span style="font-weight:700; font-size:20px;">Croptions</span><span style="font-weight:700; font-size:20px; color:#5E6558;">كروبشنز</span></div>
+  <h1 style="margin:8px 0 0; font-size:40px; font-weight:600; letter-spacing:-0.02em;">Design system</h1>
+  <p style="margin:0; color:#4A5247; max-width:40em;">Colours, type, spacing and components for the English (LTR) and Arabic (RTL) product. Components use logical properties (start/end), so one definition mirrors in RTL.</p>
+</header>
+
+<section style="display:flex; flex-direction:column; gap:20px;">
+  <h2 style="margin:0; font-size:24px; font-weight:600;">Colour</h2>
+  <sc-for list="{{ palettes }}" as="p" hint-placeholder-count="4">
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div><span style="font-weight:600;">{{ p.name }}</span> <span style="color:#5E6558; font-size:14px;">— {{ p.use }}</span></div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px;">
+        <sc-for list="{{ p.sw }}" as="s" hint-placeholder-count="4">
+          <div style="background:#FFFDF8; border-radius:14px; overflow:hidden; box-shadow:0 1px 2px rgba(60,45,20,.08);">
+            <div style="height:64px; background:{{ s.hex }}; border-bottom:1px solid rgba(0,0,0,.05);"></div>
+            <div style="padding:8px 10px;"><div style="font-size:14px; font-weight:600;">{{ s.n }}</div><div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#5E6558;">{{ s.hex }}</div></div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-for>
+  <div style="background:#FFFDF8; border-radius:16px; padding:16px 18px; display:flex; flex-wrap:wrap; gap:16px; align-items:center; font-size:14px;">
+    <strong>Risk is never colour alone:</strong>
+    <sc-for list="{{ risks }}" as="r" hint-placeholder-count="3"><span style="display:inline-flex; align-items:center; gap:6px;"><span style="width:24px; height:24px; border-radius:6px; background:{{ r.bg }}; color:{{ r.fg }}; display:grid; place-items:center; font-weight:700; font-size:12px;">{{ r.i }}</span>{{ r.en }} · {{ r.ar }}</span></sc-for>
+  </div>
+</section>
+
+<section style="display:flex; flex-direction:column; gap:20px;">
+  <h2 style="margin:0; font-size:24px; font-weight:600;">Type</h2>
+  <p style="margin:0; color:#4A5247;">IBM Plex Sans with IBM Plex Sans Arabic: one design family with matching weights and x-height. Arabic uses the same size scale, with line-height 1.5 or more for body text. Numbers use Western digits in both languages. Body text is never smaller than 14 px.</p>
+  <div style="background:#FFFDF8; border-radius:20px; overflow:hidden;">
+    <sc-for list="{{ types }}" as="ty" hint-placeholder-count="6">
+      <div style="display:grid; grid-template-columns:140px minmax(0,1fr) minmax(0,1fr); gap:24px; padding:18px 24px; border-top:1px solid #EFE8DA; align-items:baseline;">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#5E6558;">{{ ty.spec }}</div>
+        <div style="font-size:{{ ty.size }}; font-weight:{{ ty.w }}; line-height:1.25; letter-spacing:{{ ty.ls }};">{{ ty.en }}</div>
+        <div dir="rtl" lang="ar" style="font-size:{{ ty.size }}; font-weight:{{ ty.w }}; line-height:1.45;">{{ ty.ar }}</div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<section style="display:flex; flex-direction:column; gap:20px;">
+  <h2 style="margin:0; font-size:24px; font-weight:600;">Spacing, radius, elevation</h2>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px;">
+    <div style="background:#FFFDF8; border-radius:20px; padding:20px; display:flex; flex-direction:column; gap:10px;">
+      <strong>Spacing (4 px base)</strong>
+      <sc-for list="{{ space }}" as="s" hint-placeholder-count="7"><div style="display:flex; align-items:center; gap:12px; font-family:'IBM Plex Mono',monospace; font-size:12px; color:#5E6558;"><span style="width:36px;">{{ s.v }}</span><span style="height:12px; width:{{ s.w }}; background:#1E5B3F; border-radius:3px;"></span></div></sc-for>
+    </div>
+    <div style="background:#FFFDF8; border-radius:20px; padding:20px; display:flex; flex-direction:column; gap:12px;">
+      <strong>Radius</strong>
+      <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <sc-for list="{{ radii }}" as="r" hint-placeholder-count="5"><div style="display:flex; flex-direction:column; align-items:center; gap:6px; font-family:'IBM Plex Mono',monospace; font-size:12px; color:#5E6558;"><span style="width:56px; height:56px; background:#E3EDE5; border:1.5px solid #1E5B3F; border-radius:{{ r.v }};"></span>{{ r.l }}</div></sc-for>
+      </div>
+    </div>
+    <div style="background:#FFFDF8; border-radius:20px; padding:20px; display:flex; flex-direction:column; gap:12px;">
+      <strong>Elevation</strong>
+      <div style="display:flex; gap:14px; flex-wrap:wrap; padding:6px;">
+        <div style="width:90px; height:64px; border-radius:14px; background:#FFFDF8; box-shadow:0 1px 2px rgba(60,45,20,.06),0 6px 18px -10px rgba(60,45,20,.18); display:grid; place-items:center; font-size:12px; color:#5E6558;">Card</div>
+        <div style="width:90px; height:64px; border-radius:14px; background:#FFFDF8; box-shadow:0 12px 30px -12px rgba(60,45,20,.35); display:grid; place-items:center; font-size:12px; color:#5E6558;">Popover</div>
+        <div style="width:90px; height:64px; border-radius:14px; background:#FFFDF8; box-shadow:0 0 40px -12px rgba(60,45,20,.45); display:grid; place-items:center; font-size:12px; color:#5E6558;">Drawer</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="display:flex; flex-direction:column; gap:20px;">
+  <h2 style="margin:0; font-size:24px; font-weight:600;">Buttons</h2>
+  <div style="background:#FFFDF8; border-radius:20px; padding:24px; overflow-x:auto;">
+    <div style="display:grid; grid-template-columns:110px repeat(4,minmax(150px,1fr)); gap:14px 18px; align-items:center; min-width:760px;">
+      <span></span><sc-for list="{{ bStates }}" as="s" hint-placeholder-count="4"><span style="font-size:13px; color:#5E6558;">{{ s }}</span></sc-for>
+      <sc-for list="{{ buttons }}" as="b" hint-placeholder-count="3">
+        <span style="font-size:14px; font-weight:600;">{{ b.name }}</span>
+        <sc-for list="{{ b.states }}" as="s" hint-placeholder-count="4">
+          <span><span style="display:inline-flex; align-items:center; height:44px; padding:0 18px; border-radius:12px; font-size:15px; font-weight:600; background:{{ s.bg }}; color:{{ s.fg }}; border:{{ s.bd }}; outline:{{ s.ol }}; outline-offset:2px;">{{ b.label }}</span></span>
+        </sc-for>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<section style="display:flex; flex-direction:column; gap:20px;">
+  <h2 style="margin:0; font-size:24px; font-weight:600;">Components in both directions</h2>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(460px,1fr)); gap:20px;">
+    <sc-for list="{{ dirs }}" as="d" hint-placeholder-count="2">
+      <div dir="{{ d.dir }}" lang="{{ d.lang }}" style="background:#FFFDF8; border-radius:20px; padding:24px; display:flex; flex-direction:column; gap:22px;">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#5E6558;" dir="ltr">{{ d.tag }}</div>
+
+        <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
+          <span style="display:inline-flex; align-items:center; gap:6px; background:#EBDDBF; color:#1E3B2B; font-size:13px; font-weight:600; padding:3px 10px; padding-inline-start:6px; border-radius:999px;"><span style="width:16px; height:16px; border-radius:50%; background:#1E5B3F; color:#EBDDBF; display:grid; place-items:center; font-size:10px;">✓</span>{{ d.verified }}</span>
+          <span style="font-size:12px; font-weight:600; color:#FFFDF8; background:#1E5B3F; padding:2px 8px; border-radius:999px;">{{ d.rec }}</span>
+          <span style="display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:#7A3A00; background:#FBE3CC; padding:3px 10px; padding-inline-start:6px; border-radius:8px;"><span style="width:16px; height:16px; border-radius:4px; background:#E0782A; color:#FFFDF8; display:grid; place-items:center; font-size:11px;">!</span>{{ d.fails }}</span>
+          <span style="display:inline-flex; align-items:center; gap:4px; padding:0 8px; height:24px; border-radius:7px; border:1px solid #B9D3C0; color:#1E5B3F; font-size:14px; font-weight:600;"><span dir="ltr">3.4</span> {{ d.years }} <span style="font-size:11px;">↗</span></span>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <div style="border-radius:16px; padding:14px 16px; box-shadow:0 1px 2px rgba(60,45,20,.06),0 6px 18px -10px rgba(60,45,20,.18);"><div style="font-size:14px; color:#5E6558;">{{ d.pay }}</div><div style="display:flex; gap:6px; align-items:baseline;"><span style="font-size:28px; font-weight:600;" dir="ltr">3.4</span><span style="font-size:14px; color:#5E6558;">{{ d.years }}</span></div></div>
+          <div style="border-radius:16px; padding:14px 16px; box-shadow:0 1px 2px rgba(60,45,20,.06),0 6px 18px -10px rgba(60,45,20,.18); display:flex; flex-direction:column; gap:8px;"><div style="font-size:14px; color:#5E6558;">{{ d.loading }}</div><div style="height:30px; width:70%; border-radius:8px; background:#ECE4D4; animation:cr-pulse 1.2s infinite;"></div></div>
+        </div>
+
+        <label style="display:flex; flex-direction:column; gap:6px; font-size:14px; font-weight:500;">{{ d.budget }}
+          <span style="display:flex; align-items:center; border:1px solid #1E5B3F; box-shadow:0 0 0 3px rgba(43,120,176,.35); border-radius:12px; height:48px; padding:0 14px; gap:8px; background:#FFF;"><span dir="ltr" style="flex:1; text-align:start;">250000</span><span style="font-size:14px; color:#5E6558;">{{ d.qar }}</span></span>
+        </label>
+
+        <div style="display:flex; flex-direction:column; gap:0; border-radius:14px; border:1px solid #EFE8DA;">
+          <sc-for list="{{ d.steps }}" as="s" hint-placeholder-count="3">
+            <div style="display:flex; gap:12px; align-items:center; padding:10px 14px; border-top:{{ s.bt }};">
+              <span style="width:22px; height:22px; border-radius:50%; flex-shrink:0; background:{{ s.bg }}; border:{{ s.bd }}; border-top-color:{{ s.btc }}; color:#FFFDF8; display:grid; place-items:center; font-size:11px; animation:{{ s.anim }};">{{ s.i }}</span><span style="font-size:15px;">{{ s.l }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div style="align-self:flex-end; background:#1E5B3F; color:#FFFDF8; padding:10px 14px; border-radius:18px; border-end-end-radius:6px;">{{ d.q }}</div>
+          <div style="display:flex; align-items:center; gap:10px; border:1px solid #E6DDCB; background:#FAF6EE; border-radius:12px; padding:8px 12px; font-size:14px; color:#3D463C;"><span style="width:16px; height:16px; border-radius:50%; background:#1E5B3F; color:#FFFDF8; display:grid; place-items:center; font-size:10px;">✓</span><span style="flex:1;">{{ d.tool }}</span><span style="color:#8C826C;">⌄</span></div>
+          <div style="background:#F3EEE3; padding:12px 14px; border-radius:18px; border-start-start-radius:6px;">{{ d.a1 }} <span style="display:inline-flex; align-items:center; gap:4px; padding:0 8px; height:24px; border-radius:7px; border:1px solid #B9D3C0; background:#FFFDF8; color:#1E5B3F; font-size:14px; font-weight:600;"><span dir="ltr">3.4</span> {{ d.years }} ↗</span>{{ d.a2 }}</div>
+          <div style="border-radius:16px; background:#F1ECE2; border:1px dashed #A99E86; padding:12px 14px; display:flex; gap:10px;"><span style="width:22px; height:22px; flex-shrink:0; border-radius:50%; border:2px solid #8C826C; color:#5E6558; display:grid; place-items:center; font-size:12px; font-weight:700;">?</span><span style="font-size:14px;">{{ d.unsure }}</span></div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div style="background:#1E2A22; color:#FFFDF8; padding:12px 16px; border-radius:12px; display:flex; gap:10px; align-items:center; font-size:15px;"><span style="width:18px; height:18px; border-radius:50%; background:#7FB38F; color:#1E2A22; display:grid; place-items:center; font-size:11px;">✓</span>{{ d.toast }}</div>
+          <div style="padding:12px 14px; border-radius:12px; background:#FBF1CF; border:1px solid #EBD58D; font-size:14px; color:#5C4600; display:flex; gap:10px;"><span style="width:20px; height:20px; flex-shrink:0; border-radius:5px; background:#C99A12; color:#FFFDF8; display:grid; place-items:center; font-size:12px; font-weight:700;">!</span>{{ d.cached }}</div>
+          <div style="padding:12px 14px; border-radius:12px; background:#FBEAE7; border:1px solid #EBC0B8; font-size:14px; color:#7E2118; display:flex; gap:10px;"><span style="font-weight:700;">✕</span>{{ d.outside }}</div>
+        </div>
+
+        <div style="border-radius:20px; background:#FFFDF8; box-shadow:0 24px 60px -20px rgba(30,42,34,.45); border:1px solid #EFE8DA; padding:20px; display:flex; flex-direction:column; gap:12px;">
+          <strong style="font-size:18px;">{{ d.mTitle }}</strong>
+          <span style="font-size:15px; color:#4A5247;">{{ d.mBody }}</span>
+          <div style="display:flex; gap:8px; justify-content:flex-end;"><span style="height:40px; padding:0 14px; border-radius:10px; display:inline-flex; align-items:center; color:#1E5B3F; font-weight:500;">{{ d.cancel }}</span><span style="height:40px; padding:0 16px; border-radius:10px; background:#1E5B3F; color:#FFFDF8; display:inline-flex; align-items:center; font-weight:600;">{{ d.confirm }}</span></div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+<a href="Croptions.dc.html" style="font-weight:600;">← Back to the prototype</a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals(){
+    const sw=a=>a.map(([n,hex])=>({n,hex}));
+    const st=(bd,s)=>s;
+    return {
+      palettes:[
+        {name:'Sand neutrals',use:'backgrounds, surfaces, lines',sw:sw([['Sand 50 · surface','#FFFDF8'],['Sand 100 · page','#F5F0E6'],['Sand 200 · fill','#EFE8DA'],['Sand 300 · line','#E6DDCB'],['Sand 400 · border','#CFC3AA'],['Ink muted','#5E6558'],['Ink','#1E2A22']])},
+        {name:'Date-palm green',use:'brand, primary actions, recommended',sw:sw([['Green 50','#EEF4EE'],['Green 100','#E3EDE5'],['Green 600 · primary','#1E5B3F'],['Green 700 · hover','#174A33'],['Accent sand','#EBDDBF']])},
+        {name:'Sky blue',use:'water, cooling, humidity, focus ring',sw:sw([['Sky 50','#E2EEF7'],['Sky 500','#2B78B0'],['Sky 700 · text','#1F5F8C']])},
+        {name:'Heat scale',use:'temperature and risk only',sw:sw([['Heat 1 · warm','#E9B92F'],['Heat 2 · hot','#E0782A'],['Heat 3 · extreme','#B3261E'],['Risky fill','#FBEBC8'],['Impossible fill','#F6D9D4']])}
+      ],
+      risks:[{bg:'#DDEBDF',fg:'#1E5B3F',i:'✓',en:'Good',ar:'مناسب'},{bg:'#FBEBC8',fg:'#7A5200',i:'!',en:'Risky',ar:'فيه مخاطرة'},{bg:'#F6D9D4',fg:'#9E2A1F',i:'✕',en:'Not possible',ar:'غير ممكن'}],
+      types:[
+        {spec:'Display 64/600',size:'56px',w:600,ls:'-0.025em',en:'Farms that pay off',ar:'مزارع تسترد تكلفتها'},
+        {spec:'Verdict 40/600',size:'40px',w:600,ls:'-0.015em',en:'Pays back in 3.4 years',ar:'يسترد تكلفته خلال 3.4 سنوات'},
+        {spec:'Metric 28/600',size:'28px',w:600,ls:'-0.02em',en:'235,000 QAR',ar:'235,000 ر.ق'},
+        {spec:'Heading 18/600',size:'18px',w:600,ls:'0',en:'Setup comparison',ar:'مقارنة الأنظمة'},
+        {spec:'Body 15/400',size:'15px',w:400,ls:'0',en:'Evaporative cooling fails in humid air.',ar:'التبريد التبخيري يفشل في الهواء الرطب.'},
+        {spec:'Small 14/400',size:'14px',w:400,ls:'0',en:'Fetched 25 Sep 2026',ar:'تاريخ الجلب 25 سبتمبر 2026'}
+      ],
+      space:[4,8,12,16,24,32,48].map(v=>({v:v+'px',w:(v*3)+'px'})),
+      radii:[['6','6px'],['10','10px'],['14','14px'],['20','20px'],['pill','999px']].map(([l,v])=>({l,v})),
+      bStates:['Default','Hover','Focus','Disabled'],
+      buttons:[
+        {name:'Primary',label:'Analyse',states:[{bg:'#1E5B3F',fg:'#FFFDF8',bd:'0',ol:'none'},{bg:'#174A33',fg:'#FFFDF8',bd:'0',ol:'none'},{bg:'#1E5B3F',fg:'#FFFDF8',bd:'0',ol:'3px solid #2B78B0'},{bg:'#9AAE9F',fg:'#FFFDF8',bd:'0',ol:'none'}]},
+        {name:'Secondary',label:'Share link',states:[{bg:'#FFFDF8',fg:'#1E2A22',bd:'1px solid #CFC3AA',ol:'none'},{bg:'#F7F1E4',fg:'#1E2A22',bd:'1px solid #CFC3AA',ol:'none'},{bg:'#FFFDF8',fg:'#1E2A22',bd:'1px solid #CFC3AA',ol:'3px solid #2B78B0'},{bg:'#F5F0E6',fg:'#A09884',bd:'1px solid #E6DDCB',ol:'none'}]},
+        {name:'Ghost',label:'Edit all',states:[{bg:'transparent',fg:'#1E5B3F',bd:'0',ol:'none'},{bg:'#EEF4EE',fg:'#1E5B3F',bd:'0',ol:'none'},{bg:'transparent',fg:'#1E5B3F',bd:'0',ol:'3px solid #2B78B0'},{bg:'transparent',fg:'#A09884',bd:'0',ol:'none'}]}
+      ],
+      dirs:[
+        {dir:'ltr',lang:'en',tag:'English · LTR',verified:'Verified',rec:'Recommended',fails:'Fails in humid summer',years:'years',pay:'Payback',loading:'Loading',budget:'Budget',qar:'QAR',
+          steps:[{l:'Fetching 20 years of climate data',i:'✓',bg:'#1E5B3F',bd:'0',btc:'#1E5B3F',anim:'none',bt:'0'},{l:'Checking crops month by month',i:'',bg:'transparent',bd:'3px solid #D6E3D8',btc:'#1E5B3F',anim:'cr-spin 1s linear infinite',bt:'1px solid #EFE8DA'},{l:'Sizing solar panels',i:'',bg:'transparent',bd:'2px dashed #CFC3AA',btc:'#CFC3AA',anim:'none',bt:'1px solid #EFE8DA'}],
+          q:'How many years until it pays back?',tool:'Recalculating cash flow over 10 years',a1:'It pays for itself in',a2:', then earns about 69,000 QAR a year.',unsure:'Not enough data for this location to answer confidently.',
+          toast:'Link copied to clipboard',cached:'Using saved data for this site.',outside:'This location is outside our supported data.',mTitle:'Reset all assumptions?',mBody:'Your edited values will be replaced with FAO defaults.',cancel:'Cancel',confirm:'Reset'},
+        {dir:'rtl',lang:'ar',tag:'العربية · RTL',verified:'تم التحقق',rec:'موصى به',fails:'يفشل في الصيف الرطب',years:'سنوات',pay:'فترة الاسترداد',loading:'جارٍ التحميل',budget:'الميزانية',qar:'ر.ق',
+          steps:[{l:'جلب بيانات المناخ لعشرين سنة',i:'✓',bg:'#1E5B3F',bd:'0',btc:'#1E5B3F',anim:'none',bt:'0'},{l:'فحص المحاصيل شهراً بشهر',i:'',bg:'transparent',bd:'3px solid #D6E3D8',btc:'#1E5B3F',anim:'cr-spin 1s linear infinite',bt:'1px solid #EFE8DA'},{l:'تحديد حجم الألواح الشمسية',i:'',bg:'transparent',bd:'2px dashed #CFC3AA',btc:'#CFC3AA',anim:'none',bt:'1px solid #EFE8DA'}],
+          q:'كم سنة حتى تسترد المزرعة تكلفتها؟',tool:'إعادة حساب التدفق النقدي على 10 سنوات',a1:'تسترد المزرعة تكلفتها خلال',a2:'، ثم تحقق نحو 69,000 ر.ق سنوياً.',unsure:'لا تتوفر بيانات كافية لهذا الموقع للإجابة بثقة.',
+          toast:'تم نسخ الرابط',cached:'نستخدم البيانات المحفوظة لهذا الموقع.',outside:'هذا الموقع خارج نطاق البيانات المدعومة.',mTitle:'استعادة كل الافتراضات؟',mBody:'سيتم استبدال القيم التي عدّلتها بالقيم الافتراضية من FAO.',cancel:'إلغاء',confirm:'استعادة'}
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
