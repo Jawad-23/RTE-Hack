@@ -17,6 +17,7 @@ from planner.schemas import PRIORITIES, STATUS
 
 MAP_START = (25.3, 51.2)  # starting view only; any pin on Earth works
 MAP_ZOOM = 8
+PLOTLY_CONFIG = {"displayModeBar": False}  # cleaner on a projector
 STATUS_COLORS = {"good": "#2e7d32", "risky": "#f9a825", "impossible": "#c62828"}
 
 st.set_page_config(page_title="Farming the Desert Sun", page_icon="🌱", layout="wide")
@@ -114,7 +115,7 @@ if plan:
             text=cal.map(lambda s: t(f"status_{s}", lang)).to_numpy(), hovertemplate="%{y} · %{x}: %{text}<extra></extra>",
         ))
         fig.update_layout(height=60 + 32 * len(cal), margin=dict(l=0, r=0, t=10, b=0), xaxis=dict(title=t("month", lang), dtick=1))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
 
         # Comparison table
         st.subheader(t("comparison", lang))
@@ -129,7 +130,8 @@ if plan:
         climate_df = climate.get_typical_year(lat, lon)
         prof = cooling.hourly_profile(climate_df, rec["setup"], plan["inputs"]["area_m2"])
         crop_limit = next(c["t_max_c"] for c in plan["assumptions"]["crops"] if c["crop"] == rec["crop"])
-        c1, c2 = st.columns(2)
+        uses_power = rec["solar_kw"] > 0
+        c1, c2 = st.columns(2) if uses_power else (st.container(), None)
 
         # Inside vs outside daily maximum
         with c1:
@@ -140,22 +142,23 @@ if plan:
             fig.add_scatter(x=daily.index + 1, y=daily["inside_c"], name=setup_label(rec["setup"]), line=dict(color="#1565c0"))
             fig.add_hline(y=crop_limit, line_dash="dash", annotation_text=t("crop_limit", lang))
             fig.update_layout(height=320, margin=dict(l=0, r=0, t=10, b=0), yaxis_title="°C", legend=dict(orientation="h", yanchor="bottom", y=1.02))
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
 
-        # Hottest day: cooling electricity vs solar output, hour by hour
-        with c2:
-            st.subheader(t("solar_vs_cooling", lang))
-            day_kwh = prof.groupby(prof["hour_of_year"] // 24)["cooling_kwh"].sum()
-            peak_day = int(day_kwh.idxmax())
-            hours = slice(peak_day * 24, peak_day * 24 + 24)
-            ghi = climate_df["ghi_wh_m2"].to_numpy()[hours]
-            # Share the panels' daily output across the hours in proportion to sunlight.
-            solar_kwh = ghi / ghi.sum() * rec["solar_kwh_year"] / 365 if ghi.sum() > 0 else ghi * 0
-            fig = go.Figure()
-            fig.add_bar(x=list(range(24)), y=prof["cooling_kwh"].to_numpy()[hours], name=t("cooling_need", lang), marker_color="#1565c0")
-            fig.add_scatter(x=list(range(24)), y=solar_kwh, name=t("solar_output", lang), line=dict(color="#f9a825", width=3))
-            fig.update_layout(height=320, margin=dict(l=0, r=0, t=10, b=0), yaxis_title="kWh", xaxis_title="h", legend=dict(orientation="h", yanchor="bottom", y=1.02))
-            st.plotly_chart(fig, use_container_width=True)
+        # Hottest day: cooling electricity vs solar output, hour by hour (only when there is cooling to power)
+        if uses_power:
+            with c2:
+                st.subheader(t("solar_vs_cooling", lang))
+                day_kwh = prof.groupby(prof["hour_of_year"] // 24)["cooling_kwh"].sum()
+                peak_day = int(day_kwh.idxmax())
+                hours = slice(peak_day * 24, peak_day * 24 + 24)
+                ghi = climate_df["ghi_wh_m2"].to_numpy()[hours]
+                # Share the panels' daily output across the hours in proportion to sunlight.
+                solar_kwh = ghi / ghi.sum() * rec["solar_kwh_year"] / 365 if ghi.sum() > 0 else ghi * 0
+                fig = go.Figure()
+                fig.add_bar(x=list(range(24)), y=prof["cooling_kwh"].to_numpy()[hours], name=t("cooling_need", lang), marker_color="#1565c0")
+                fig.add_scatter(x=list(range(24)), y=solar_kwh, name=t("solar_output", lang), line=dict(color="#f9a825", width=3))
+                fig.update_layout(height=320, margin=dict(l=0, r=0, t=10, b=0), yaxis_title="kWh", xaxis_title="h", legend=dict(orientation="h", yanchor="bottom", y=1.02))
+                st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
 
         # Cumulative 10-year profit for each setup of the recommended crop
         st.subheader(t("profit_chart", lang))
@@ -166,7 +169,7 @@ if plan:
                             line=dict(width=4 if o["setup"] == rec["setup"] else 2))
         fig.add_hline(y=0, line_color="gray")
         fig.update_layout(height=320, margin=dict(l=0, r=0, t=10, b=0), yaxis_title="QAR", xaxis_title=t("years", lang), legend=dict(orientation="h", yanchor="bottom", y=1.02))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
 
     with st.expander(t("assumptions", lang)):
         for name, rows in plan["assumptions"].items():
