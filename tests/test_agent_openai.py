@@ -88,7 +88,7 @@ def test_full_loop_against_openai_compatible_server(fake_server, monkeypatch, dr
     assert out["tool_log"][0].startswith("run_plan(")
     first = FakeOpenAI.requests_seen[0]
     assert first["path"] == "/v1/chat/completions" and first["auth"] == "Bearer test-key"
-    assert first["body"]["model"] == "qwen2.5:7b-instruct" and first["body"]["temperature"] == 0.0
+    assert first["body"]["model"] == "qwen2.5:7b-instruct" and first["body"]["temperature"] == agent.TEMPERATURE
     assert [x["function"]["name"] for x in first["body"]["tools"]] == ["run_plan", "compare_sites"]
 
 

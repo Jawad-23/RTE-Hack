@@ -6,7 +6,8 @@ import re
 
 # Arabic-Indic (٠–٩) and Eastern Arabic-Indic (۰–۹) digits, Arabic decimal (٫) and thousands (٬) separators
 _DIGITS = str.maketrans("٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹٫٬", "01234567890123456789.,")
-_NUMBER = re.compile(r"\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?")
+# thousands may be grouped with commas or spaces (plain, no-break or narrow no-break): 175,000 / 175 000
+_NUMBER = re.compile(r"(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d{1,3}(?:[ \u00a0\u202f]\d{3})+(?!\d)(?:\.\d+)?|\d+(?:\.\d+)?)(?:\s?([kK])\b|\s(thousand)\b)?")
 
 REL_TOL = 0.01   # a number passes if within 1 % ...
 ABS_TOL = 0.1    # ... or within ±0.1 of an allowed number
@@ -16,7 +17,8 @@ ALWAYS_ALLOWED = [(1, 12), (2000, 2100)]  # month numbers and years
 def extract_numbers(text: str) -> list[float]:
     """Reply text (English or Arabic) -> every number in it, as positive floats."""
     text = text.translate(_DIGITS)
-    return [float(m.group().replace(",", "")) for m in _NUMBER.finditer(text)]
+    # "175k" and "175 thousand" mean 175,000, so they are checked as that
+    return [float(re.sub(r"[, \u00a0\u202f]", "", m.group(1))) * (1000 if m.group(2) or m.group(3) else 1) for m in _NUMBER.finditer(text)]
 
 
 def allowed_numbers(plan, tool_results=None, user_text: str = "") -> set[float]:

@@ -39,3 +39,14 @@ def test_numbers_inside_tool_results_are_allowed():
 
 def test_extract_numbers():
     assert checker.extract_numbers("1,234.5 QAR and 37°C, ٤٥") == [1234.5, 37.0, 45.0]
+
+
+def test_k_and_thousand_suffixes_are_expanded():
+    assert checker.extract_numbers("about 150k QAR, or 826 thousand for a chiller") == [150000.0, 826000.0]
+    assert checker.verify("It costs about 150k QAR.", PLAN)[0]
+    assert not checker.verify("It costs about 90k QAR.", PLAN)[0]
+
+
+def test_space_grouped_thousands_are_one_number():
+    assert checker.extract_numbers("costs 150 000 QAR, or 826 225 QAR, in 2 phases") == [150000.0, 826225.0, 2.0]
+    assert checker.verify("A wet-pad costs 150 000 QAR.", PLAN)[0]

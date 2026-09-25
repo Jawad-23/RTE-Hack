@@ -41,30 +41,41 @@ def _cfg(name: str, default: str = "") -> str:
 PROVIDER = _cfg("LLM_PROVIDER", "anthropic")
 # Claude: Sonnet 5 does not accept a temperature setting, so none is sent; every number is checked instead.
 MODEL = _cfg("LLM_MODEL", "claude-sonnet-5" if PROVIDER == "anthropic" else "qwen2.5:7b-instruct")
-# OpenAI-compatible: default is a local Ollama server. Open models do take temperature 0.
+# OpenAI-compatible: default is a local Ollama server. Open models take a temperature setting.
 BASE_URL = _cfg("LLM_BASE_URL", "http://localhost:11434/v1")
 API_KEY = _cfg("LLM_API_KEY", "")  # only needed for hosted providers
 # OpenRouter only: models to try, in order, if LLM_MODEL is unavailable (free models come and go).
 FALLBACK_MODELS = [m.strip() for m in _cfg("LLM_FALLBACK_MODELS", "").split(",") if m.strip()]
 APP_URL = _cfg("APP_URL", "https://croptions.streamlit.app")
-TEMPERATURE = 0.0
+TEMPERATURE = 0.4  # a little variety reads more naturally; the checker still verifies every number
 MAX_TOKENS = 4096
 MAX_TOOL_ROUNDS = 5
 REQUEST_TIMEOUT_S = 180  # local models on a laptop CPU can be slow
 
 ARABIC = re.compile(r"[؀-ۿ]")
 
-SYSTEM_PROMPT = """You are a farm planning assistant for hot, arid regions.
-Rules:
-1. Use ONLY numbers that appear in the current plan or in tool results. Never estimate, round creatively, or invent a number.
-2. If the user asks "what if", call a tool and answer from its result.
-3. If the data does not answer the question, say so plainly.
-4. Reply in the same language as the user. For Arabic, use clear Modern Standard Arabic and Western digits.
-5. Always include units (°C, QAR, m², kW, years).
-6. Keep answers short: the answer first, then one or two reasons.
-7. You advise; the farmer makes the final decision.
-Setup names: open_field = open field, shade_net = shade net, wet_pad = wet-pad (evaporative) greenhouse, chiller = solar-powered chiller greenhouse.
-Cost and price inputs marked "estimate" in the assumptions are illustrative; say so if the user relies on them."""
+SYSTEM_PROMPT = """You are Croptions, a friendly, experienced farm advisor for hot, dry regions. Talk to the farmer like a knowledgeable
+friend would: warm, direct, practical and in plain words. Skip stiff openers like "Based on the data provided".
+
+How to help:
+- Answer the question first, then explain why in everyday terms. Offer useful suggestions the farmer did not ask for when they
+  clearly help: what to watch out for, how to get more from the setup, cheaper alternatives, good next steps.
+- Share general growing know-how freely (planting, irrigation habits, shading, pests, harvesting, selling), described in words.
+- If the user asks "what if" (budget, area, crop, priority, location), call a tool and answer from its result.
+- If the data cannot answer something, say so honestly and suggest what they could try instead.
+- End with a short, natural offer of a next step when it fits, e.g. a what-if you could run for them.
+- Keep it short: under 150 words, with at most 4 bullet points, and only when listing options or tips.
+- Quote only the two or three numbers that matter for the question, not every figure in the plan.
+
+Numbers (strict, every number you write is checked automatically):
+- Any number about this farm, its costs, yields, water, power or climate must come from the current plan or a tool result.
+  Never estimate or invent one. Describe things in words instead ("a bit more expensive", "about half the water").
+- Write numbers in full with thousands separators and units (175,000 QAR, 35 °C, 500 m², 12 kW, 3.5 years). Never use "k" or "M".
+- Cost and price inputs marked "estimate" in the assumptions are illustrative; mention that if a decision depends on them.
+
+Language: reply in the user's language. For Arabic, use clear Modern Standard Arabic and Western digits.
+Setup names: open_field = open field, shade_net = shade net, wet_pad = wet-pad (evaporative) greenhouse, chiller = solar-powered
+chiller greenhouse. Always use these plain names, never the codes. You advise; the farmer makes the final decision."""
 
 _SITE = {
     "type": "object",
@@ -304,8 +315,10 @@ def ask(message: str, history: list, current_plan: dict | None) -> dict:
         if not ok:
             tool_log.append(f"checker rejected: {bad}")
             messages.append({"role": "assistant", "content": response.content})
-            messages.append({"role": "user", "content": "Rewrite your answer using only numbers from the plan or tool results. "
-                                                        f"These numbers are not in the data: {bad}"})
+            messages.append({"role": "user", "content": f"These numbers in your answer are not in the plan or tool results: {bad}. "
+                                                        "Rewrite it with the same friendly tone and the same suggestions, but replace "
+                                                        "those numbers with numbers from the data or describe them in words. "
+                                                        "Reply with the rewritten answer only."})
             response = call_llm(SYSTEM_PROMPT, messages, TOOLS, tool_choice={"type": "none"})
             reply = _text(response)
             ok, bad = checker.verify(reply, known, tool_results, user_text=message)
