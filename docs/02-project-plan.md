@@ -173,7 +173,7 @@ Planned in stage 2: `planner/controller.py` and `pages/operate_simulator.py`.
 | App and map | Streamlit, folium (Leaflet), Plotly |
 | Physics | PsychroLib (Stull formula as fallback), NumPy, pandas |
 | Data | NASA POWER API, FAO EcoCrop, FAOSTAT; Open-Meteo Air Quality planned |
-| AI agent | Claude API (`claude-sonnet-5`) with tool use. This model does not accept a temperature setting, so no temperature is sent; the number checker is what keeps answers grounded |
+| AI agent | Claude API (`claude-sonnet-5`) with tool use by default; no temperature is sent because this model rejects it. Or any open-source model through an OpenAI-compatible server (for example Qwen2.5 7B on Ollama), at temperature 0. Either way the number checker keeps answers grounded |
 | Hosting for demo | Streamlit Community Cloud (free) |
 
 ## 7. Demo script and pitch flow
@@ -200,7 +200,7 @@ Pick and test both demo pins on Friday night, and screenshot the results in case
 | --- | --- |
 | NASA POWER is slow or down during the demo | Cache the data for both demo pins as local files on Friday. Offline, the app now fails in seconds with a clear message instead of hanging |
 | Venue Wi-Fi fails or the map can't load | Run the app locally; use **Or type coordinates** under the map; backup video as last resort |
-| LLM API fails, is slow, or no key | The chat says it is unavailable; the full plan and dashboard still work |
+| LLM API fails, is slow, or no key | The chat says it is unavailable; the full plan and dashboard still work. An open-source model on a laptop (Ollama) needs no internet at all |
 | Cost and price numbers are rough | Labelled "estimate" in the CSVs and in the app; judges value honesty. Quote only the app's numbers in the pitch |
 | The chiller payback on estimated costs is long | This may undercut the pitch's "solar chiller pays off" story. Replace estimates with sourced costs before building slides around it |
 | Crop heat limits are hard to find | Start with 8 well-known crops typed in by hand from EcoCrop; mark each value's source |
@@ -228,3 +228,44 @@ Pick and test both demo pins on Friday night, and screenshot the results in case
 - [ ] How long is the pitch? Adjust the demo script to fit.
 - [ ] Which five regions go in "Where this applies"?
 - [ ] Does the team agree that cameras and ESP32 are roadmap only?
+
+## 10. Known gaps: what is not real yet
+
+**Everything the app shows is calculated, but some inputs are estimates and some APIs have never been called live.** Keep this list current; judges will ask.
+
+### APIs: missing or never run live
+
+| API / data | State | What it takes |
+| --- | --- | --- |
+| NASA POWER hourly (temperature, humidity, sunlight, wind) | Code written and unit-tested; **never run against the real API** (blocked in the build environment) | Run `python -m planner.climate 25.29 51.53` on a laptop |
+| Claude API | Code written and tested with a fake model; **never called live** | An `ANTHROPIC_API_KEY` in `.env` |
+| Open-source LLM (Ollama, llama.cpp, vLLM, Groq, OpenRouter) | Code written and tested against a fake OpenAI-compatible server; **never run with a real model** | Install Ollama and `ollama pull qwen2.5:7b-instruct`, or a hosted endpoint and key |
+| Map (Leaflet scripts and OpenStreetMap tiles) | Not loaded in the build environment; typed coordinates work | A normal internet connection |
+| FAO EcoCrop | **No download or API.** Crop limits in `crops.csv` were typed in as estimates | Look up each crop and fill `source` |
+| FAOSTAT | **No API.** Prices in `prices.csv` were typed in as estimates | Look up each price and fill `source` |
+| NASA POWER spectral data (PAR, UV, longwave, clear-sky) | Not built (stage 2, step 1) | |
+| Open-Meteo Air Quality (dust) | Not built (stage 2, step 7) | |
+| Open-Meteo Climate API (2040/2050 view) | Not built (stretch) | |
+| Nominatim (place name → coordinates) | Listed in the Problem and solution tab, not built | Small; only if time allows |
+
+### Numbers that are estimates (all in `data/*.csv`, all labelled `estimate`)
+
+- **`setups.csv`, the numbers that decide the winner:** build cost per m² (open field 10, shade net 40, wet pad 300, chiller 450 QAR), running cost per m², yield factor per setup (1.0 to 1.8), extra water per m², and the physics values: shade net cools by 2 °C, pad efficiency 0.8, greenhouse solar heat gain 4 °C, chiller setpoint 26 °C, chiller load 0.03 kW per m² per °C, COP 3.
+- **`settings.csv`:** solar cost 2,500 QAR/kW, electricity 0.13 QAR/kWh, performance ratio 0.8, risky margin 3 °C.
+- **`crops.csv`:** temperature limits, yield and water use for all 8 crops.
+- **`prices.csv`:** price per kg for all 8 crops.
+
+### Simplifications in the code
+
+1. **Solar and night-time cooling:** the array is sized so one day of panel output equals the hottest day's cooling energy, but the chiller also runs at night. This quietly assumes free storage or grid net metering. There is no battery cost.
+2. **`electricity_price_qar_kwh` is not used yet:** solar is assumed to cover all cooling electricity.
+3. **Air pressure is fixed at sea level** (101,325 Pa) for wet-bulb; high sites are slightly off.
+4. **Greenhouse solar heat gain is on/off:** the full 4 °C whenever the sun is up, not scaled by how strong it is.
+5. **Wet pads:** efficiency and water use are constant, whatever the weather.
+6. **Revenue** = yield × price × (growing months ÷ 12) × setup yield factor. Heat stress within a growing month and light levels do not change yield. A growing month is one with at least 90 % of hours below the crop's limit.
+7. **Coverage only checks the crop's maximum temperature**, over all 8,760 hours. Cold winter nights inside a greenhouse are not checked.
+8. **Economics:** no discounting, panel degradation, labour, land, financing or equipment replacement. The budget only limits build cost.
+9. **Typical year:** averaging 5 years smooths out heatwaves, so extremes are under-represented.
+10. **Arabic:** the recommendation's reason sentence and crop names are still English, and the Arabic labels were written without a native speaker.
+
+What is **not** faked: the app never uses made-up climate data. The synthetic climate years exist only in `tests/`.

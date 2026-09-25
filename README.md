@@ -42,7 +42,27 @@ Every value in `data/*.csv` is currently labelled `estimate`, and the app says s
 
 ## The AI assistant
 
-The chat uses Claude with two tools that run our own planner (`run_plan`, `compare_sites`). A checker compares every number in the reply with the plan and tool results; an answer with an unknown number is rewritten once, then replaced by a template built only from plan fields. Without an `ANTHROPIC_API_KEY` the chat says it is unavailable and the dashboard still works.
+The chat uses Claude with two tools that run our own planner (`run_plan`, `compare_sites`). A checker compares every number in the reply with the plan and tool results; an answer with an unknown number is rewritten once, then replaced by a template built only from plan fields. Without a model configured the chat says it is unavailable and the dashboard still works.
+
+**Claude (default):** put `ANTHROPIC_API_KEY=...` in `.env`.
+
+**Open-source model instead:** any server with an OpenAI-compatible `/chat/completions` API works. For a local model with [Ollama](https://ollama.com):
+
+```bash
+ollama pull qwen2.5:7b-instruct
+```
+
+then in `.env`:
+
+```
+LLM_PROVIDER=openai_compatible
+LLM_MODEL=qwen2.5:7b-instruct
+LLM_BASE_URL=http://localhost:11434/v1
+```
+
+Hosted services such as Groq or OpenRouter work the same way with their base URL and `LLM_API_KEY`. Smaller models call tools less reliably; the checker still blocks any number they invent.
+
+What is still estimated or untested: [docs/02-project-plan.md, section 10](docs/02-project-plan.md#10-known-gaps-what-is-not-real-yet).
 
 ## How we work
 
@@ -93,7 +113,7 @@ Every value in `data/*.csv` has a `source` column. Values marked `estimate` are 
 | [python-dotenv](https://github.com/theskumar/python-dotenv) | Loads `.env` | BSD-3 |
 | [pytest](https://pytest.org/) | Tests | MIT |
 
-The Claude API itself is a paid, closed service. The agent talks to it through one function (`call_llm` in `planner/agent.py`) so it can be swapped for an open-weight model.
+The Claude API is a paid, closed service and optional: the agent can run on an open-weight model instead (see The AI assistant). If you use Qwen2.5, credit it under Apache 2.0.
 
 ## License
 

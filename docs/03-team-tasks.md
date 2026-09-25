@@ -83,7 +83,7 @@ Stage 2 adds `controller.py` (called by `cooling.py` and the simulator page) and
 | [FAOSTAT](https://www.fao.org/faostat/) | Crop prices | Open data | CC BY 4.0; credit FAO |
 | [Open-Meteo](https://open-meteo.com/) Air Quality API | Dust (stage 2) | Open data | Free for non-commercial use; credit Open-Meteo and CAMS |
 
-Our own code is MIT licensed. The only closed piece is the LLM, which is why the agent talks to it through one small function (`call_llm`) that another model can replace.
+Our own code is MIT licensed. The only closed piece is the Claude API, and it is optional: set `LLM_PROVIDER=openai_compatible` to run the agent on an open-weight model such as [Qwen2.5 7B Instruct](https://ollama.com/library/qwen2.5) (Apache 2.0) through Ollama.
 
 ## 3. Shared contracts
 
@@ -121,7 +121,16 @@ PRIORITIES = ["profit", "payback", "water"]
 
 Rules: every output must be JSON-safe (plain floats, strings, lists, dicts; no NumPy types), because the agent sends it to the LLM. Units always live in the key name: `_c`, `_qar`, `_kwh`, `_m2`, `_pct`, and in stage 2 `_w_m2`, `_kpa`, `_mol_m2_day`.
 
-LLM settings (top of `agent.py`): `MODEL = "claude-sonnet-5"`, `MAX_TOKENS = 4096`, `MAX_TOOL_ROUNDS = 5`. **No temperature:** this model rejects a temperature setting. Switching `MODEL` to `"claude-haiku-4-5"` saves credits.
+LLM settings (top of `agent.py`, overridable in `.env`):
+
+| Setting | Default | Notes |
+| --- | --- | --- |
+| `LLM_PROVIDER` | `anthropic` | or `openai_compatible` for an open-source model |
+| `LLM_MODEL` | `claude-sonnet-5`, or `qwen2.5:7b-instruct` for open models | `claude-haiku-4-5` saves credits |
+| `LLM_BASE_URL` | `http://localhost:11434/v1` (Ollama) | any `/chat/completions` server |
+| `LLM_API_KEY` | empty | only for hosted open-model services |
+
+Claude gets no temperature (Sonnet 5 rejects it); open models get temperature 0. `MAX_TOKENS = 4096`, `MAX_TOOL_ROUNDS = 5`. Only `call_llm()` talks to a model, and both providers return the same response shape.
 
 ## 4. Rules for everyone
 
@@ -210,6 +219,7 @@ Merge order into `main`: the setup branch, then `jawad/core`, `mustafa/core-modu
 - [x] `chat_ui.py`: history, 4 suggested prompts, "Verified" badge, tool log in an expander, "Plan updated" note, Arabic in `dir="rtl"`
 - [x] `styles/rtl.css`: RTL text, LTR charts, tables, metrics and number inputs
 - [x] Tests: made-up payback fails, plan number passes, Arabic-Indic digits pass, i18n keys match, agent loop with a fake LLM
+- [x] Open-source model support: `LLM_PROVIDER=openai_compatible` works with Ollama, llama.cpp, vLLM, LM Studio, Groq or OpenRouter; tested against a fake server
 
 System prompt (in `agent.py`):
 
@@ -230,6 +240,7 @@ Rules:
 - [ ] Review `salih/agent-chat`; you own it from now on
 - [ ] **Review every Arabic string** in `i18n/ar.json`. They were written without a native speaker; make them natural and simple for farmers
 - [ ] With your own key in `.env`, test 4 English and 4 Arabic questions end to end and save the good transcripts
+- [ ] Try the open-source path: install [Ollama](https://ollama.com), `ollama pull qwen2.5:7b-instruct`, set `LLM_PROVIDER=openai_compatible` in `.env`, and run the same 8 questions. Note how often the checker has to step in
 - [ ] Stage 2 step 9: agent and checker updates, Arabic for new labels (they will arrive as `TODO_AR: <English>`)
 
 ## 7. Mustafa's tasks: data tables, crops, solar, economics

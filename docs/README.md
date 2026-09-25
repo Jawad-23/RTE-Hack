@@ -20,6 +20,8 @@ Planning documents for our Reboot the Earth Doha 2026 project (Challenge 1). Rea
 - Stage 1 is built: the whole app runs end to end on the stacked branches (see [Team tasks, section 4](03-team-tasks.md#branches-right-now)).
 - The agent sends no temperature setting (the model rejects it); the number checker keeps answers grounded.
 - pvlib is not used; solar output comes straight from NASA POWER sunlight.
+- The agent can run on an open-source model through any OpenAI-compatible server, not only Claude.
+- The project plan now lists every known gap: APIs never run live, estimated numbers and simplifications ([section 10](02-project-plan.md#10-known-gaps-what-is-not-real-yet)).
 - The planner uses the 5 most recent full years of NASA data, not 20+.
 - All values in `data/*.csv` are labelled `estimate` until someone finds a source.
 - Stage 2 (smarter shading and dust) is planned, with an owner for every piece.

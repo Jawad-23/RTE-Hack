@@ -108,7 +108,7 @@ The farmer always makes the final call; the tool advises. This directly answers 
 
 Open-source libraries: **PsychroLib** (wet-bulb and humidity physics), **pandas** (data handling), **Streamlit** (web app), **Plotly** (charts) and **folium/Leaflet** (interactive map). Solar output is calculated directly from NASA POWER sunlight; we do not use pvlib.
 
-To stay fully open, the agent talks to the LLM through one function (`call_llm` in `planner/agent.py`), so it can swap to an open-weight model later. All crop limits and cost assumptions live in editable CSV files, so any country can plug in its own local values.
+To stay fully open, the agent talks to the LLM through one function (`call_llm` in `planner/agent.py`) and can already run on an open-weight model (for example Qwen2.5 7B through Ollama) instead of Claude, by changing one setting. All crop limits and cost assumptions live in editable CSV files, so any country can plug in its own local values.
 
 ## 7. What we are adding next: smarter shading
 
