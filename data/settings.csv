@@ -2,3 +2,4 @@ key,value,unit,source
 electricity_price_qar_kwh,0.13,QAR/kWh,estimate
 solar_capex_qar_kw,2500.0,QAR/kW,estimate
 performance_ratio,0.8,fraction,typical value
+risky_margin_c,3.0,°C,estimate - how far above t_max_c the average daily max may go before a month is impossible
