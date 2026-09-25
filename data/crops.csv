@@ -1,9 +1,9 @@
 crop,t_min_c,t_opt_min_c,t_opt_max_c,t_max_c,yield_kg_m2_year,water_l_m2_day,source
-tomato,10,20,27,35,10,5,PLACEHOLDER - replace with FAO EcoCrop
-cucumber,12,20,30,35,12,5,PLACEHOLDER - replace with FAO EcoCrop
-lettuce,5,15,22,28,4,3,PLACEHOLDER - replace with FAO EcoCrop
-bell_pepper,12,20,28,35,6,5,PLACEHOLDER - replace with FAO EcoCrop
-eggplant,12,22,30,38,8,5,PLACEHOLDER - replace with FAO EcoCrop
-okra,15,25,35,42,3,5,PLACEHOLDER - replace with FAO EcoCrop
-melon,15,22,32,40,4,5,PLACEHOLDER - replace with FAO EcoCrop
-strawberry,5,15,25,30,3,4,PLACEHOLDER - replace with FAO EcoCrop
+tomato,10,20,27,35,10,5,estimate - verify against FAO EcoCrop https://gaez.fao.org/pages/ecocrop
+cucumber,12,20,30,35,12,5,estimate - verify against FAO EcoCrop https://gaez.fao.org/pages/ecocrop
+lettuce,5,15,22,28,4,3,estimate - verify against FAO EcoCrop https://gaez.fao.org/pages/ecocrop
+bell_pepper,12,20,28,35,6,5,estimate - verify against FAO EcoCrop https://gaez.fao.org/pages/ecocrop
+eggplant,12,22,30,38,8,5,estimate - verify against FAO EcoCrop https://gaez.fao.org/pages/ecocrop
+okra,15,25,35,42,3,5,estimate - verify against FAO EcoCrop https://gaez.fao.org/pages/ecocrop
+melon,15,22,32,40,4,5,estimate - verify against FAO EcoCrop https://gaez.fao.org/pages/ecocrop
+strawberry,5,15,25,30,3,4,estimate - verify against FAO EcoCrop https://gaez.fao.org/pages/ecocrop

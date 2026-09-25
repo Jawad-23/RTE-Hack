@@ -1,5 +1,5 @@
 setup,capex_qar_m2,opex_qar_m2_year,shade_drop_c,pad_efficiency,solar_gain_c,setpoint_c,chiller_kw_per_m2_per_c,cop,water_l_m2_day_extra,yield_factor,source
-open_field,10,5,0,0,0,0,0,0,0,1.0,PLACEHOLDER estimate
-shade_net,40,8,2,0,0,0,0,0,0,1.1,PLACEHOLDER estimate
-wet_pad,300,25,0,0.8,4,0,0,0,8,1.5,PLACEHOLDER estimate
-chiller,450,35,0,0.8,4,26,0.03,3.0,3,1.8,PLACEHOLDER estimate
+open_field,10,5,0,0.0,0,0,0.0,0.0,0,1.0,estimate
+shade_net,40,8,2,0.0,0,0,0.0,0.0,0,1.1,estimate
+wet_pad,300,25,0,0.8,4,0,0.0,0.0,8,1.5,estimate
+chiller,450,35,0,0.8,4,26,0.03,3.0,3,1.8,estimate

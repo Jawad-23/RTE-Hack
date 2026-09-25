@@ -46,7 +46,31 @@ Branch per person and module (`jawad/core`, `mustafa/economics`, …), only edit
 
 ## Credits
 
-Data: [NASA POWER](https://power.larc.nasa.gov/) (climate), [FAO EcoCrop](https://gaez.fao.org/pages/ecocrop) (crop limits), [FAOSTAT](https://www.fao.org/faostat/) (prices). Libraries: Streamlit, folium, streamlit-folium, Plotly, pandas, NumPy, PsychroLib, requests, the Anthropic Python SDK. Full credits section to come (Mustafa).
+### Data
+
+| Source | Used for | License / terms |
+| --- | --- | --- |
+| [NASA POWER](https://power.larc.nasa.gov/) | Hourly temperature, humidity, sunlight, wind | Free and open; credit "NASA Langley Research Center (LaRC) POWER Project" |
+| [FAO EcoCrop](https://gaez.fao.org/pages/ecocrop) | Crop temperature limits (values in `data/crops.csv` are estimates until checked) | Open; credit FAO |
+| [FAOSTAT](https://www.fao.org/faostat/) | Crop prices (values in `data/prices.csv` are estimates until checked) | CC BY 4.0; credit FAO |
+
+Every value in `data/*.csv` has a `source` column. Values marked `estimate` are illustrative, not measured.
+
+### Libraries
+
+| Library | Role | License |
+| --- | --- | --- |
+| [Streamlit](https://streamlit.io/) | Web app | Apache 2.0 |
+| [folium](https://python-visualization.github.io/folium/) + [streamlit-folium](https://github.com/randyzwitch/streamlit-folium) | Map and pin clicks | MIT |
+| [Plotly](https://plotly.com/python/) | Charts | MIT |
+| [pandas](https://pandas.pydata.org/) + [NumPy](https://numpy.org/) | Tables and maths | BSD-3 |
+| [PsychroLib](https://github.com/psychrometrics/psychrolib) | Wet-bulb temperature | MIT |
+| [requests](https://requests.readthedocs.io/) | API calls | Apache 2.0 |
+| [anthropic](https://github.com/anthropics/anthropic-sdk-python) | Claude API client | MIT |
+| [python-dotenv](https://github.com/theskumar/python-dotenv) | Loads `.env` | BSD-3 |
+| [pytest](https://pytest.org/) | Tests | MIT |
+
+The Claude API itself is a paid, closed service. The agent talks to it through one function (`call_llm` in `planner/agent.py`) so it can be swapped for an open-weight model.
 
 ## License
 
