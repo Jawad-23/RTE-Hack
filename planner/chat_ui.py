@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import html
-import os
 
 import streamlit as st
 
@@ -26,8 +25,9 @@ def render(plan: dict | None, lang: str) -> None:
     st.subheader(t("chat_title", lang))
     chat = st.session_state.setdefault("chat", [])
 
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        st.info(t("chat_no_key", lang))
+    ready, why = agent.llm_ready()
+    if not ready:
+        st.info(t(why, lang))
 
     for msg in chat:
         with st.chat_message(msg["role"]):
