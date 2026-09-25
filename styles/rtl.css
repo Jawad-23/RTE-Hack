@@ -1,4 +1,10 @@
-/* Right-to-left layout for Arabic. Owned by Salih. STUB: refine in section 6, step 4. */
-.stApp, .stMarkdown, .stSidebar { direction: rtl; text-align: right; }
-/* Keep charts, tables, maps and number inputs left-to-right so they don't break. */
-.stPlotlyChart, .stDataFrame, .stNumberInput input, iframe { direction: ltr; text-align: left; }
+/* Right-to-left layout for Arabic. Owned by Salih. */
+.stApp, .stMarkdown, [data-testid="stSidebar"], [data-testid="stChatMessage"], .stRadio, .stSelectbox label, .stNumberInput label {
+  direction: rtl;
+  text-align: right;
+}
+/* Keep charts, tables, maps, code and number inputs left-to-right so they don't break. */
+.stPlotlyChart, [data-testid="stDataFrame"], .stNumberInput input, iframe, code, pre, [data-testid="stMetricValue"] {
+  direction: ltr;
+  text-align: left;
+}
