@@ -37,6 +37,19 @@ There is no hardware yet, so a hidden simulator page plays the kit. It is not li
 
 Simulated readings are built from the site's NASA typical-year weather passed through the recommended setup. The Kit page tags each one **Demo reading · simulated**, the Results card says "Latest demo reading (simulated)", and the readings CSV marks every row `source = simulated`. At the bottom of the Kit page, **Fixed shade vs the kit's smart screen** simulates one day of the typical year: the kit benefit the app actually calculates.
 
+## Record a demo video
+
+`scripts/record_demo.py` drives a real browser through the whole app (Home, Try Al Khor, Results, a question to the assistant, Plan, Compare sites, the Croptions Kit with the phone simulator, Arabic) with captions on screen, and saves `demo-video/croptions-demo.mp4`:
+
+```bash
+pip install playwright imageio-ffmpeg
+python -m playwright install chromium
+python scripts/record_demo.py                                  # the live site
+python scripts/record_demo.py --url http://localhost:8501      # a local run
+```
+
+Open the site once first so NASA data for Al Khor is cached. Add `--no-chat` if no LLM key is set, and `--pace 1.3` for a slower video.
+
 ## Layout
 
 | Path | What | Owner |
