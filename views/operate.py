@@ -12,7 +12,7 @@ import streamlit as st
 from i18n import t
 from planner import crops, kit
 from planner.solar import load_settings
-from ui import charts, insights, kit_ui, state, theme
+from ui import charts, insights, kit_screens, kit_ui, state, theme
 from ui import components as ui
 
 lang = state.lang()
@@ -65,6 +65,9 @@ with st.container(key="card_kit_setup"):
     st.segmented_control(t("kit_mode", lang), ["auto", "approve", "manual"], default="approve",
                          format_func=lambda m: t(f"kit_mode_{m}", lang), key="_kit_mode")
     st.caption(t(f"kit_mode_{ss.get('_kit_mode') or 'approve'}_n", lang))
+
+# screen choice and its three evaluations (spectrum, canopy stress, maintenance and hazard training)
+kit_screens.render(plan, weather, crop, code, sim_day, cfg, lang)
 
 def _event(seq, kind, **params):
     ss["_kit_events"] = (ss["_kit_events"] + [{"seq": seq, "kind": kind, **params}])[-40:]

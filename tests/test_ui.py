@@ -122,3 +122,19 @@ def test_menu_lists_kit_and_compare(offline):
     labels = " ".join(str(p.label) for p in at.get("page_link"))
     assert "Croptions Kit" in labels and "Compare sites" in labels
     assert any("Feel the heat" in m.value for m in at.markdown)
+
+
+@pytest.mark.parametrize("lang", ["en", "ar"])
+@pytest.mark.parametrize("screen", ["etfe_coated", "aluminium_strip"])
+def test_kit_screen_choice_shows_three_evaluations(offline, screen, lang):
+    at = AppTest.from_file(APP, default_timeout=60)
+    from planner import optimizer
+    at.session_state["lang"] = lang
+    at.session_state["pin"] = (25.69, 51.50)
+    at.session_state["plan"] = optimizer.plan(25.69, 51.50, 500, 250000, "profit")
+    at.session_state["_kit_screen_type"] = screen
+    at.run()
+    at.switch_page("views/operate.py").run()
+    assert not at.exception, at.exception
+    assert len(at.tabs) == 3
+    assert any(p.value < 1 for p in at.get("progress"))  # hazard training starts unbriefed

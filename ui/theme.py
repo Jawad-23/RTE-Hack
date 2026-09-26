@@ -287,6 +287,12 @@ div[role="dialog"] {{ border-radius: 20px; }}
 .st-key-card_chat {{ border-top: 4px solid {GREEN}; }}
 .st-key-card_chat [data-testid="stChatMessage"] {{ background: {GREEN_50}; }}
 
+/* Kit screen evaluations: hazard briefings */
+.cr-hazard {{ background: {SAND_100}; border: 1px solid {SAND_300}; border-radius: 14px; padding: 14px 16px; margin-top: 4px; }}
+.cr-hazard .h {{ display: flex; justify-content: space-between; align-items: center; gap: 10px; }}
+.cr-hazard p {{ margin: 6px 0; font-size: 14px; color: {INK}; }}
+.cr-hazard ol {{ margin: 4px 0 0; padding-inline-start: 20px; font-size: 14px; color: #4A5247; }}
+
 /* Investment table */
 .cr-invest td.good {{ color: {GREEN}; }}
 .cr-invest td.bad {{ color: {HEAT_3}; }}
