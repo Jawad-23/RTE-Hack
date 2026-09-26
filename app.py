@@ -27,30 +27,35 @@ PAGES = {
 }
 # Kit simulator for demos: not in any menu, reached only by the link in the README ("Try the Croptions Kit").
 REMOTE = st.Page("views/kit_remote.py", title=t("kit_remote_nav", lang), url_path="kit-simulator")
-MENU_ICONS = {"home": "🏠", "plan": "📍", "results": "📊", "compare": "⚖️", "operate": "🌡️", "assumptions": "📋"}
+MENU_ICONS = {"home": ":material/home:", "plan": ":material/add_location_alt:", "results": ":material/insights:",
+              "compare": ":material/compare_arrows:", "operate": ":material/sensors:", "assumptions": ":material/fact_check:"}
 st.session_state["_pages"] = PAGES
 current = st.navigation([*PAGES.values(), REMOTE], position="hidden")
 if current.url_path == REMOTE.url_path:  # simulator screen: no top bar, no assistant
     current.run()
     st.stop()
 
-# ---------- top bar ----------
+# ---------- top bar: brand, Home, Plan, then the menu (every page), the assistant and the language ----------
+MENU_GROUPS = [("menu_g_plan", ["home", "plan", "results"]), ("menu_g_operate", ["operate", "compare"]), ("menu_g_data", ["assumptions"])]
+if st.session_state.get("_last_page") != current.url_path:  # a new page closes the menu
+    st.session_state["nav_menu"] = False
+    st.session_state["_last_page"] = current.url_path
 with st.container(key="topbar"):
-    # Home, Plan and Results are always visible; the menu holds every page, including the Kit and Compare sites.
-    nav_ratios = [1.35, 0.75, 0.7, 0.9, 1.55, 1.05, 0.9, 1.55, 1.45]
-    cols = st.columns(nav_ratios, vertical_alignment="center")
+    cols = st.columns([1.5, 0.62, 0.62, 3.0, 1.05, 1.45, 1.1], vertical_alignment="center")
     cols[0].markdown(ui.brand(lang), unsafe_allow_html=True)
-    for col, key in zip(cols[1:4], ("home", "plan", "results")):
-        col.page_link(PAGES[key], label=PAGES[key].title)
-    cols[4].page_link(PAGES["operate"], label=f"✦ {PAGES['operate'].title}")
-    with cols[5].popover(f"☰ {t('menu', lang)}", use_container_width=True):
-        st.markdown(f'<div class="cr-eyebrow">{t("menu_sub", lang)}</div>', unsafe_allow_html=True)
-        for key in PAGES:
-            st.page_link(PAGES[key], label=PAGES[key].title, icon=MENU_ICONS[key])
-    if cols[7].button(f"● {t('chat_open', lang)}", key="ask_top", type="primary", use_container_width=True):
-        state.open_chat()
-    cols[8].segmented_control(
-        t("language", lang), options=["en", "ar"], format_func=lambda x: "English" if x == "en" else "العربية",
+    cols[1].page_link(PAGES["home"], label=PAGES["home"].title)
+    cols[2].page_link(PAGES["plan"], label=PAGES["plan"].title)
+    with cols[4].popover(t("menu", lang), icon=":material/menu:", key="nav_menu", use_container_width=True):
+        for group, keys in MENU_GROUPS:
+            st.markdown(f'<div class="cr-menu-group">{t(group, lang)}</div>', unsafe_allow_html=True)
+            for key in keys:
+                label = PAGES[key].title + ("  ✦" if key == "operate" else "")
+                st.page_link(PAGES[key], label=label, icon=MENU_ICONS[key], use_container_width=True)
+    with cols[5]:
+        if st.button(t("chat_open", lang), key="ask_top", type="primary", icon=":material/forum:", use_container_width=True):
+            state.open_chat()
+    cols[6].segmented_control(
+        t("language", lang), options=["en", "ar"], format_func=lambda x: "EN" if x == "en" else "عربي",
         key=state.bind("lang"), on_change=state.save, args=("lang",), label_visibility="collapsed",
     )
 

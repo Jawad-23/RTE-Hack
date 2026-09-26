@@ -18,15 +18,17 @@ from ui import components as ui
 lang = state.lang()
 ss = st.session_state
 plan = ss.get("plan")
-st.markdown(f'<h1 style="font-size:32px;margin:8px 0 0">{t("kit_name", lang)}</h1><p class="cr-sub">{t("kit_sub", lang)}</p>',
-            unsafe_allow_html=True)
 if not plan or not plan.get("options"):
-    st.markdown(ui.kit_pitch(lang), unsafe_allow_html=True)
-    st.write(t("r_empty", lang))
-    if st.button(f"{t('l_plan', lang)} →", type="primary"):
-        st.switch_page(ss["_pages"]["plan"])
+    cfg = load_settings()
+    with st.container(key="kit_home"):  # the pitch is written for the dark green panel
+        st.markdown(ui.kit_pitch(lang, cfg["kit_pod_price_qar"], cfg["kit_service_qar_year"]), unsafe_allow_html=True)
+        st.markdown(f'<p class="cr-kit-empty">{t("kit_empty", lang)}</p>', unsafe_allow_html=True)
+        if st.button(f"{t('l_plan', lang)} →", type="primary", key="kit_plan"):
+            st.switch_page(ss["_pages"]["plan"])
     st.stop()
 
+st.markdown(f'<h1 style="font-size:32px;margin:8px 0 0">{t("kit_name", lang)}</h1><p class="cr-sub">{t("kit_sub", lang)}</p>',
+            unsafe_allow_html=True)
 inp = plan["inputs"]
 weather = state.climate_for(inp["lat"], inp["lon"])
 crop_table = crops.load_crops().set_index("crop")

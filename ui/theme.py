@@ -87,21 +87,33 @@ header[data-testid="stHeader"] {{ display: none; }}
 .stMain [data-testid="stMetricValue"], .stMain [data-testid="stMetricValue"] * {{ direction: ltr; unicode-bidi: isolate; text-align: {align}; }}
 .stMain a {{ color: {GREEN}; }}
 
-/* Top bar */
+/* Top bar: one clean row, sticky, with a soft blur */
 .st-key-topbar {{
-  background: {SAND_50}; border-bottom: 1px solid {SAND_300};
-  margin: 0 -40px 24px !important; padding: 10px 40px; width: calc(100% + 80px) !important; max-width: none !important; position: sticky; top: 0; z-index: 50;
+  background: rgba(255,253,248,.92); backdrop-filter: saturate(1.4) blur(10px); border-bottom: 1px solid {SAND_300};
+  margin: 0 -40px 28px !important; padding: 10px 40px; width: calc(100% + 80px) !important; max-width: none !important;
+  position: sticky; top: 0; z-index: 50; box-shadow: 0 6px 18px -16px rgba(60,45,20,.5);
 }}
-.st-key-topbar [data-testid="stHorizontalBlock"] {{ align-items: center; gap: 8px; }}
-.cr-brand {{ display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 20px; color: {INK}; white-space: nowrap; }}
-.cr-brand .mark {{ width: 32px; height: 32px; border-radius: 10px; background: {GREEN}; display: grid; place-items: center; }}
-.cr-brand .mark span {{ width: 12px; height: 12px; border-radius: 50%; background: {ACCENT}; }}
-[data-testid="stPageLink"] a {{ border-radius: 10px; padding: 6px 10px; white-space: nowrap; }}
-[data-testid="stPageLink"] a p {{ white-space: nowrap; overflow: visible; }}
-[data-testid="stPageLink"] a p {{ font-size: 15px; color: {INK}; font-weight: 500; }}
+.st-key-topbar [data-testid="stHorizontalBlock"] {{ align-items: center; gap: 8px; flex-wrap: nowrap; }}
+.st-key-topbar [data-testid="stColumn"] {{ min-width: 0; }}
+.cr-brand {{ display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 20px; color: {INK}; white-space: nowrap; letter-spacing: -0.01em; }}
+.cr-brand .mark {{ width: 34px; height: 34px; border-radius: 11px; background: linear-gradient(145deg, #2B6B4C, {GREEN}); display: grid; place-items: center;
+  box-shadow: 0 4px 10px -4px rgba(30,91,63,.6); flex: none; }}
+.cr-brand .mark span {{ width: 12px; height: 12px; border-radius: 50%; background: {ACCENT}; box-shadow: 0 0 0 3px rgba(235,221,191,.25); }}
+[data-testid="stPageLink"] a {{ border-radius: 10px; padding: 8px 12px; white-space: nowrap; }}
+[data-testid="stPageLink"] a p {{ white-space: nowrap; overflow: visible; font-size: 15px; color: {INK}; font-weight: 500; }}
 [data-testid="stPageLink"] a:hover {{ background: {GREEN_50}; }}
 [data-testid="stPageLink"] a[aria-current="page"], [data-testid="stPageLink-NavLink"][aria-current="page"] {{ background: {GREEN_100}; }}
-[data-testid="stPageLink"] a[aria-current="page"] p {{ color: {GREEN}; }}
+[data-testid="stPageLink"] a[aria-current="page"] p {{ color: {GREEN}; font-weight: 600; }}
+.st-key-topbar .stButton button, .st-key-topbar [data-testid="stPopover"] button {{ min-height: 40px; border-radius: 12px; white-space: nowrap; }}
+.st-key-topbar [data-testid="stPopover"] button {{ background: {SAND_50}; border: 1px solid {SAND_300}; }}
+.st-key-topbar [data-testid="stPopover"] button:hover {{ border-color: {GREEN}; }}
+.st-key-topbar button p {{ white-space: nowrap; }}
+.st-key-topbar [data-baseweb="button-group"] button, .st-key-topbar [data-testid="stButtonGroup"] button {{ min-height: 40px; padding: 4px 12px; }}
+/* Menu popover: grouped page list */
+[data-testid="stPopoverBody"] {{ min-width: 240px; padding: 10px 12px !important; border-radius: 16px; }}
+[data-testid="stPopoverBody"] [data-testid="stVerticalBlock"] {{ gap: 2px !important; }}
+[data-testid="stPopoverBody"] [data-testid="stPageLink"] a {{ padding: 8px 10px; }}
+.cr-menu-group {{ font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: {INK_MUTED}; margin: 10px 10px 2px; }}
 
 /* Buttons */
 .stButton button, .stDownloadButton button, .stFormSubmitButton button {{
@@ -131,7 +143,7 @@ header[data-testid="stHeader"] {{ display: none; }}
 .cr-sub {{ font-size: 14px; color: {INK_MUTED}; margin: 2px 0 0; }}
 .cr-eyebrow {{ font-size: 14px; color: {INK_MUTED}; }}
 .cr-mono {{ font-family: {MONO}; font-size: 13px; color: {INK_MUTED}; direction: ltr; unicode-bidi: isolate; }}
-.cr-note {{ font-size: 14px; color: {INK_MUTED}; }}
+.stMain .cr-note, .cr-note {{ font-size: 14px !important; color: {INK_MUTED}; line-height: 1.5; }}
 .cr-pill {{ display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 3px 10px; font-size: 13px; font-weight: 600; }}
 .cr-pill.green {{ background: {GREEN}; color: {SAND_50}; }}
 .cr-pill.sand {{ background: {ACCENT}; color: {GREEN}; }}
@@ -147,7 +159,7 @@ header[data-testid="stHeader"] {{ display: none; }}
 .cr-hero-label {{ display: flex; align-items: center; gap: 10px; font-size: 14px; color: #D8E4DA; }}
 .cr-verdict {{ font-size: 44px; line-height: 1.12; font-weight: 600; letter-spacing: -0.02em; margin: 14px 0 12px; color: {SAND_50}; max-width: 22em; }}
 .cr-verdict em {{ font-style: normal; color: {ACCENT}; }}
-.cr-run {{ font-size: 15px; color: #D8E4DA; }}
+.cr-run {{ font-size: 15px; color: #D8E4DA; margin-bottom: 18px; }}
 .st-key-hero .stButton button {{ background: transparent; color: {SAND_50}; border: 1px solid rgba(255,253,248,.35); }}
 .st-key-hero .stButton button[kind="primary"] {{ background: {SAND_50}; color: {GREEN}; border: 0; }}
 
@@ -240,16 +252,10 @@ div[role="dialog"] {{ border-radius: 20px; }}
 .cr-feature .ic {{ width: 44px; height: 44px; border-radius: 12px; background: {GREEN_50}; display: grid; place-items: center; font-size: 22px; }}
 .cr-feature h3 {{ font-size: 19px; margin: 16px 0 8px; }}
 .cr-feature p {{ font-size: 15px; color: #4A5247; margin: 0; line-height: 1.5; }}
+.cr-linkbtn, .cr-linkbtn:hover {{ text-decoration: none !important; }}
 .cr-linkbtn {{ display: flex; align-items: center; justify-content: center; min-height: 44px; border-radius: 10px; background: {GREEN}; color: {SAND_50} !important;
   font-weight: 600; text-decoration: none; padding: 8px 18px; white-space: nowrap; }}
 .cr-linkbtn:hover {{ background: {GREEN_700}; }}
-
-/* Top-bar menu */
-.st-key-topbar [data-testid="stPopover"] button {{ border-radius: 10px; min-height: 40px; background: {SAND_50}; border: 1px solid {SAND_300}; white-space: nowrap; }}
-.st-key-topbar [data-testid="stPopover"] button p {{ white-space: nowrap; }}
-.st-key-topbar [data-testid="stPageLink"] a[href$="/kit"] {{ background: {GREEN_50}; }}
-.st-key-topbar [data-testid="stPageLink"] a[href$="/kit"] p {{ color: {GREEN}; font-weight: 600; }}
-[data-testid="stPopoverBody"] [data-testid="stPageLink"] a {{ padding: 8px 12px; }}
 
 /* Croptions Kit: marketing block and spotlight */
 .cr-kit {{ display: grid; grid-template-columns: 1.5fr 1fr; gap: 24px; align-items: center; }}
@@ -275,7 +281,7 @@ div[role="dialog"] {{ border-radius: 20px; }}
 .st-key-kit_spot .stButton button[kind="primary"], .st-key-kit_home .stButton button[kind="primary"] {{ background: {ACCENT}; color: {GREEN}; }}
 .st-key-kit_home .stButton button:not([kind="primary"]) {{ background: transparent; color: {SAND_50}; border-color: rgba(255,253,248,.35); }}
 .cr-kit-live {{ color: {ACCENT}; font-weight: 600; margin: 0; }}
-.cr-kit-note {{ color: #AFC0B3; font-size: 12.5px; margin: 0; }}
+.stMain .cr-kit-note, .cr-kit-note {{ color: #AFC0B3; font-size: 12.5px !important; margin: 0; }}
 .cr-kit-id {{ font-size: 34px; font-weight: 700; letter-spacing: .12em; direction: ltr; unicode-bidi: isolate; color: {GREEN}; }}
 .cr-kit-steps {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 8px; }}
 .cr-kit-steps .s {{ display: flex; gap: 12px; background: rgba(255,253,248,.07); border: 1px solid rgba(235,221,191,.18); border-radius: 16px; padding: 16px; }}
@@ -293,6 +299,19 @@ div[role="dialog"] {{ border-radius: 20px; }}
 .cr-hazard p {{ margin: 6px 0; font-size: 14px; color: {INK}; }}
 .cr-hazard ol {{ margin: 4px 0 0; padding-inline-start: 20px; font-size: 14px; color: #4A5247; }}
 
+.cr-place {{ font-size: 26px; font-weight: 650; letter-spacing: -0.015em; }}
+.stMain .cr-kit-empty {{ color: {ACCENT}; font-weight: 600; margin: 16px 0 4px; }}
+
+/* Tabs (Results, Kit, Assumptions): pills so the sections read as navigation */
+.stMain [data-testid="stTabs"] [role="tablist"] {{ gap: 6px; flex-wrap: wrap; border-bottom: 0 !important; box-shadow: none; }}
+.stMain [data-testid="stTab"] {{ background: {SAND_50}; border: 1px solid {SAND_300}; border-radius: 999px; padding: 7px 16px !important;
+  height: auto; margin: 0 !important; }}
+.stMain [data-testid="stTab"]:hover {{ border-color: {GREEN}; }}
+.stMain [data-testid="stTab"][aria-selected="true"] {{ background: {GREEN}; border-color: {GREEN}; }}
+.stMain [data-testid="stTab"][aria-selected="true"] p {{ color: {SAND_50} !important; font-weight: 600; }}
+.stMain [data-testid="stTab"] p {{ font-size: 14.5px; }}
+.stMain [data-testid="stTabs"] [role="tablist"] > div:not([role="tab"]) {{ display: none; }}  /* Streamlit's sliding underline */
+
 /* Investment table */
 .cr-invest td.good {{ color: {GREEN}; }}
 .cr-invest td.bad {{ color: {HEAT_3}; }}
@@ -302,14 +321,63 @@ div[role="dialog"] {{ border-radius: 20px; }}
 @media (max-width: 900px) {{
   .st-key-card_site .cr-tiles, .st-key-card_kit .cr-tiles {{ grid-template-columns: repeat(2, minmax(0, 1fr)); }}
 }}
+/* Phones */
+@media (max-width: 640px) {{
+  .block-container, [data-testid="stMainBlockContainer"] {{ padding: 0 14px 72px !important; }}
+  .stMain [data-testid="stVerticalBlock"] {{ gap: 12px; }}
+  /* header: brand + menu + ask (icon) + language on one row; Home and Plan live in the menu */
+  .st-key-topbar {{ margin: 0 -14px 16px !important; padding: 8px 12px; width: calc(100% + 28px) !important; }}
+  .st-key-topbar [data-testid="stHorizontalBlock"] {{ flex-direction: row !important; flex-wrap: nowrap !important; gap: 6px !important; }}
+  .st-key-topbar [data-testid="stColumn"] {{ width: auto !important; flex: 0 0 auto !important; }}
+  .st-key-topbar [data-testid="stColumn"]:first-child {{ flex: 1 1 auto !important; }}
+  .st-key-topbar [data-testid="stColumn"]:nth-child(2), .st-key-topbar [data-testid="stColumn"]:nth-child(3),
+  .st-key-topbar [data-testid="stColumn"]:nth-child(4) {{ display: none !important; }}
+  .cr-brand {{ font-size: 18px; gap: 8px; }}
+  .cr-brand .mark {{ width: 30px; height: 30px; border-radius: 9px; }}
+  .st-key-ask_top button {{ width: 40px !important; min-width: 40px; padding: 0 !important; }}
+  .st-key-ask_top button p {{ display: none; }}
+  .st-key-topbar button {{ min-height: 38px !important; }}
+  .st-key-topbar [data-testid="stPopover"] button {{ padding: 4px 10px; }}
+  .st-key-topbar [data-testid="stButtonGroup"] button {{ padding: 2px 8px !important; }}
+  /* type */
+  .cr-home-hero {{ padding: 16px 0 0; }}
+  .cr-home-hero h1 {{ font-size: 34px !important; margin: 12px 0; }}
+  .cr-home-hero p.lead {{ font-size: 16px; }}
+  .cr-section-head h2 {{ font-size: 26px; }}
+  .cr-verdict {{ font-size: 28px !important; }}
+  .stMain h1 {{ font-size: 28px !important; }}
+  [class*="st-key-card"], .cr-card {{ padding: 18px; border-radius: 16px; }}
+  .st-key-hero {{ padding: 24px 20px 20px; }}
+  .st-key-kit_home, .st-key-kit_spot {{ padding: 22px 18px; border-radius: 20px; }}
+  /* metric tiles: two per row, compact */
+  .cr-tiles, .st-key-card_site .cr-tiles, .st-key-card_kit .cr-tiles {{ grid-template-columns: 1fr 1fr !important; gap: 8px; }}
+  .st-key-kit_spot .cr-tiles {{ grid-template-columns: 1fr 1fr 1fr !important; }}
+  .cr-tile {{ padding: 12px; border-radius: 14px; }}
+  .cr-tile .k {{ font-size: 12.5px; }}
+  .cr-tile .v {{ font-size: 21px !important; margin: 4px 0 2px; }}
+  .cr-tile .v small {{ font-size: 12px; }}
+  .cr-tile .n {{ font-size: 11.5px; }}
+  .st-key-kit_spot .cr-tile .v {{ font-size: 17px !important; }}
+  /* hero and header actions: full-width buttons */
+  .st-key-hero .stButton button, .st-key-hero a {{ width: 100% !important; justify-content: center; }}
+  .st-key-res_actions [data-testid="stHorizontalBlock"] {{ flex-wrap: nowrap !important; gap: 6px !important; }}
+  .st-key-res_actions [data-testid="stColumn"] {{ min-width: 0 !important; flex: 1 1 0 !important; width: auto !important; }}
+  .st-key-res_actions button, .st-key-res_actions .cr-linkbtn {{ min-height: 40px; padding: 6px 8px !important; font-size: 13px; }}
+  .st-key-res_actions button p {{ font-size: 13px !important; }}
+  .cr-kit h2 {{ font-size: 24px !important; }}
+  .cr-kit .lead {{ font-size: 14.5px; }}
+  .cr-table {{ font-size: 13.5px; }}
+  .cr-table td, .cr-table th {{ padding: 10px 8px; }}
+  .cr-hazard {{ padding: 12px; }}
+}}
 @media (max-width: 1100px) {{
   .block-container, [data-testid="stMainBlockContainer"] {{ padding: 0 16px 64px; }}
   .st-key-topbar {{ margin: 0 -16px 16px !important; padding: 8px 16px; width: calc(100% + 32px) !important; }}
-  .st-key-topbar [data-testid="stHorizontalBlock"] {{ flex-direction: row !important; flex-wrap: wrap !important; gap: 4px !important; }}
+  .st-key-topbar [data-testid="stHorizontalBlock"] {{ flex-direction: row !important; flex-wrap: nowrap !important; gap: 6px !important; }}
   .st-key-topbar [data-testid="stColumn"] {{ width: auto !important; flex: 0 0 auto !important; min-width: 0 !important; }}
-  .st-key-topbar [data-testid="stColumn"]:first-child {{ flex-basis: 100% !important; }}
+  .st-key-topbar [data-testid="stColumn"]:first-child {{ flex: 1 1 auto !important; }}
+  .st-key-topbar [data-testid="stColumn"]:nth-child(4) {{ display: none !important; }}
   [data-testid="stPageLink"] a {{ padding: 4px 8px; }}
-  .cr-brand {{ margin-bottom: 6px; }}
   .cr-brand .mark {{ width: 28px; height: 28px; }}
   .cr-verdict {{ font-size: 30px; }}
   .cr-home-hero h1 {{ font-size: 38px; }}
