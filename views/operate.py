@@ -21,7 +21,7 @@ plan = ss.get("plan")
 if not plan or not plan.get("options"):
     cfg = load_settings()
     with st.container(key="kit_home"):  # the pitch is written for the dark green panel
-        st.markdown(ui.kit_pitch(lang, cfg["kit_pod_price_qar"], cfg["kit_service_qar_year"]), unsafe_allow_html=True)
+        st.markdown(ui.kit_pitch(lang, cfg["kit_pod_price_qar"], cfg["kit_service_qar_year"], pod_area_m2=cfg["kit_pod_area_m2"]), unsafe_allow_html=True)
         st.markdown(f'<p class="cr-kit-empty">{t("kit_empty", lang)}</p>', unsafe_allow_html=True)
         if st.button(f"{t('l_plan', lang)} →", type="primary", key="kit_plan"):
             st.switch_page(ss["_pages"]["plan"])
