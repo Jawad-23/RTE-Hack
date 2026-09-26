@@ -96,11 +96,11 @@ A first run for a new pin takes up to about a minute (five NASA downloads). Afte
 
 ## 6. The assistant (LLM)
 
-| Setting (`.env` or Secrets) | Deployed value | Default in code |
+| Setting (`.env` or Secrets) | Suggested in `.env.example` (the live value is set in Secrets) | Default in code |
 | --- | --- | --- |
 | `LLM_PROVIDER` | `openai_compatible` | `anthropic` |
 | `LLM_BASE_URL` | `https://openrouter.ai/api/v1` | `http://localhost:11434/v1` (Ollama) |
-| `LLM_MODEL` | `qwen/qwen3.8-27b:free` (see `.env.example`) | `claude-sonnet-5` (Anthropic) or `qwen2.5:7b-instruct` |
+| `LLM_MODEL` | `qwen/qwen3.8-27b:free` | `claude-sonnet-5` (Anthropic) or `qwen2.5:7b-instruct` |
 | `LLM_FALLBACK_MODELS` | `nvidia/nemotron-3-super-120b-a12b:free,openrouter/free` (sent as OpenRouter's `models` list) | none |
 | `LLM_API_KEY` / `ANTHROPIC_API_KEY` | set in Secrets (never in the repo) | empty |
 | `APP_URL` | https://croptions.streamlit.app (OpenRouter `HTTP-Referer`) | same |
@@ -128,7 +128,7 @@ A first run for a new pin takes up to about a minute (five NASA downloads). Afte
 | Results (`/results`) | `views/results.py` | Verdict; 6 key numbers; assistant summary and chat; Croptions Kit card (cost with the kit, latest reading); investment table; NASA climate card with charts; PVGIS and forecast; recent dust; crop calendar; setup comparison; compare a second site; inside-temperature, hottest-day and cumulative-profit charts; diagnostics; assumptions and sources |
 | Compare sites (`/compare`) | `views/compare.py` | Two sites with the same inputs; "same heat, different air" only when the data shows it |
 | Croptions Kit (`/kit`) | `views/operate.py` | Kit ID, control mode (Auto / Approve once / Manual), live tiles (leaf, air, humidity, light, CWSI, VPD, dew-point gap, light so far), advice, thermal image, alerts, readings chart, CSV; each reading tagged "Demo reading · simulated"; a one-day fixed-shade vs smart-screen simulation at the bottom |
-| Assumptions (`/assumptions`) | `views/assumptions.py` | Every CSV row with its source, and the FAOSTAT prices used |
+| Assumptions (`/assumptions`) | `views/assumptions.py` | Crops, setups and settings with their sources, and the FAOSTAT prices used |
 | Kit simulator (`/kit-simulator?farm=ID`) | `views/kit_remote.py` | Hidden; no top bar. Scenario buttons (Normal, Heat stress, Dry air, Sun surge, Humid night) and "Stream the day" |
 
 ## 8. Croptions Kit data flow
