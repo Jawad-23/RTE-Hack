@@ -1,8 +1,10 @@
-"""Home: what Croptions does, with a way into planning or a demo site. Owned by Me."""
+"""Home: what Croptions does, what it checks, and the Croptions Kit, with a way into planning or a demo site. Owned by Me."""
 
 import streamlit as st
 
 from i18n import t
+from planner.solar import load_settings
+from ui import components as ui
 from ui import state
 
 lang = state.lang()
@@ -55,3 +57,28 @@ for i, col in enumerate(cols, start=1):
         f'<div class="cr-value"><div class="n">{i}</div><h3>{t(f"v{i}", lang)}</h3><p>{t(f"v{i}t", lang)}</p></div>',
         unsafe_allow_html=True,
     )
+
+# ---------- what the planner checks ----------
+st.write("")
+st.markdown(f'<div class="cr-section-head"><span class="cr-pill soft">{t("h_feat_eyebrow", lang)}</span><h2>{t("h_feat_title", lang)}</h2></div>',
+            unsafe_allow_html=True)
+cols = st.columns(3, gap="medium")
+for col, (icon, key) in zip(cols, (("🛰", "h_f1"), ("🌱", "h_f2"), ("📈", "h_f3"))):
+    col.markdown(f'<div class="cr-feature"><div class="ic">{icon}</div><h3>{t(key, lang)}</h3><p>{t(key + "t", lang)}</p></div>',
+                 unsafe_allow_html=True)
+
+# ---------- the Croptions Kit ----------
+st.write("")
+cfg = load_settings()
+with st.container(key="kit_home"):
+    st.markdown(ui.kit_pitch(lang, cfg["kit_pod_price_qar"], cfg["kit_service_qar_year"]), unsafe_allow_html=True)
+    steps = "".join(f'<div class="s"><b>{i}</b><div><h4>{t(f"h_k{i}", lang)}</h4><p>{t(f"h_k{i}t", lang)}</p></div></div>' for i in (1, 2, 3))
+    st.markdown(f'<div class="cr-kit-steps">{steps}</div>', unsafe_allow_html=True)
+    k1, k2, _ = st.columns([1, 1, 2])
+    if k1.button(f"{t('h_kit_cta', lang)} →", type="primary", use_container_width=True, key="home_kit"):
+        st.switch_page(pages["operate"])
+    if k2.button(t("l_plan", lang), use_container_width=True, key="home_plan2"):
+        st.switch_page(pages["plan"])
+
+# ---------- open data behind every number ----------
+st.markdown(f'<p class="cr-note" style="text-align:center;margin-top:24px">{t("h_data", lang)}</p>', unsafe_allow_html=True)

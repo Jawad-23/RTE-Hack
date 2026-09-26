@@ -16,6 +16,8 @@ def offline(monkeypatch, humid_year, tmp_path):
     monkeypatch.setattr(climate, "CACHE_DIR", tmp_path)
     monkeypatch.setattr(climate, "get_typical_year", lambda lat, lon, years=None: humid_year)
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    from planner import agent
+    monkeypatch.setattr(agent, "llm_ready", lambda: (False, "chat_no_key"))  # never call a real LLM (a local .env may hold a key)
 
 
 def run(page: str, lang: str = "en", plan: bool = False) -> AppTest:
@@ -95,3 +97,28 @@ def test_results_shows_site_climate_and_kit_cost(offline):
     assert "What NASA measured at this site" in text
     if at.session_state["plan"]["recommended"]:
         assert "Build cost with kit" in text
+
+
+def test_results_opens_with_assistant_summary_kit_and_investment(offline):
+    at = run("views/results.py", plan=True)
+    assert not at.exception, at.exception
+    text = " ".join(m.value for m in at.markdown)
+    assert "Your plan, explained" in text and "Investment scenarios" in text and "Feel the heat before your crop does" in text
+    chat = at.session_state["chat"]
+    assert chat and chat[0]["role"] == "assistant"  # the summary is the first message, before any question
+    assert "Compare with another site" in text
+
+
+def test_kit_page_has_no_simulation_tabs_or_qr(offline):
+    at = run("views/operate.py", plan=True)
+    assert not at.exception, at.exception
+    text = " ".join(m.value for m in at.markdown)
+    assert "Simulated day" not in [tab.label for tab in at.tabs]
+    assert "QR" not in text and "Kit ID" in text
+
+
+def test_menu_lists_kit_and_compare(offline):
+    at = run("views/home.py")
+    labels = " ".join(str(p.label) for p in at.get("page_link"))
+    assert "Croptions Kit" in labels and "Compare sites" in labels
+    assert any("Feel the heat" in m.value for m in at.markdown)

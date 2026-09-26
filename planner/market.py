@@ -148,6 +148,14 @@ def country_for(lat: float, lon: float) -> dict | None:
     return found
 
 
+def iso3(country: dict | None) -> str | None:
+    """Country dict from country_for() -> ISO 3166 alpha-3 code (for the World Bank API), or None."""
+    import pycountry
+
+    found = pycountry.countries.get(numeric=f"{country['m49']:03d}") if country else None
+    return found.alpha_3 if found else None
+
+
 def _country_from_iso2(iso2: str | None, name: str | None) -> dict | None:
     import pycountry
 

@@ -1,6 +1,8 @@
-"""Results: the recommendation, key numbers, crop calendar, setup comparison and charts. Owned by Me.
+"""Results: the recommendation, the assistant's summary, the Croptions Kit, investment scenarios, site intelligence,
+the crop calendar, setup comparison, an optional second site and charts. Owned by Me.
 
 Every number on this page comes from the plan or from ui/insights.py, which summarises the planner's physics.
+The assistant's summary is written last (into a slot near the top) so the rest of the page shows while it thinks.
 """
 
 import json
@@ -9,8 +11,10 @@ import pandas as pd
 import streamlit as st
 
 from i18n import t
+from planner import chat_ui, dust, optimizer
 from planner.schemas import SETUPS
-from ui import charts, insights, state
+from planner.solar import load_settings
+from ui import charts, insights, kit_ui, state
 from ui import components as ui
 from ui.theme import PLOTLY_CONFIG
 
@@ -46,8 +50,7 @@ with h2:
         st.caption(t("share_hint", lang))
         base = (st.context.url or "").split("?")[0]
         st.code(base + "?" + "&".join(f"{k}={v}" for k, v in st.query_params.items()), language=None)
-    if b3.button(f"{t('compare_other', lang)} →", type="primary", use_container_width=True):
-        st.switch_page(pages["compare"])
+    b3.markdown(f'<a class="cr-linkbtn" href="#compare-sites">+ {t("cmp_add", lang)}</a>', unsafe_allow_html=True)
 
 # ---------- recommendation ----------
 summary = t("run_summary", lang).format(area=state.n0(inp["area_m2"]), budget=state.n0(inp["budget_qar"]), priority=t(f"pr_{inp['priority']}", lang))
@@ -97,6 +100,46 @@ if rec:
     ]), unsafe_allow_html=True)
 st.markdown(f'<div class="cr-banner">⚠ {t("estimate_banner", lang)}</div>', unsafe_allow_html=True)
 
+# ---------- assistant summary (filled at the end) + Croptions Kit spotlight ----------
+chat_col, kit_col = st.columns([1.15, 1], gap="medium")
+with chat_col:
+    chat_slot = st.container(key="card_chat")
+cfg = load_settings()
+kit_cost = plan.get("kit") or {}
+with kit_col, st.container(key="kit_spot"):
+    st.markdown(ui.kit_pitch(lang, compact=True), unsafe_allow_html=True)
+    if rec and kit_cost.get("capex_with_kit_qar") is not None:
+        st.markdown(ui.tiles([
+            {"k": t("kc_pods", lang), "v": str(kit_cost["pods"]), "unit": "",
+             "note": t("kc_pods_n", lang).format(price=state.n0(kit_cost["kit_capex_qar"] / kit_cost["pods"]), area=state.n0(kit_cost["pod_area_m2"]))},
+            {"k": t("kc_cost", lang), "v": state.n0(kit_cost["capex_with_kit_qar"]), "unit": t("qar", lang),
+             "note": t("kc_cost_n", lang).format(plan=state.n0(rec["capex_qar"]), kit=state.n0(kit_cost["kit_capex_qar"]))},
+            {"k": t("kc_pay", lang), "v": state.n1(kit_cost["payback_with_kit_years"]), "unit": t("years", lang),
+             "note": t("kc_pay_n", lang).format(years=state.n1(rec["payback_years"]))},
+        ]), unsafe_allow_html=True)
+    last = kit_ui.latest(ss.get("_kit_code"))
+    if last:
+        st.markdown(f'<p class="cr-kit-live">● {t("kc_live", lang).format(leaf=state.n1(last["leaf_c"]), air=state.n1(last["air_c"]), rh=state.n0(last["rh_pct"]))}</p>',
+                    unsafe_allow_html=True)
+    if st.button(f"{t('kc_open', lang)} →", type="primary", use_container_width=True, key="kit_open"):
+        st.switch_page(pages["operate"])
+    st.markdown(f'<p class="cr-kit-note">{t("kc_note", lang)}</p>', unsafe_allow_html=True)
+
+# ---------- investment scenarios ----------
+fin = plan.get("finance") or {}
+invest_options = insights.crop_options(plan, crop)
+with st.container(key="card_invest"):
+    st.markdown(ui.title(t("i_title", lang), t("i_sub", lang).format(crop=state.crop_label(crop, lang), years=fin.get("years", 10))),
+                unsafe_allow_html=True)
+    st.markdown(ui.investment(invest_options, rec, lang), unsafe_allow_html=True)
+    if fin.get("basis") == "world_bank":
+        basis = t("i_rate_wb", lang).format(rate=state.n1(fin["rate_pct"]), lending=state.n1(fin["lending_rate_pct"]), ly=fin["lending_rate_year"],
+                                            inflation=state.n1(fin["inflation_pct"]), iy=fin["inflation_year"])
+    else:
+        basis = t("i_rate_fallback", lang).format(rate=state.n1(fin.get("rate_pct")))
+    down_pct = f"{fin.get('price_down_pct', 20):.0f}"
+    st.markdown(f'<p class="cr-note">{basis} {t("i_notes", lang).format(down=down_pct)}</p>', unsafe_allow_html=True)
+
 # ---------- what NASA measured at this site ----------
 site = plan.get("site") or {}
 if "monthly_temp_max_mean_c" in site:
@@ -136,6 +179,47 @@ if "monthly_temp_max_mean_c" in site:
         if site.get("missing"):
             st.caption(" · ".join(site["missing"]))
 
+# ---------- sun, heat and humidity from satellites, maps and forecasts ----------
+gis, fc = plan.get("solar_gis") or {}, plan.get("forecast") or {}
+if gis.get("available") or fc.get("available"):
+    with st.container(key="card_gis"):
+        st.markdown(ui.title(t("gis_title", lang), t("gis_sub", lang)), unsafe_allow_html=True)
+        left, right = st.columns(2, gap="medium")
+        if gis.get("available"):
+            with left:
+                st.markdown(ui.tiles([
+                    {"k": t("gis_yield", lang), "v": state.n0(gis["kwh_per_kw_year"]), "unit": t("gis_yield_u", lang),
+                     "note": t("gis_yield_n", lang).format(years=gis["years"])},
+                    {"k": t("gis_heat", lang), "v": state.n1(gis["heat_loss_pct"]), "unit": "%", "note": t("gis_heat_n", lang)},
+                    {"k": t("gis_tilt", lang), "v": str(gis["tilt_deg"]), "unit": "°",
+                     "note": t("gis_tilt_n", lang).format(az=gis["azimuth_deg"], elev=state.n0(gis["elevation_m"]))},
+                ]), unsafe_allow_html=True)
+                st.plotly_chart(charts.solar_months(gis["monthly_kwh_per_kw"], lang), use_container_width=True, config=PLOTLY_CONFIG)
+                st.markdown(f'<p class="cr-note">{t("gis_src", lang)}</p>', unsafe_allow_html=True)
+        if fc.get("available"):
+            with right:
+                limit_c = insights.crop_limit(plan, crop)
+                hot_days = sum(1 for d in fc["days"] if d["temp_max_c"] is not None and d["temp_max_c"] > limit_c)
+                uv = max((d["uv_max"] for d in fc["days"] if d["uv_max"] is not None), default=None)
+                st.markdown(ui.tiles([
+                    {"k": t("fc_hot", lang), "v": str(hot_days), "unit": t("fc_of7", lang),
+                     "note": t("fc_hot_n", lang).format(crop=state.crop_label(crop, lang), limit=f"{limit_c:.0f}")},
+                    {"k": t("fc_uv", lang), "v": state.n1(uv), "unit": "", "note": t("fc_uv_n", lang)},
+                ]), unsafe_allow_html=True)
+                st.plotly_chart(charts.forecast_week(fc["days"], limit_c, lang), use_container_width=True, config=PLOTLY_CONFIG)
+                st.markdown(f'<p class="cr-note">{t("fc_src", lang)}</p>', unsafe_allow_html=True)
+        d1, d2 = st.columns([1, 3], vertical_alignment="center")
+        if d1.button(t("dust_fetch", lang), key="dust_btn", use_container_width=True):
+            with st.spinner(t("dust_fetch", lang)):
+                ss["_dust_exposure"] = (lat, lon, dust.recent_exposure(lat, lon))
+        saved = ss.get("_dust_exposure")
+        if saved and saved[:2] == (lat, lon):
+            e = saved[2]
+            d2.markdown(f'<p class="cr-note">{t("dust_line", lang).format(mean=state.n0(e["mean_ug_m3"]), n=e["event_hours"], total=e["valid_hours"])}</p>'
+                        if e["available"] else f'<p class="cr-note">{t("dust_unavailable", lang)}</p>', unsafe_allow_html=True)
+        else:
+            d2.markdown(f'<p class="cr-note">{t("dust_note", lang)}</p>', unsafe_allow_html=True)
+
 # ---------- crop calendar ----------
 with st.container(key="card_calendar"):
     a, b = st.columns([1.3, 1], vertical_alignment="center")
@@ -152,25 +236,41 @@ with st.container(key="card_compare"):
                 unsafe_allow_html=True)
     st.markdown(ui.comparison(options, rec, lang), unsafe_allow_html=True)
 
-# ---------- the plan with the Croptions Kit ----------
-kit_cost = plan.get("kit") or {}
-if rec and kit_cost.get("capex_with_kit_qar") is not None:
-    with st.container(key="card_kit"):
-        a, b = st.columns([3, 1], vertical_alignment="center")
-        a.markdown(ui.title(t("kc_title", lang), t("kc_sub", lang)), unsafe_allow_html=True)
-        if b.button(f"{t('kc_open', lang)} →", type="primary", use_container_width=True):
-            st.switch_page(pages["operate"])
-        st.markdown(ui.tiles([
-            {"k": t("kc_pods", lang), "v": str(kit_cost["pods"]), "unit": "",
-             "note": t("kc_pods_n", lang).format(price=state.n0(kit_cost["kit_capex_qar"] / kit_cost["pods"]), area=state.n0(kit_cost["pod_area_m2"]))},
-            {"k": t("kc_cost", lang), "v": state.n0(kit_cost["capex_with_kit_qar"]), "unit": t("qar", lang),
-             "note": t("kc_cost_n", lang).format(plan=state.n0(rec["capex_qar"]), kit=state.n0(kit_cost["kit_capex_qar"]))},
-            {"k": t("kc_profit", lang), "v": state.n0(kit_cost["profit_with_kit_qar_year"]), "unit": t("qar", lang),
-             "note": t("kc_profit_n", lang).format(service=state.n0(kit_cost["kit_opex_qar_year"]))},
-            {"k": t("kc_pay", lang), "v": state.n1(kit_cost["payback_with_kit_years"]), "unit": t("years", lang),
-             "note": t("kc_pay_n", lang).format(years=state.n1(rec["payback_years"]))},
-        ]), unsafe_allow_html=True)
-        st.markdown(f'<p class="cr-note">⚠ {t("kc_note", lang)}</p>', unsafe_allow_html=True)
+# ---------- compare with another site (optional) ----------
+st.markdown('<div id="compare-sites"></div>', unsafe_allow_html=True)
+with st.container(key="card_addsite"):
+    st.markdown(ui.title(t("cmp_add_title", lang), t("cmp_add_sub", lang)), unsafe_allow_html=True)
+    demos = state.demo_sites()
+    others = [r for r in demos.itertuples() if abs(r.lat - lat) > 0.01 or abs(r.lon - lon) > 0.01]
+    c1, c2, c3 = st.columns([1.6, 0.8, 0.9], vertical_alignment="bottom")
+    pick = c1.selectbox(t("c_site_b", lang), range(len(others)), key="_add_site",
+                        format_func=lambda i: f"{others[i].name_ar if lang == 'ar' else others[i].name_en} · {state.coords(others[i].lat, others[i].lon)}")
+    if c2.button(f"+ {t('cmp_add_btn', lang)}", type="primary", use_container_width=True) and others:
+        o = others[pick]
+        with st.spinner(t("a_title", lang)):
+            other = optimizer.plan(float(o.lat), float(o.lon), inp["area_m2"], inp["budget_qar"], inp["priority"], inp.get("crop"),
+                                   cleaning_interval_days=inp.get("cleaning_interval_days"))
+        ss["results_compare"] = {"base": (lat, lon), "name": o.name_ar if lang == "ar" else o.name_en, "plan": other}
+    if c3.button(t("cmp_full", lang), use_container_width=True):
+        st.switch_page(pages["compare"])
+    extra = ss.get("results_compare")
+    if extra and extra["base"] == (lat, lon):
+        def _verdict(p):
+            r = p.get("recommended")
+            if not r:
+                return t("none_title", lang)
+            pay = t("verdict_pay", lang).format(years=state.n1(r["payback_years"])) if r["payback_years"] is not None else t("verdict_nopay", lang)
+            return t("verdict", lang).format(crop=state.crop_in_sentence(r["crop"], lang), setup=t(f"setupv_{r['setup']}", lang)) + " " + pay
+        here_rh, there_rh = (plan["site"].get("hottest_month_rh_mean_pct") or 0), (extra["plan"]["site"].get("hottest_month_rh_mean_pct") or 0)
+        a, b = st.columns(2, gap="medium")
+        a.markdown(ui.site_card(state.site_name(lat, lon, lang) or t("p_pinned", lang), t("cmp_this", lang), lat, lon, plan, None,
+                                _verdict(plan), lang, here_rh > there_rh), unsafe_allow_html=True)
+        xi = extra["plan"]["inputs"]
+        b.markdown(ui.site_card(extra["name"], t("cmp_other_site", lang), xi["lat"], xi["lon"], extra["plan"], None,
+                                _verdict(extra["plan"]), lang, there_rh > here_rh), unsafe_allow_html=True)
+        if st.button(t("cmp_remove", lang), key="cmp_remove"):
+            ss["results_compare"] = None
+            st.rerun()
 
 # ---------- charts ----------
 climate_df = state.climate_for(lat, lon)
@@ -234,3 +334,8 @@ with left, st.container(key="card_assum"):
         st.dataframe(df, hide_index=True, use_container_width=True)
 with right, st.container(key="card_sources"):
     st.markdown(ui.title(t("sources", lang), t("sources_sub", lang)) + ui.sources(plan, lang), unsafe_allow_html=True)
+
+# ---------- assistant: summary first, then questions (last, so the page is already on screen) ----------
+with chat_slot:
+    st.markdown(ui.title(t("chat_card", lang), t("chat_card_sub", lang)), unsafe_allow_html=True)
+    chat_ui.render(plan, lang, key="inline_chat", summary=True)

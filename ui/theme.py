@@ -230,6 +230,68 @@ iframe {{ border-radius: 20px; }}
 [data-testid="stChatMessage"] {{ background: {SAND_50}; border-radius: 16px; }}
 div[role="dialog"] {{ border-radius: 20px; }}
 
+/* Polish: softer cards with a hairline border, a richer hero */
+[class*="st-key-card"], .cr-card, .cr-tile, .cr-value, .cr-feature {{ border: 1px solid {SAND_300}; box-shadow: 0 1px 2px rgba(60,45,20,.06), 0 8px 24px -18px rgba(60,45,20,.25); }}
+.st-key-hero {{ background: linear-gradient(135deg, {GREEN} 0%, #184A34 60%, #123826 100%); box-shadow: 0 18px 40px -28px rgba(18,56,38,.9); }}
+.cr-tile .v {{ color: {INK}; }}
+.cr-section-head {{ text-align: center; margin: 8px 0 4px; }}
+.cr-section-head h2 {{ font-size: 34px; margin: 12px 0 0; text-align: center !important; }}
+.cr-feature {{ background: {SAND_50}; border-radius: 20px; padding: 26px; height: 100%; }}
+.cr-feature .ic {{ width: 44px; height: 44px; border-radius: 12px; background: {GREEN_50}; display: grid; place-items: center; font-size: 22px; }}
+.cr-feature h3 {{ font-size: 19px; margin: 16px 0 8px; }}
+.cr-feature p {{ font-size: 15px; color: #4A5247; margin: 0; line-height: 1.5; }}
+.cr-linkbtn {{ display: flex; align-items: center; justify-content: center; min-height: 44px; border-radius: 10px; background: {GREEN}; color: {SAND_50} !important;
+  font-weight: 600; text-decoration: none; padding: 8px 18px; white-space: nowrap; }}
+.cr-linkbtn:hover {{ background: {GREEN_700}; }}
+
+/* Top-bar menu */
+.st-key-topbar [data-testid="stPopover"] button {{ border-radius: 10px; min-height: 40px; background: {SAND_50}; border: 1px solid {SAND_300}; white-space: nowrap; }}
+.st-key-topbar [data-testid="stPopover"] button p {{ white-space: nowrap; }}
+.st-key-topbar [data-testid="stPageLink"] a[href$="/kit"] {{ background: {GREEN_50}; }}
+.st-key-topbar [data-testid="stPageLink"] a[href$="/kit"] p {{ color: {GREEN}; font-weight: 600; }}
+[data-testid="stPopoverBody"] [data-testid="stPageLink"] a {{ padding: 8px 12px; }}
+
+/* Croptions Kit: marketing block and spotlight */
+.cr-kit {{ display: grid; grid-template-columns: 1.5fr 1fr; gap: 24px; align-items: center; }}
+.cr-kit.compact {{ grid-template-columns: 1fr; }}
+.cr-kit h2 {{ font-size: 34px; line-height: 1.1; margin: 12px 0 8px; color: {SAND_50}; }}
+.cr-kit.compact h2 {{ font-size: 26px; }}
+.cr-kit .lead {{ font-size: 16px; color: #D8E4DA; margin: 0 0 16px; max-width: 36em; }}
+.cr-kit .feats {{ display: grid; grid-template-columns: 1fr 1fr; gap: 12px 18px; }}
+.cr-kit .f {{ display: flex; gap: 10px; align-items: flex-start; }}
+.cr-kit .f .i {{ width: 34px; height: 34px; flex: none; border-radius: 10px; background: rgba(235,221,191,.16); display: grid; place-items: center; font-size: 17px; }}
+.cr-kit .f b {{ color: {SAND_50}; font-size: 15px; }}
+.cr-kit .f p {{ color: #C9D6CC; font-size: 13.5px; margin: 2px 0 0; line-height: 1.4; }}
+.cr-kit .price {{ margin-top: 18px; font-size: 18px; font-weight: 600; color: {ACCENT}; }}
+.cr-kit .price span {{ display: block; font-size: 13px; font-weight: 400; color: #C9D6CC; margin-top: 2px; }}
+.cr-kit .art {{ display: flex; justify-content: center; background: rgba(255,253,248,.06); border-radius: 20px; padding: 12px; }}
+.st-key-kit_home, .st-key-kit_spot {{ background: radial-gradient(120% 140% at 100% 0%, #2B6B4C 0%, {GREEN} 45%, #123826 100%);
+  border-radius: 24px; padding: 32px; color: {SAND_50}; box-shadow: 0 24px 48px -30px rgba(18,56,38,.95); }}
+.st-key-kit_spot {{ padding: 26px; }}
+.st-key-kit_spot .cr-tile {{ background: rgba(255,253,248,.08); border-color: rgba(235,221,191,.22); box-shadow: none; }}
+.st-key-kit_spot .cr-tile .k, .st-key-kit_spot .cr-tile .n, .st-key-kit_spot .cr-tile .v small {{ color: #C9D6CC; }}
+.st-key-kit_spot .cr-tile .v {{ color: {SAND_50}; font-size: 24px; }}
+.st-key-kit_spot .cr-tiles {{ grid-template-columns: repeat(3, minmax(0, 1fr)); }}
+.st-key-kit_spot .stButton button[kind="primary"], .st-key-kit_home .stButton button[kind="primary"] {{ background: {ACCENT}; color: {GREEN}; }}
+.st-key-kit_home .stButton button:not([kind="primary"]) {{ background: transparent; color: {SAND_50}; border-color: rgba(255,253,248,.35); }}
+.cr-kit-live {{ color: {ACCENT}; font-weight: 600; margin: 0; }}
+.cr-kit-note {{ color: #AFC0B3; font-size: 12.5px; margin: 0; }}
+.cr-kit-id {{ font-size: 34px; font-weight: 700; letter-spacing: .12em; direction: ltr; unicode-bidi: isolate; color: {GREEN}; }}
+.cr-kit-steps {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 8px; }}
+.cr-kit-steps .s {{ display: flex; gap: 12px; background: rgba(255,253,248,.07); border: 1px solid rgba(235,221,191,.18); border-radius: 16px; padding: 16px; }}
+.cr-kit-steps .s b {{ width: 30px; height: 30px; flex: none; border-radius: 50%; background: {ACCENT}; color: {GREEN}; display: grid; place-items: center; }}
+.cr-kit-steps h4 {{ margin: 0; color: {SAND_50}; font-size: 16px; }}
+.cr-kit-steps p {{ margin: 4px 0 0; color: #C9D6CC; font-size: 14px; }}
+
+/* Assistant card on Results */
+.st-key-card_chat {{ border-top: 4px solid {GREEN}; }}
+.st-key-card_chat [data-testid="stChatMessage"] {{ background: {GREEN_50}; }}
+
+/* Investment table */
+.cr-invest td.good {{ color: {GREEN}; }}
+.cr-invest td.bad {{ color: {HEAT_3}; }}
+.cr-invest small {{ color: {INK_MUTED}; font-weight: 400; }}
+
 .st-key-card_site .cr-tiles, .st-key-card_kit .cr-tiles {{ grid-template-columns: repeat(4, minmax(0, 1fr)); }}
 @media (max-width: 900px) {{
   .st-key-card_site .cr-tiles, .st-key-card_kit .cr-tiles {{ grid-template-columns: repeat(2, minmax(0, 1fr)); }}
@@ -245,6 +307,9 @@ div[role="dialog"] {{ border-radius: 20px; }}
   .cr-brand .mark {{ width: 28px; height: 28px; }}
   .cr-verdict {{ font-size: 30px; }}
   .cr-home-hero h1 {{ font-size: 38px; }}
+  .cr-kit, .cr-kit-steps, .cr-kit .feats {{ grid-template-columns: 1fr; }}
+  .st-key-kit_spot .cr-tiles {{ grid-template-columns: 1fr 1fr; }}
+  .cr-kit h2 {{ font-size: 26px; }}
 }}
 </style>
 """

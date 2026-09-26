@@ -110,6 +110,16 @@ TOOLS = [
     },
 ]
 
+def arabic_glossary() -> str:
+    """The app's own Arabic names for every crop and setup, so Arabic replies match the screen (e.g. okra = بامية)."""
+    from planner import crops
+    from planner.schemas import SETUPS
+
+    pairs = [f"{c} = {t(f'crop_{c}', 'ar')}" for c in crops.load_crops()["crop"]] + [f"{s} = {t(f'setup_{s}', 'ar')}" for s in SETUPS]
+    return ("\nArabic names to use exactly: " + "; ".join(pairs) + "; QAR = ريال قطري (ر.ق). "
+            "Copy numbers exactly as they appear in the data.")
+
+
 _client = None
 
 
@@ -224,7 +234,8 @@ def compact_plan(plan: dict | None) -> dict | None:
     if not plan:
         return None
     keep = ["crop", "setup", "coverage_pct", "growing_months", "inside_max_c", "capex_qar", "opex_qar_year", "revenue_qar_year",
-            "profit_qar_year", "payback_years", "profit_10y_qar", "water_l_day", "solar_kw", "cooling_kwh_year", "passes", "fail_reasons"]
+            "profit_qar_year", "payback_years", "profit_10y_qar", "water_l_day", "solar_kw", "cooling_kwh_year", "passes", "fail_reasons",
+            "price_qar_kg", "npv_qar", "irr_pct", "breakeven_price_qar_kg", "npv_price_down_qar", "payback_price_down_years"]
     slim = lambda o: {k: o.get(k) for k in keep} if o else None  # noqa: E731
     site = {k: v for k, v in plan.get("site", {}).items() if not k.startswith("monthly_")}
     return {
@@ -236,6 +247,10 @@ def compact_plan(plan: dict | None) -> dict | None:
         "calendar": plan.get("calendar"),
         "sources": plan.get("sources"),
         "assumptions": plan.get("assumptions"),
+        "finance": plan.get("finance"),
+        "kit": plan.get("kit"),
+        "solar_gis": {k: v for k, v in (plan.get("solar_gis") or {}).items() if k != "monthly_kwh_per_kw"},
+        "forecast_next_7_days": plan.get("forecast"),
     }
 
 
@@ -281,11 +296,12 @@ def ask(message: str, history: list, current_plan: dict | None) -> dict:
     messages = [{"role": m["role"], "content": m["content"]} for m in history if m.get("content")]
     messages.append({"role": "user", "content": f"<current_plan>\n{context}\n</current_plan>\n\n{message}"})
 
+    system = SYSTEM_PROMPT + (arabic_glossary() if lang == "ar" else "")
     tool_log: list[str] = []
     tool_results: list = []
     new_plan = None
     try:
-        response = call_llm(SYSTEM_PROMPT, messages, TOOLS)
+        response = call_llm(system, messages, TOOLS)
         for _ in range(MAX_TOOL_ROUNDS):
             if response.stop_reason != "tool_use":
                 break
@@ -301,7 +317,7 @@ def ask(message: str, history: list, current_plan: dict | None) -> dict:
                 except Exception as exc:  # report the failure to the model instead of crashing the chat
                     results.append({"type": "tool_result", "tool_use_id": block.id, "content": f"Tool error: {exc}", "is_error": True})
             messages.append({"role": "user", "content": results})
-            response = call_llm(SYSTEM_PROMPT, messages, TOOLS)
+            response = call_llm(system, messages, TOOLS)
 
         if response.stop_reason == "refusal":
             return {"reply": t("chat_error", lang), "language": lang, "verified": False, "plan": new_plan, "tool_log": tool_log}
@@ -319,7 +335,7 @@ def ask(message: str, history: list, current_plan: dict | None) -> dict:
                                                         "Rewrite it with the same friendly tone and the same suggestions, but replace "
                                                         "those numbers with numbers from the data or describe them in words. "
                                                         "Reply with the rewritten answer only."})
-            response = call_llm(SYSTEM_PROMPT, messages, TOOLS, tool_choice={"type": "none"})
+            response = call_llm(system, messages, TOOLS, tool_choice={"type": "none"})
             reply = _text(response)
             ok, bad = checker.verify(reply, known, tool_results, user_text=message)
             if not ok:
@@ -329,3 +345,33 @@ def ask(message: str, history: list, current_plan: dict | None) -> dict:
     except Exception as exc:  # no key, network down, API error: the dashboard still works without the chat
         tool_log.append(f"{type(exc).__name__}: {exc}")
         return {"reply": t("chat_error", lang), "language": lang, "verified": False, "plan": new_plan, "tool_log": tool_log}
+
+
+SUMMARY_REQUEST = {
+    "en": "Summarise this plan for me as my farm advisor: what you recommend and why in plain words, the two or three numbers "
+          "that matter most, the biggest risk to watch, and one way the Croptions Kit could help. Under 120 words. Do not run any "
+          "tools. End by inviting me to ask questions.",
+    "ar": "لخّص لي هذه الخطة كمستشار زراعي: ما الذي توصي به ولماذا بكلمات بسيطة، وأهم رقمين أو ثلاثة، وأكبر خطر يجب الانتباه له، "
+          "وطريقة واحدة يمكن أن تساعد بها مجموعة Croptions. أقل من 120 كلمة. لا تستخدم أي أدوات. واختم بدعوتي لطرح الأسئلة.",
+}
+
+
+NAMES_HINT = {
+    "en": "The recommended crop is called \"{crop}\" and the setup \"{setup}\".",
+    "ar": "اسم المحصول الموصى به \"{crop}\" واسم النظام \"{setup}\"؛ استخدم هذين الاسمين حرفياً.",
+}
+
+
+def summarize(plan: dict, lang: str) -> dict:
+    """Plan + language -> the assistant's opening summary (same shape as ask()); a verified template if no LLM is set up."""
+    ready, _ = llm_ready()
+    if not ready:
+        return {"reply": safe_answer(plan, lang), "language": lang, "verified": True, "plan": None, "tool_log": ["no LLM: template summary"]}
+    request = SUMMARY_REQUEST[lang]
+    rec = plan.get("recommended")
+    if rec:  # name the recommendation in the reply language so the model does not translate it itself
+        names = {"crop": t(f"crop_{rec['crop']}", lang), "setup": t(f"setup_{rec['setup']}", lang)}
+        request += " " + NAMES_HINT[lang].format(**names)
+    out = ask(request, [], plan)
+    out["plan"] = None  # a summary never replaces the plan
+    return out
