@@ -21,3 +21,14 @@ usd_to_qar,3.64,QAR/USD,Qatar Central Bank fixed exchange rate (pegged since 200
 irrigation_efficiency,0.9,fraction,FAO Irrigation Water Management Training Manual 4: typical drip irrigation application efficiency
 pad_airflow_m3_s_m2,0.041,m3/s per m2 floor,Standard fan-and-pad greenhouse design airflow (8 cfm per ft2 of floor; ASABE EP406 / NGMA)
 greenhouse_air_speed_ms,0.5,m/s,estimate - typical air speed across the crop in a fan-ventilated greenhouse; used for crop water inside closed setups
+kit_pod_price_qar,2000,QAR/pod,"estimate - fixed placeholder price for one Croptions Kit pod (thermal camera, air sensor, light sensor, controller, solar supply); not a supplier quote"
+kit_pod_area_m2,500,m2/pod,estimate - floor area one Croptions Kit pod is assumed to watch
+kit_service_qar_year,300,QAR/pod/year,"estimate - fixed placeholder yearly service per pod (connectivity, calibration, replacement parts)"
+kit_cwsi_lower_intercept_c,1.5,°C,"estimate - leaf minus air temperature of a fully transpiring crop at zero VPD (form of the Idso et al. 1981 non-water-stressed baseline; coefficients not crop-calibrated)"
+kit_cwsi_lower_slope_c_kpa,-1.9,°C/kPa,"estimate - slope of the non-water-stressed baseline against VPD (form of Idso et al. 1981; coefficients not crop-calibrated)"
+kit_cwsi_upper_delta_c,5.0,°C,"estimate - leaf minus air temperature of a leaf that has stopped transpiring (CWSI upper limit)"
+kit_cwsi_alert,0.5,fraction,estimate - crop water stress index above which the kit raises an alert
+kit_dew_gap_alert_c,2.0,°C,estimate - leaf temperature within this margin of the dew point raises a condensation (mould) alert
+kit_noise_temp_c,0.3,°C,estimate - standard deviation of simulated sensor noise on temperatures
+kit_noise_rh_pct,2.0,%,estimate - standard deviation of simulated sensor noise on humidity
+kit_noise_par_fraction,0.03,fraction,estimate - standard deviation of simulated sensor noise on sunlight

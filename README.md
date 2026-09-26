@@ -28,13 +28,14 @@ The first run for a new pin fetches 5 years of hourly data from NASA POWER (can 
 | Path | What | Owner |
 | --- | --- | --- |
 | `app.py` | Entry point: top bar, page navigation, language switch, the "Ask Croptions" dialog | Repo owner |
-| `views/` | The six pages: Home, Plan, Results, Compare sites, Operate, Assumptions | Repo owner |
+| `views/` | The six pages: Home, Plan, Results, Compare sites, Croptions Kit (Operate), Assumptions; plus the phone remote `kit_remote.py` | Repo owner |
 | `ui/` | Design tokens and CSS (`theme.py`), HTML components, Plotly charts, page state, chart summaries (`insights.py`) | Repo owner |
 | `.streamlit/config.toml`, `assets/` | Theme colours and logo from the Croptions design system | Repo owner |
 | `planner/schemas.py` | Shared column names, setups, statuses, units | Repo owner |
 | `planner/climate.py` | NASA POWER fetch → 8,760-hour typical year, cached | Repo owner |
 | `planner/cooling.py` | Wet-bulb physics and inside temperature per setup | Repo owner |
 | `planner/optimizer.py` | Runs every crop × setup, filters, ranks: `plan()` | Repo owner |
+| `planner/site_climate.py`, `planner/kit.py`, `ui/kit_ui.py` | NASA climate card on Results; the simulated Croptions Kit (readings, CWSI/VPD/dew point, advice, costs, phone ↔ laptop inbox) | Repo owner |
 | `planner/crops.py`, `solar.py`, `economics.py`, `data/*.csv` | Crop check, solar sizing, economics, data tables (`demo_sites.csv` holds the example pins) | Mustafa |
 | `planner/agent.py`, `checker.py`, `chat_ui.py`, `i18n/`, `styles/rtl.css` | Claude agent, number checker, English/Arabic chat | Salih |
 | `tests/` | One test file per module | everyone |
@@ -89,10 +90,12 @@ Branch per person and feature (`<owner>/<feature>`), only edit files you own, an
 
 See [implementation, validation and remaining work](docs/05-optional-update.md). Run `python scripts/validate_demo.py --five-sites` to verify public data access and cache demo sites. The default planner now prices uncovered cooling electricity hour by hour; surplus solar earns zero by default. All new crop and equipment parameters remain illustrative estimates.
 
+**Croptions Kit (simulated):** the Operate page is now the Croptions Kit. A phone scans a QR code and sends simulated sensor readings; the dashboard shows crop water stress, alerts and screen advice in Auto, Approve-once or Manual mode. No hardware. See [docs/06-croptions-kit.md](docs/06-croptions-kit.md).
+
 Future work only, none of it in the code:
 
 - Learned (reinforcement learning) controller trained on our simulator
-- Live sensors and spectrometers (cameras, ESP32)
+- Real Croptions Kit pods (thermal camera, ESP32) posting the same reading format the simulated kit uses
 - Computer-vision dust detection and targeted cleaning
 - Camera-based canopy stress detection
 - Predictive maintenance (screen motors, panel soiling)

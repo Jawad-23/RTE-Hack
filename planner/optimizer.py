@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from planner import agronomy, climate, cooling, crops, dust, economics, market, solar, water
+from planner import agronomy, climate, cooling, crops, dust, economics, kit, market, site_climate, solar, water
 from planner.schemas import MIN_COVERAGE_PCT, MIN_LIGHT_OK_PCT, PRIORITIES, SETUPS
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
@@ -66,7 +66,7 @@ def plan(lat: float, lon: float, area_m2: float, budget_qar: float, priority: st
 
     result = {
         "inputs": inputs,
-        "site": _site_summary(climate_df, lat, lon),
+        "site": _site_summary(climate_df, lat, lon, crops_df),
         "recommended": recommended,
         "reason": _reason(recommended, options, priority, crop),
         "options": _rank(options, priority),
@@ -75,6 +75,7 @@ def plan(lat: float, lon: float, area_m2: float, budget_qar: float, priority: st
         },
         "sources": _sources(lat, lon, prices),
         "assumptions": _assumptions(crops_df, prices),
+        "kit": kit.costs(area_m2, recommended),
     }
     # The existing assistant already forwards assumptions; no provider-code change
     # is needed for these new diagnostics to reach the model and number checker.
@@ -181,8 +182,8 @@ def _reason(recommended: dict | None, options: list[dict], priority: str, crop: 
     return f"No option for {what} passes all temperature, light, data and budget checks. See each option's fail_reasons."
 
 
-def _site_summary(climate_df: pd.DataFrame, lat: float, lon: float) -> dict:
-    """Headline climate numbers for the pin."""
+def _site_summary(climate_df: pd.DataFrame, lat: float, lon: float, crops_df: pd.DataFrame | None = None) -> dict:
+    """Headline climate numbers for the pin, plus site_climate.summary() (the Results page's climate card)."""
     tw = cooling.wet_bulb_c(climate_df["temp_c"], climate_df["rh_pct"])
     by_month = climate_df.assign(wet_bulb_c=tw).groupby("month")
     hottest = int(by_month["temp_c"].mean().idxmax())
@@ -198,6 +199,7 @@ def _site_summary(climate_df: pd.DataFrame, lat: float, lon: float) -> dict:
         "solar_kwh_m2_year": round(float(climate_df["ghi_wh_m2"].sum() / 1000), 2),
         "monthly_temp_max_c": {int(m): round(float(v), 2) for m, v in by_month["temp_c"].max().items()},
         "monthly_wet_bulb_max_c": {int(m): round(float(v), 2) for m, v in by_month["wet_bulb_c"].max().items()},
+        **site_climate.summary(climate_df, crops.load_crops() if crops_df is None else crops_df),
     }
 
 

@@ -230,6 +230,10 @@ iframe {{ border-radius: 20px; }}
 [data-testid="stChatMessage"] {{ background: {SAND_50}; border-radius: 16px; }}
 div[role="dialog"] {{ border-radius: 20px; }}
 
+.st-key-card_site .cr-tiles, .st-key-card_kit .cr-tiles {{ grid-template-columns: repeat(4, minmax(0, 1fr)); }}
+@media (max-width: 900px) {{
+  .st-key-card_site .cr-tiles, .st-key-card_kit .cr-tiles {{ grid-template-columns: repeat(2, minmax(0, 1fr)); }}
+}}
 @media (max-width: 1100px) {{
   .block-container, [data-testid="stMainBlockContainer"] {{ padding: 0 16px 64px; }}
   .st-key-topbar {{ margin: 0 -16px 16px !important; padding: 8px 16px; width: calc(100% + 32px) !important; }}

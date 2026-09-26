@@ -48,6 +48,7 @@ These steps are collected on the user-requested `jawad/optional-update` branch. 
 | 7 | Dust: haze light loss, cleaning interval, dust-storm exposure (Open-Meteo) | Me + Mustafa | Implemented: recent 30-day exposure plus separate cleaning scenarios |
 | 8 | Area scan (draw a rectangle, grid of plans) | Me | Implemented (max 25 points) |
 | 9 | Wire new metrics through app, agent, checker, i18n, README | Everyone | Implemented |
+| 10 | Croptions Kit (simulated): phone remote, live dashboard, thermal grid, CSV, kit cost; NASA climate card on Results | Me | Implemented ([details](06-croptions-kit.md)) |
 
 ### Not in scope (roadmap only; mention in the pitch, do not build)
 

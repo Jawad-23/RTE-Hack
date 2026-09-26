@@ -65,3 +65,59 @@ def cumulative_profit(options: list[dict], rec: dict | None, lang: str) -> go.Fi
     fig.update_xaxes(title_text=t("years", lang), dtick=2)
     fig.update_yaxes(tickformat="~s")
     return fig
+
+
+def site_temperature(site: dict, limit_c: float, crop_name: str, lang: str) -> go.Figure:
+    """NASA typical year: average daily high and low by month, with the crop's heat limit."""
+    months = MONTHS[lang]
+    hi = [site["monthly_temp_max_mean_c"][str(m)] for m in range(1, 13)]
+    lo = [site["monthly_temp_min_mean_c"][str(m)] for m in range(1, 13)]
+    fig = go.Figure()
+    fig.add_scatter(x=months, y=lo, name=t("sc_low", lang), mode="lines", line=dict(color=theme.SKY, width=2),
+                    hovertemplate="%{x}: %{y:.1f} °C<extra></extra>")
+    fig.add_scatter(x=months, y=hi, name=t("sc_high", lang), mode="lines", fill="tonexty", fillcolor="rgba(224,120,42,0.15)",
+                    line=dict(color=theme.HEAT_2, width=2.5), hovertemplate="%{x}: %{y:.1f} °C<extra></extra>")
+    fig.add_scatter(x=months, y=[limit_c] * 12, name=t("limit_label", lang).format(crop=crop_name, limit=f"{limit_c:.0f}"),
+                    mode="lines", line=dict(color=theme.HEAT_3, dash="dash", width=2), hoverinfo="skip")
+    fig.update_layout(**theme.plotly_layout(lang, 300))
+    fig.update_yaxes(ticksuffix=" °C")
+    return fig
+
+
+def site_humidity(site: dict, lang: str) -> go.Figure:
+    """NASA typical year: mean humidity (bars) and the highest wet-bulb temperature (line) by month."""
+    months = MONTHS[lang]
+    fig = go.Figure()
+    fig.add_bar(x=months, y=[site["monthly_rh_mean_pct"][str(m)] for m in range(1, 13)], name=t("sc_rh", lang),
+                marker_color=theme.SKY_50, marker_line_color=theme.SKY, marker_line_width=1,
+                hovertemplate="%{x}: %{y:.0f}%<extra></extra>")
+    fig.add_scatter(x=months, y=[site["monthly_wet_bulb_max_c"][str(m)] for m in range(1, 13)], name=t("sc_wb", lang),
+                    mode="lines+markers", yaxis="y2", line=dict(color=theme.GREEN, width=2.5),
+                    hovertemplate="%{x}: %{y:.1f} °C<extra></extra>")
+    fig.update_layout(**theme.plotly_layout(lang, 300))
+    fig.update_layout(yaxis=dict(ticksuffix="%", range=[0, 100]),
+                      yaxis2=dict(overlaying="y", side="right", ticksuffix=" °C", tickformat=".0f", showgrid=False))
+    return fig
+
+
+def kit_trace(log: pd.DataFrame, lang: str) -> go.Figure:
+    """Croptions Kit readings in arrival order: leaf and air temperature, and the screen position."""
+    x = log["seq"].astype(str)
+    fig = go.Figure()
+    fig.add_scatter(x=x, y=log["air_c"], name=t("kit_air", lang), mode="lines+markers", line=dict(color=theme.SKY, width=2))
+    fig.add_scatter(x=x, y=log["leaf_c"], name=t("kit_leaf", lang), mode="lines+markers", line=dict(color=theme.HEAT_2, width=2.5))
+    fig.add_bar(x=x, y=log["screen_pct"], name=t("operate_screen", lang), yaxis="y2", marker_color="rgba(30,91,63,0.18)")
+    fig.update_layout(**theme.plotly_layout(lang, 300))
+    fig.update_layout(yaxis=dict(ticksuffix=" °C"), yaxis2=dict(overlaying="y", side="right", ticksuffix="%", range=[0, 100], tickmode="linear", dtick=20, showgrid=False),
+                      xaxis=dict(title=t("kit_reading_no", lang), type="category"))
+    return fig
+
+
+def thermal(image, lang: str) -> go.Figure:
+    """Simulated 32 × 24 thermal image (°C)."""
+    fig = go.Figure(go.Heatmap(z=image, colorscale="Inferno", zsmooth="best", colorbar=dict(ticksuffix=" °C", thickness=12),
+                               hovertemplate="%{z:.1f} °C<extra></extra>"))
+    fig.update_layout(**theme.plotly_layout(lang, 300))
+    fig.update_xaxes(visible=False)
+    fig.update_yaxes(visible=False, autorange="reversed", scaleanchor="x")
+    return fig
