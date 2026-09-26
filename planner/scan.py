@@ -19,7 +19,7 @@ def scan_area(bounds, side=3, **inputs) -> list[dict]:
     results = []
     for lat, lon in grid(*bounds, side):
         try:
-            result = plan(lat, lon, **inputs)
+            result = plan(lat, lon, extras=False, **inputs)
             results.append({"lat": lat, "lon": lon, "reason": result["reason"], **(result["recommended"] or {})})
         except ValueError as exc:
             results.append({"lat": lat, "lon": lon, "reason": str(exc)})

@@ -71,8 +71,11 @@ for col, (icon, key) in zip(cols, (("🛰", "h_f1"), ("🌱", "h_f2"), ("📈", 
 st.write("")
 cfg = load_settings()
 with st.container(key="kit_home"):
-    st.markdown(ui.kit_pitch(lang, cfg["kit_pod_price_qar"], cfg["kit_service_qar_year"]), unsafe_allow_html=True)
-    steps = "".join(f'<div class="s"><b>{i}</b><div><h4>{t(f"h_k{i}", lang)}</h4><p>{t(f"h_k{i}t", lang)}</p></div></div>' for i in (1, 2, 3))
+    st.markdown(ui.kit_pitch(lang, cfg["kit_pod_price_qar"], cfg["kit_service_qar_year"], pod_area_m2=cfg["kit_pod_area_m2"]),
+                unsafe_allow_html=True)
+    area = state.n0(cfg["kit_pod_area_m2"])
+    steps = "".join(f'<div class="s"><b>{i}</b><div><h4>{t(f"h_k{i}", lang)}</h4><p>{t(f"h_k{i}t", lang).format(area=area)}</p></div></div>'
+                    for i in (1, 2, 3))
     st.markdown(f'<div class="cr-kit-steps">{steps}</div>', unsafe_allow_html=True)
     k1, k2, _ = st.columns([1, 1, 2])
     if k1.button(f"{t('h_kit_cta', lang)} →", type="primary", use_container_width=True, key="home_kit"):

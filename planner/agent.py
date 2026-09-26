@@ -75,7 +75,8 @@ Numbers (strict, every number you write is checked automatically):
 
 Language: reply in the user's language. For Arabic, use clear Modern Standard Arabic and Western digits.
 Setup names: open_field = open field, shade_net = shade net, wet_pad = wet-pad (evaporative) greenhouse, chiller = solar-powered
-chiller greenhouse. Always use these plain names, never the codes. You advise; the farmer makes the final decision."""
+chiller greenhouse, nir_screen_wet_pad = wet-pad greenhouse with a heat-reflecting (NIR) roof screen, agrivoltaic_fixed = fixed
+solar panels over the crop, agrivoltaic_louver = movable solar louvers over the crop. Always use these plain names, never the codes. You advise; the farmer makes the final decision."""
 
 _SITE = {
     "type": "object",
@@ -282,10 +283,10 @@ def safe_answer(plan: dict | None, lang: str) -> str:
     rec = plan.get("recommended")
     if rec is None:
         return t("safe_answer_none", lang).format(reason=plan.get("reason", ""))
-    payback = "—" if rec.get("payback_years") is None else f"{rec['payback_years']}"
+    payback = "—" if rec.get("payback_years") is None else f"{rec['payback_years']:.1f}"
     return t("safe_answer_rec", lang).format(
-        setup=t(f"setup_{rec['setup']}", lang), crop=rec["crop"].replace("_", " "), coverage=rec["coverage_pct"],
-        capex=f"{rec['capex_qar']:,.0f}", payback=payback,
+        setup=t(f"setup_{rec['setup']}", lang), crop=t(f"crop_{rec['crop']}", lang).lower() if lang == "en" else t(f"crop_{rec['crop']}", lang),
+        coverage=f"{rec['coverage_pct']:.0f}", capex=f"{rec['capex_qar']:,.0f}", payback=payback,
     )
 
 
@@ -294,6 +295,8 @@ def ask(message: str, history: list, current_plan: dict | None) -> dict:
     lang = detect_language(message)
     context = json.dumps(compact_plan(current_plan), ensure_ascii=False) if current_plan else "No plan yet: the user has not analysed a site."
     messages = [{"role": m["role"], "content": m["content"]} for m in history if m.get("content")]
+    if messages and messages[0]["role"] != "user":  # the Results chat opens with the assistant's summary
+        messages.insert(0, {"role": "user", "content": SUMMARY_REQUEST[lang]})
     messages.append({"role": "user", "content": f"<current_plan>\n{context}\n</current_plan>\n\n{message}"})
 
     system = SYSTEM_PROMPT + (arabic_glossary() if lang == "ar" else "")
@@ -352,7 +355,7 @@ SUMMARY_REQUEST = {
           "that matter most, the biggest risk to watch, and one way the Croptions Kit could help. Under 120 words. Do not run any "
           "tools. End by inviting me to ask questions.",
     "ar": "لخّص لي هذه الخطة كمستشار زراعي: ما الذي توصي به ولماذا بكلمات بسيطة، وأهم رقمين أو ثلاثة، وأكبر خطر يجب الانتباه له، "
-          "وطريقة واحدة يمكن أن تساعد بها مجموعة Croptions. أقل من 120 كلمة. لا تستخدم أي أدوات. واختم بدعوتي لطرح الأسئلة.",
+          "وطريقة واحدة يمكن أن تساعد بها عُدّة كروبشنز. أقل من 120 كلمة. لا تستخدم أي أدوات. واختم بدعوتي لطرح الأسئلة.",
 }
 
 

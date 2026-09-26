@@ -1,6 +1,6 @@
 # Team tasks and system architecture
 
-**Current branch:** `jawad/optional-update` includes `jawad/redesign`, existing `salih/openrouter` content and the Stage 2 implementation. No PR was created. API keys, provider setup and LLM models remain assigned to the teammate and were not changed. See [implementation and remaining work](05-optional-update.md).
+**Status (Sep 26, 2026):** all work is merged on `main` (pull requests #1 Croptions Kit and #2 Results hub), which the live app runs. For the current system, see [System architecture](07-architecture.md); the stage 2 record is in [Optional update](05-optional-update.md).
 
 Sep 25, 2026 · @Blay · kept in sync with the code
 
@@ -65,7 +65,7 @@ flowchart TD
 
 How a request flows: the user drops a pin (or types coordinates), `optimizer.plan()` runs the engine and the dashboard shows the result. In chat, the agent sends the question and the current plan to Claude with our tools attached; Claude asks to run a tool, the agent runs `optimizer.plan()` and returns the result; Claude writes the answer; the checker confirms every number matches before the user sees it. If the checker rejects the answer twice, the user gets a template answer built only from plan fields.
 
-Stage 2 adds `controller.py` (called by `cooling.py` and the simulator page) and Open-Meteo dust data under `climate.py`.
+Stage 2 added `controller.py` (called by `cooling.py`, `operate.py` and the Croptions Kit) and Open-Meteo dust data (`dust.py`). The full current picture, including finance, PVGIS, the forecast and the kit, is in [System architecture](07-architecture.md).
 
 ### Components and licenses
 
@@ -117,7 +117,7 @@ PRIORITIES = ["profit", "payback", "water"]
 | `cooling.simulate(climate_df, setup, crop_limit_c, area_m2)` | Me | DataFrame, str, float, float | dict: `inside_temp_c` (list of 8,760), `coverage_pct`, `cooling_kwh_year`, `cooling_kwh_peak_day` |
 | `solar.size_solar(cooling_kwh_peak_day, climate_df)` | Mustafa | float, DataFrame | dict: `solar_kw`, `solar_kwh_year`, `peak_sun_hours` |
 | `economics.evaluate(setup, crop, area_m2, growing_months, cooling_kwh_year, solar_kw)` | Mustafa | str, str, floats | dict: `capex_qar`, `opex_qar_year`, `revenue_qar_year`, `profit_qar_year`, `payback_years`, `profit_10y_qar`, `water_l_day` (all `None` plus `reason` if data is missing) |
-| `optimizer.plan(lat, lon, area_m2, budget_qar, priority, crop=None)` | Me | see names | dict (JSON-safe): `inputs`, `site`, `recommended`, `reason`, `options` (one per crop × setup), `calendar`, `sources`, `assumptions` |
+| `optimizer.plan(lat, lon, area_m2, budget_qar, priority, crop=None, *, cleaning_interval_days=None, extras=True)` | Me | see names | dict (JSON-safe): `inputs`, `site`, `recommended`, `reason`, `options` (one per crop × setup), `calendar`, `sources`, `assumptions`, `kit`, `finance`, `solar_gis`, `forecast`. `extras=False` skips the online extras (used by the area scan) |
 | `agent.ask(message, history, current_plan)` | Salih | str, list, dict | dict: `reply`, `language` (`"en"`/`"ar"`), `verified` (bool), `plan` (new plan or None), `tool_log` |
 | `checker.verify(reply, plan, tool_results, user_text="")` | Salih | str, dict, list, str | `(ok, bad_numbers)` |
 
@@ -135,7 +135,7 @@ LLM settings (top of `agent.py`, overridable in `.env`):
 
 Settings are read from `.env` first, then from Streamlit **Secrets** (how the live app gets them). The team's live app uses OpenRouter's free `qwen/qwen3.8-27b:free`.
 
-Claude gets no temperature (Sonnet 5 rejects it); open models get temperature 0. `MAX_TOKENS = 4096`, `MAX_TOOL_ROUNDS = 5`. Only `call_llm()` talks to a model, and both providers return the same response shape.
+Claude gets no temperature (Sonnet 5 rejects it); open models get `TEMPERATURE = 0.4` (a little variety; the checker still verifies every number). `MAX_TOKENS = 4096`, `MAX_TOOL_ROUNDS = 5`. Only `call_llm()` talks to a model, and both providers return the same response shape.
 
 ## 4. Rules for everyone
 
@@ -173,15 +173,19 @@ claude/rte-hack-repo-setup-acjcdd   docs + UI demo
 └── jawad/core                      scaffold, climate, cooling, optimizer, app
     └── mustafa/core-modules        crops, solar, economics, CSV sources, credits
         └── salih/agent-chat        agent, checker, chat, i18n
-            └── jawad/docs-sync     docs synced with the code  ==  main
-                └── jawad/redesign  Croptions look and feel (open for review)
+            └── jawad/docs-sync     docs synced with the code
+                └── jawad/redesign  Croptions look and feel (merged)
+salih/openrouter, jawad/live-data   OpenRouter, FAOSTAT prices and FAO-56 water (merged)
+jawad/croptions-kit                 Croptions Kit and NASA climate card (PR #1, merged)
+jawad/results-kit-redesign          Results hub, investment, PVGIS, forecast (PR #2, merged)
+jawad/review-fixes                  review bug fixes and the architecture doc
 ```
 
 New work branches from `main` and comes back through a pull request.
 
 ### Secrets
 
-- The Claude API key lives only in a `.env` file on your own laptop: `ANTHROPIC_API_KEY=...`.
+- LLM keys (`LLM_API_KEY` for OpenRouter, or `ANTHROPIC_API_KEY`) live only in a `.env` file on your own laptop.
 - `.env` is in `.gitignore`. **Never paste the key into code, Slack or a commit.** A leaked key must be revoked immediately.
 - For the hosted demo, the key goes into Streamlit Cloud's Secrets settings, never the repo.
 
@@ -202,7 +206,7 @@ New work branches from `main` and comes back through a pull request.
 - [x] Repo with MIT license, `.gitignore` (`.env`, `.venv/`, `data/cache/`, `__pycache__/`), pinned `requirements.txt`, `.env.example`
 - [x] `planner/schemas.py` and working stubs for every module
 - [x] `climate.py`: NASA POWER hourly fetch for the 5 most recent full years, fill values as NaN, unit check, drop 29 Feb, average into 8,760 rows, cache in `data/cache/`, fail fast when offline
-- [x] `cooling.py`: wet-bulb with PsychroLib (Stull fallback), inside temperature for the 4 setups, chiller energy, coverage, peak-day energy; solar heat gain applies only while the sun is up
+- [x] `cooling.py`: wet-bulb with PsychroLib (Stull fallback), inside temperature for the setups (4 in stage 1, 7 now), chiller energy, coverage, peak-day energy; solar heat gain applies only while the sun is up
 - [x] `optimizer.py`: every crop × setup, filter on coverage and budget, rank by priority, one-sentence reason, sources and assumptions, JSON-safe, `python -m planner.optimizer LAT LON` prints a plan
 - [x] `app.py`: map plus "Or type coordinates" fallback, inputs, recommendation tiles, crop calendar heatmap, comparison table, inside-temperature chart, hottest-day solar chart (only when there is cooling to power), 10-year profit chart, assumptions and sources, English/Arabic toggle with RTL
 

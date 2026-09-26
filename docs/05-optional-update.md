@@ -1,7 +1,8 @@
 # Optional update — implementation and validation
 
-Branch: `jawad/optional-update`. Based on `salih/openrouter`, which already contains
-`jawad/redesign`. No pull request is created and `main` is unchanged.
+**Historical record.** Written for branch `jawad/optional-update`; all of it is now merged on `main`.
+The Operate page it describes was later replaced by the Croptions Kit (the one-day simulator lives on in
+`planner/operate.py`). For the current system, see [System architecture](07-architecture.md).
 
 ## Implemented
 
