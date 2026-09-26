@@ -35,7 +35,7 @@ There is no hardware yet, so a hidden simulator page plays the kit. It is not li
 4. Select a scenario: **Normal** (at the time of day you choose), **Heat stress**, **Dry air**, **Sun surge** or **Humid night**, or press **Stream the day** for one reading every two seconds from 05:00 to 20:00.
 5. Back on the Kit page the reading appears within two seconds with leaf temperature, water stress (CWSI), air dryness (VPD), dew-point risk, alerts and the screen advice (Auto, Approve once or Manual). The Results page shows the latest reading in its Croptions Kit card.
 
-Simulated readings are built from the site's NASA typical-year weather passed through the recommended setup; the downloaded readings CSV marks every row `source = simulated`.
+Simulated readings are built from the site's NASA typical-year weather passed through the recommended setup. The Kit page tags each one **Demo reading · simulated**, the Results card says "Latest demo reading (simulated)", and the readings CSV marks every row `source = simulated`. At the bottom of the Kit page, **Fixed shade vs the kit's smart screen** simulates one day of the typical year: the kit benefit the app actually calculates.
 
 ## Layout
 
@@ -53,7 +53,7 @@ Simulated readings are built from the site's NASA typical-year weather passed th
 | `planner/finance.py`, `planner/site_data.py` | NPV, IRR, break-even price and downside cases; PVGIS solar, Open-Meteo 7-day forecast and World Bank rates | Repo owner |
 | `planner/crops.py`, `solar.py`, `economics.py`, `data/*.csv` | Crop check, solar sizing, economics, data tables (`demo_sites.csv` holds the example pins) | Mustafa |
 | `planner/agent.py`, `checker.py`, `chat_ui.py`, `i18n/`, `styles/rtl.css` | LLM agent (OpenRouter, Claude or a local model), number checker, English/Arabic chat | Salih |
-| `planner/controller.py`, `agronomy.py`, `water.py`, `dust.py`, `scan.py`, `operate.py`, `market.py` | Screen rule, light/VPD checks, FAO-56 water, dust scenarios, area scan, one-day screen simulation (kept and tested, no longer shown in the app), FAOSTAT prices | Repo owner / Mustafa |
+| `planner/controller.py`, `agronomy.py`, `water.py`, `dust.py`, `scan.py`, `operate.py`, `market.py` | Screen rule, light/VPD checks, FAO-56 water, dust scenarios, area scan, one-day fixed-shade vs smart-screen simulation (a section on the Kit page), FAOSTAT prices | Repo owner / Mustafa |
 | `tests/` | One test file per module | everyone |
 | `docs/` | Problem, plan, team tasks, hackathon brief, Croptions Kit and the [system architecture](docs/07-architecture.md) ([start here](docs/README.md)) | |
 | `ui-demo/` | Croptions UI prototype and design system the app is styled on (open `Croptions.dc.html`) | |

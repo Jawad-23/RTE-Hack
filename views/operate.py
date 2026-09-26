@@ -10,7 +10,7 @@ import pandas as pd
 import streamlit as st
 
 from i18n import t
-from planner import crops, kit
+from planner import crops, kit, operate
 from planner.solar import load_settings
 from ui import charts, insights, kit_ui, state, theme
 from ui import components as ui
@@ -105,7 +105,8 @@ def live():
     last = log[-1]
     received = t("kit_last", lang).format(n=last["seq"], at=last["sent_at"][11:19], hour=f"{last['sim_hour']:02d}:00",
                                           scenario=kit_ui.scenario_label(last["scenario"], lang))
-    st.markdown(f'<p class="cr-note">📡 {received}</p>', unsafe_allow_html=True)
+    demo = f'<span class="cr-pill demo">{t("kit_demo_tag", lang)}</span>' if last.get("source") == "simulated" else ""
+    st.markdown(f'<p class="cr-note">📡 {received}{demo}</p>', unsafe_allow_html=True)
     light = kit.dli_so_far(log, last["sim_day"], cfg)
     st.markdown(ui.tiles([
         {"k": t("kit_leaf", lang), "v": state.n1(last["leaf_c"]), "unit": "°C",
@@ -174,3 +175,27 @@ def live():
             st.rerun(scope="fragment")
 
 live()
+
+# ---------- the kit's calculated benefit: one simulated day, fixed shade vs the smart screen ----------
+with st.expander(t("kd_title", lang)):
+    st.caption(t("kd_note", lang))
+    day_no = st.slider(t("kd_day", lang), 1, 365, sim_day, key="_kd_day")
+    try:
+        frame = operate.simulate_day(weather, day_no, crop, inp["area_m2"])
+    except ValueError:
+        frame = None
+        st.warning(t("operate_missing", lang))
+    if frame is not None:
+        limit = float(crop["t_max_c"])
+        step_min = 24 * 60 // len(frame)
+        fixed_hot, smart_hot = (int((frame[k] > limit).sum()) * step_min for k in ("fixed_inside_c", "smart_inside_c"))
+        fixed_par, smart_par = frame["fixed_par_w_m2"].sum(), frame["smart_par_w_m2"].sum()
+        st.markdown(ui.tiles([
+            {"k": t("kd_fixed_hot", lang), "v": state.n0(fixed_hot), "unit": t("kd_min", lang), "note": t("kd_hot_n", lang).format(limit=f"{limit:.0f}")},
+            {"k": t("kd_smart_hot", lang), "v": state.n0(smart_hot), "unit": t("kd_min", lang), "note": t("kd_hot_n", lang).format(limit=f"{limit:.0f}")},
+            {"k": t("kd_light", lang), "v": state.n0(smart_par / fixed_par * 100) if fixed_par > 0 else "—", "unit": "%", "note": t("kd_light_n", lang)},
+            {"k": t("kd_pv", lang), "v": state.n1(frame["smart_pv_kwh"].sum()), "unit": "kWh",
+             "note": t("kd_pv_n", lang).format(fixed=state.n1(frame["fixed_pv_kwh"].sum()))},
+        ]), unsafe_allow_html=True)
+        st.plotly_chart(charts.day_compare(frame, limit, lang), use_container_width=True, config=theme.PLOTLY_CONFIG, key="kd_chart")
+        st.download_button(t("kd_csv", lang), frame.to_csv(index=False), f"croptions-day-{day_no}.csv", "text/csv")

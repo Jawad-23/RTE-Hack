@@ -34,7 +34,7 @@ flowchart LR
 | Hosting | Streamlit Community Cloud, deployed from the `main` branch of `Jawad-23/RTE-Hack`; one container and one Python process, so every visitor shares the same memory and the same `data/cache/` files |
 | Secrets | Streamlit Cloud **Settings → Secrets** (TOML). Locally a `.env` file (git-ignored). `agent._cfg()` reads `.env`/environment first, then `st.secrets` |
 | CI | GitHub Actions `.github/workflows/tests.yml`: on every push and pull request, Ubuntu, Python 3.11, `pip install -r requirements.txt`, `python -m pytest -q` |
-| Dev container | `.devcontainer/devcontainer.json` (Codespaces): Python 3.11 image, installs requirements, starts Streamlit on port 8501 with CORS and XSRF protection turned off (fine for a private codespace, never for a public server) |
+| Dev container | `.devcontainer/devcontainer.json` (Codespaces): Python 3.11 image, installs requirements, starts Streamlit on port 8501 with its default CORS and XSRF protection |
 | Theme | `.streamlit/config.toml` (Croptions colours, no sidebar navigation) plus the CSS in `ui/theme.py`; fonts IBM Plex Sans / Sans Arabic / Mono from Google Fonts; Arabic switches the page to right-to-left |
 
 ## 3. Storage: there is no database
@@ -127,7 +127,7 @@ A first run for a new pin takes up to about a minute (five NASA downloads). Afte
 | Plan (`/plan`) | `views/plan.py` | Map (click a pin or draw a rectangle), place search, coordinates, farm size, budget, crop, priority, dust scenario, area scan (up to 25 points, CSV) |
 | Results (`/results`) | `views/results.py` | Verdict; 6 key numbers; assistant summary and chat; Croptions Kit card (cost with the kit, latest reading); investment table; NASA climate card with charts; PVGIS and forecast; recent dust; crop calendar; setup comparison; compare a second site; inside-temperature, hottest-day and cumulative-profit charts; diagnostics; assumptions and sources |
 | Compare sites (`/compare`) | `views/compare.py` | Two sites with the same inputs; "same heat, different air" only when the data shows it |
-| Croptions Kit (`/kit`) | `views/operate.py` | Kit ID, control mode (Auto / Approve once / Manual), live tiles (leaf, air, humidity, light, CWSI, VPD, dew-point gap, light so far), advice, thermal image, alerts, readings chart, CSV |
+| Croptions Kit (`/kit`) | `views/operate.py` | Kit ID, control mode (Auto / Approve once / Manual), live tiles (leaf, air, humidity, light, CWSI, VPD, dew-point gap, light so far), advice, thermal image, alerts, readings chart, CSV; each reading tagged "Demo reading · simulated"; a one-day fixed-shade vs smart-screen simulation at the bottom |
 | Assumptions (`/assumptions`) | `views/assumptions.py` | Every CSV row with its source, and the FAOSTAT prices used |
 | Kit simulator (`/kit-simulator?farm=ID`) | `views/kit_remote.py` | Hidden; no top bar. Scenario buttons (Normal, Heat stress, Dry air, Sun surge, Humid night) and "Stream the day" |
 
@@ -158,19 +158,19 @@ A first run for a new pin takes up to about a minute (five NASA downloads). Afte
 | `planner/finance.py` | NPV, IRR (bisection), break-even price, −20 % price and +20 % build-cost cases |
 | `planner/market.py` | FAOSTAT prices, country lookup, ISO3 code |
 | `planner/site_climate.py`, `site_data.py` | NASA climate card; PVGIS, forecast and World Bank with caching |
-| `planner/dust.py`, `scan.py`, `operate.py` | Soiling scenarios and CAMS dust; area scan; one-day screen simulation (kept, not shown) |
+| `planner/dust.py`, `scan.py`, `operate.py` | Soiling scenarios and CAMS dust; area scan; one-day fixed-shade vs smart-screen simulation (Kit page section) |
 | `planner/kit.py` | Kit scenarios, readings, CWSI/VPD/dew point, advice, thermal image, costs, `KitStore` |
 | `planner/agent.py`, `checker.py`, `chat_ui.py` | LLM provider layer and tool loop; number checker; chat UI |
-| `i18n/en.json`, `ar.json` | 458 strings, identical keys in both languages (a test enforces it) |
+| `i18n/en.json`, `ar.json` | 475 strings, identical keys in both languages (a test enforces it) |
 | `scripts/validate_demo.py` | Checks the public APIs live and caches the demo sites |
 
 ## 10. Tests
 
-136 pytest tests. They never touch the network: `conftest.py` provides synthetic climate years and stubs FAOSTAT, the country lookup, PVGIS, the forecast and the World Bank. The LLM is replaced by a scripted fake (Anthropic shape) or a fake OpenAI-compatible server. Streamlit `AppTest` renders every page in English and Arabic, with and without a plan, including the kit simulator → dashboard round trip.
+137 pytest tests. They never touch the network: `conftest.py` provides synthetic climate years and stubs FAOSTAT, the country lookup, PVGIS, the forecast and the World Bank. The LLM is replaced by a scripted fake (Anthropic shape) or a fake OpenAI-compatible server. Streamlit `AppTest` renders every page in English and Arabic, with and without a plan, including the kit simulator → dashboard round trip.
 
 ## 11. Security notes
 
 - **No keys in the repo:** `.env` and `.streamlit/secrets.toml` are git-ignored, and the git history was checked for keys before the repo went public.
 - **Escaping:** HTML is built with `html.escape` for text from data files and the site name. Chat replies in English are rendered as Markdown.
 - **The Kit ID is not a password:** anyone who knows or guesses a 4-digit Kit ID can send readings to that dashboard. That is fine for a demo; real pods need authentication.
-- **Devcontainer:** it disables CORS and XSRF protection, which is acceptable only inside a private codespace.
+- **Honest labels:** simulated kit readings are tagged "Demo reading · simulated" on the Kit page and the Results card; the thermal image is labelled illustrative.

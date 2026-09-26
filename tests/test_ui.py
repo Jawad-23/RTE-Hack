@@ -122,3 +122,16 @@ def test_menu_lists_kit_and_compare(offline):
     labels = " ".join(str(p.label) for p in at.get("page_link"))
     assert "Croptions Kit" in labels and "Compare sites" in labels
     assert any("Feel the heat" in m.value for m in at.markdown)
+
+
+def test_kit_page_labels_demo_readings_and_shows_the_day_simulator(offline):
+    from ui import kit_ui
+    at = run("views/operate.py", plan=True)
+    code = at.session_state["_kit_code"]
+    kit_ui.send(code, kit_ui.store().context(code), "normal", 12)
+    at.run()
+    assert not at.exception, at.exception
+    text = " ".join(m.value for m in at.markdown)
+    assert "Demo reading" in text
+    assert any("one simulated day" in e.label for e in at.expander)
+    assert "Too hot with fixed shade" in text

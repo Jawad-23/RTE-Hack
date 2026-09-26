@@ -123,7 +123,7 @@ To stay fully open, the agent talks to the LLM through one function (`call_llm` 
 3. **Light sufficiency (daily light integral)**, so a setup that keeps the crop cool by starving it of light is rejected.
 4. **Three new setups:** a wet-pad greenhouse with a heat-reflective (NIR-blocking) roof, fixed agrivoltaic panels over the crop, and agrivoltaic louvers that move.
 5. **One rule-based controller** that decides how far to close a smart screen each hour. The planner and the demo use the same rule.
-6. **Operate simulator:** `planner/operate.py` replays one day at the chosen site, comparing fixed shade with the smart screen. It is tested but no longer shown in the app; the Croptions Kit page replaced it.
+6. **Operate simulator:** `planner/operate.py` replays one day at the chosen site, comparing fixed shade with the smart screen. It is shown at the bottom of the Croptions Kit page as the kit's calculated benefit.
 8. **Croptions Kit (simulated):** the Operate page is the kit dashboard. A hidden simulator page (`/kit-simulator`, on a phone or a second tab) plays the sensor pod and sends simulated readings; the dashboard shows CWSI, VPD, dew-point risk, light so far and the controller's advice. The Results page adds the kit's cost and a "What NASA measured at this site" card. See [Croptions Kit](06-croptions-kit.md).
 7. **Dust:** haze light loss, panel and roof cleaning intervals, and dust-storm exposure.
 

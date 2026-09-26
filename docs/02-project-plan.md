@@ -44,7 +44,7 @@ These steps are merged on `main`. The detailed completion record and scientific 
 | 3 | Light sufficiency (daily light integral) so shading has a trade-off | Me + Mustafa | Implemented |
 | 4 | Three new setups: NIR-screen wet pad, fixed agrivoltaic, agrivoltaic louvers | Me + Mustafa (CSV rows, electricity revenue) | Implemented |
 | 5 | One shared rule-based screen controller | Me | Implemented |
-| 6 | Operate simulator for the demo video | Me | Implemented; `planner/operate.py` is kept and tested, its page was replaced by the Croptions Kit |
+| 6 | Operate simulator for the demo video | Me | Implemented; now a section of the Croptions Kit page |
 | 7 | Dust: haze light loss, cleaning interval, dust-storm exposure (Open-Meteo) | Me + Mustafa | Implemented: recent 30-day exposure plus separate cleaning scenarios |
 | 8 | Area scan (draw a rectangle, grid of plans) | Me | Implemented (max 25 points) |
 | 9 | Wire new metrics through app, agent, checker, i18n, README | Everyone | Implemented |
