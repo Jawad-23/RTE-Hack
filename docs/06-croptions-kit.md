@@ -1,28 +1,28 @@
 # Croptions Kit (simulated)
 
-**Croptions plans the farm. The Croptions Kit protects it.** The kit is the Operate stage: sensor pods that watch the crop and advise the smart screen. There is no hardware. A phone plays the kit and sends simulated readings to the website. Every screen says so.
+**Croptions plans the farm. The Croptions Kit protects it.** The kit is the Operate stage: sensor pods that watch the crop and advise the smart screen. There is no hardware yet. A hidden simulator page plays the kit and sends simulated readings; the readings CSV marks each one `simulated`.
 
 | Stage | Question | Where | Real or simulated |
 | --- | --- | --- | --- |
 | Plan | What to grow, with which setup; does it pay? | Plan → Results | Real: NASA POWER, FAOSTAT, our physics |
-| Build | What does it cost, with the kit? | Results → "Add the Croptions Kit" | Real calculation; kit prices are fixed placeholders |
-| Operate | How is the crop doing right now? | Croptions Kit page (`/kit`) | Simulated readings from a phone |
+| Build | What does it cost, with the kit? | Results → "Croptions Kit" card | Real calculation; kit prices are fixed placeholders |
+| Operate | How is the crop doing right now? | Croptions Kit page (`/kit`) | Simulated readings from `/kit-simulator` |
 
 ## Demo in one minute
 
-1. Analyse a site (for example **Try Al Khor**). Results now shows **What NASA measured at this site** and **Add the Croptions Kit**.
-2. Open **Croptions Kit** in the top bar. It shows a 4-digit farm code and a QR code.
-3. Scan the QR code with a phone. It opens `/kit-remote?farm=<code>`, a phone-sized page with no top bar.
-4. Tap **Heat stress**. Within about two seconds the laptop shows the reading, the crop water stress (CWSI), the alerts and the kit's advice ("move screen to 80%").
+1. Analyse a site (for example **Try Al Khor**). Results shows the assistant's summary, the **Croptions Kit** card, investment scenarios and site intelligence.
+2. Open **✦ Croptions Kit** in the top bar (or **☰ Menu**). It shows a 4-digit **Kit ID**.
+3. In another tab or on a phone, open the hidden simulator: `/kit-simulator?farm=<Kit ID>` (not linked in the app; see the README section "Try the Croptions Kit").
+4. Select **Heat stress**. Within about two seconds the Kit page shows the reading, the crop water stress (CWSI), the alerts and the kit's advice ("move screen to 80%").
 5. Pick a control mode: **Auto** (moves the screen), **Approve once** (waits for your click) or **Manual** (you set it).
-6. Tap **Stream the day** to send one reading every two seconds from 05:00 to 20:00.
-7. **Download readings CSV** feeds the 3D video, so the animation shows exactly what the software decided.
+6. Press **Stream the day** to send one reading every two seconds from 05:00 to 20:00.
+7. **Download readings CSV** feeds the 3D video, so the animation shows exactly what the software decided. Every row says `source = simulated`.
 
-No phone? Use **No phone? Send a reading from here** on the kit page. A phone cannot open `localhost`: run with the Network URL Streamlit prints, or use the deployed site.
+A phone cannot open `localhost`: run with the Network URL Streamlit prints, or use the deployed site.
 
 ## How a reading is made
 
-1. The kit page takes the site's NASA typical year, the chosen date and the recommended setup, and runs `cooling.hourly_profile` for that day. This gives the hourly inside air temperature, humidity and growing light.
+1. The kit page takes the site's NASA typical year, today's date and the recommended setup, and runs `cooling.hourly_profile` for that day. This gives the hourly inside air temperature, humidity and growing light.
 2. A scenario from `data/kit_scenarios.csv` shifts that hour: hotter, drier, brighter, or a humid night. It also sets how stressed the leaf is.
 3. The leaf temperature sits between the transpiring baseline and the non-transpiring limit (below). Small sensor noise is added (`kit_noise_*` in `data/settings.csv`).
 
@@ -51,9 +51,9 @@ Alerts are logged when they start, not on every reading. The CWSI coefficients, 
 
 `kit.costs()` adds `ceil(area / kit_pod_area_m2)` pods at `kit_pod_price_qar` (2,000 QAR) plus `kit_service_qar_year` (300 QAR a pod). It reports build cost, yearly profit and payback with the kit next to the plan without it. These are fixed placeholder prices, not quotes. **No yield gain from the kit is assumed.** The only calculated benefit is the day simulator's comparison of fixed shade with the smart screen.
 
-## How the phone reaches the laptop
+## How the simulator reaches the dashboard
 
-The phone and the laptop are two Streamlit sessions. They share one in-memory `KitStore` (`st.cache_resource` in `ui/kit_ui.py`): farm code → context + readings. The dashboard polls it every two seconds (`st.fragment(run_every=2)`).
+The simulator and the Kit page are two Streamlit sessions. They share one in-memory `KitStore` (`st.cache_resource` in `ui/kit_ui.py`): farm code → context + readings. The dashboard polls it every two seconds (`st.fragment(run_every=2)`).
 
 Limits:
 

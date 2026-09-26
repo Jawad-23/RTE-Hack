@@ -23,19 +23,34 @@ Run the tests: `python -m pytest`
 
 The first run for a new pin fetches 5 years of hourly data from NASA POWER (can take a minute) and caches it in `data/cache/`. If the map can't load, use **Or type coordinates** under it.
 
+## Try the Croptions Kit
+
+There is no hardware yet, so a hidden simulator page plays the kit. It is not linked anywhere in the app.
+
+1. Open the app (for example https://croptions.streamlit.app), analyse a site, then open **✦ Croptions Kit** in the top bar (also in **☰ Menu**).
+2. Note the 4-digit **Kit ID** at the top of the page.
+3. In a second tab or on a phone, open the simulator with that ID:
+   `https://croptions.streamlit.app/kit-simulator?farm=<Kit ID>`
+   (locally: `http://localhost:8501/kit-simulator?farm=<Kit ID>`; a phone needs the Network URL Streamlit prints, not localhost).
+4. Select a scenario: **Normal** (at the time of day you choose), **Heat stress**, **Dry air**, **Sun surge** or **Humid night**, or press **Stream the day** for one reading every two seconds from 05:00 to 20:00.
+5. Back on the Kit page the reading appears within two seconds with leaf temperature, water stress (CWSI), air dryness (VPD), dew-point risk, alerts and the screen advice (Auto, Approve once or Manual). The Results page shows the latest reading in its Croptions Kit card.
+
+Simulated readings are built from the site's NASA typical-year weather passed through the recommended setup; the downloaded readings CSV marks every row `source = simulated`.
+
 ## Layout
 
 | Path | What | Owner |
 | --- | --- | --- |
 | `app.py` | Entry point: top bar, page navigation, language switch, the "Ask Croptions" dialog | Repo owner |
-| `views/` | The six pages: Home, Plan, Results, Compare sites, Croptions Kit (Operate), Assumptions; plus the phone remote `kit_remote.py` | Repo owner |
+| `views/` | The six pages: Home, Plan, Results, Compare sites, Croptions Kit (Operate), Assumptions; plus the hidden kit simulator `kit_remote.py` (`/kit-simulator`) | Repo owner |
 | `ui/` | Design tokens and CSS (`theme.py`), HTML components, Plotly charts, page state, chart summaries (`insights.py`) | Repo owner |
 | `.streamlit/config.toml`, `assets/` | Theme colours and logo from the Croptions design system | Repo owner |
 | `planner/schemas.py` | Shared column names, setups, statuses, units | Repo owner |
 | `planner/climate.py` | NASA POWER fetch → 8,760-hour typical year, cached | Repo owner |
 | `planner/cooling.py` | Wet-bulb physics and inside temperature per setup | Repo owner |
 | `planner/optimizer.py` | Runs every crop × setup, filters, ranks: `plan()` | Repo owner |
-| `planner/site_climate.py`, `planner/kit.py`, `ui/kit_ui.py` | NASA climate card on Results; the simulated Croptions Kit (readings, CWSI/VPD/dew point, advice, costs, phone ↔ laptop inbox) | Repo owner |
+| `planner/site_climate.py`, `planner/kit.py`, `ui/kit_ui.py` | NASA climate card on Results; the simulated Croptions Kit (readings, CWSI/VPD/dew point, advice, costs, simulator ↔ dashboard inbox) | Repo owner |
+| `planner/finance.py`, `planner/site_data.py` | NPV, IRR, break-even price and downside cases; PVGIS solar, Open-Meteo 7-day forecast and World Bank rates | Repo owner |
 | `planner/crops.py`, `solar.py`, `economics.py`, `data/*.csv` | Crop check, solar sizing, economics, data tables (`demo_sites.csv` holds the example pins) | Mustafa |
 | `planner/agent.py`, `checker.py`, `chat_ui.py`, `i18n/`, `styles/rtl.css` | Claude agent, number checker, English/Arabic chat | Salih |
 | `tests/` | One test file per module | everyone |
@@ -90,7 +105,7 @@ Branch per person and feature (`<owner>/<feature>`), only edit files you own, an
 
 See [implementation, validation and remaining work](docs/05-optional-update.md). Run `python scripts/validate_demo.py --five-sites` to verify public data access and cache demo sites. The default planner now prices uncovered cooling electricity hour by hour; surplus solar earns zero by default. All new crop and equipment parameters remain illustrative estimates.
 
-**Croptions Kit (simulated):** the Operate page is now the Croptions Kit. A phone scans a QR code and sends simulated sensor readings; the dashboard shows crop water stress, alerts and screen advice in Auto, Approve-once or Manual mode. No hardware. See [docs/06-croptions-kit.md](docs/06-croptions-kit.md).
+**Croptions Kit:** the Kit page shows live readings, crop water stress, alerts and screen advice in Auto, Approve-once or Manual mode. Until the hardware exists, readings come from the hidden simulator (see [Try the Croptions Kit](#try-the-croptions-kit)). See [docs/06-croptions-kit.md](docs/06-croptions-kit.md).
 
 Future work only, none of it in the code:
 
@@ -119,6 +134,9 @@ The planner runs on any pin on Earth. *(To fill: the five regions from the feasi
 | [FAO-56](https://www.fao.org/4/x0490e/x0490e00.htm) | Crop water use: hourly Penman-Monteith from the NASA POWER weather, times FAO crop coefficients (`planner/water.py`) | Credit FAO (Allen et al. 1998) |
 | [OpenStreetMap Nominatim](https://nominatim.org/) | Which country the pin is in, for its prices | ODbL; credit OpenStreetMap contributors |
 | [Open-Meteo / CAMS](https://open-meteo.com/en/docs/air-quality-api) | Recent modelled dust exposure, fetched on demand | Credit Open-Meteo and CAMS; separate from the typical climate year |
+| [Open-Meteo forecast](https://open-meteo.com/en/docs) | Next 7 days of maximum temperature, humidity, UV index, sunlight and ET0 (`planner/site_data.py`) | CC BY 4.0; credit Open-Meteo |
+| [EU JRC PVGIS](https://joint-research-centre.ec.europa.eu/photovoltaic-geographical-information-system-pvgis_en) | GIS solar: PV yield with terrain shading (horizon from a digital elevation model), best tilt, heat loss | Free; credit European Commission JRC |
+| [World Bank Open Data](https://data.worldbank.org/indicator/FR.INR.LEND) | Lending interest rate and inflation for the real discount rate in NPV (`planner/finance.py`) | CC BY 4.0; credit World Bank |
 
 Every value in `data/*.csv` has a `source` column. Values marked `estimate` are illustrative, not measured.
 

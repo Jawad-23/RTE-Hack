@@ -121,3 +121,29 @@ def thermal(image, lang: str) -> go.Figure:
     fig.update_xaxes(visible=False)
     fig.update_yaxes(visible=False, autorange="reversed", scaleanchor="x")
     return fig
+
+
+def forecast_week(days: list[dict], limit_c: float, lang: str) -> go.Figure:
+    """Open-Meteo 7-day forecast: daily maximum temperature (bars, hot days in red) and mean humidity (line)."""
+    x = [f'{int(d["date"][8:10])}/{int(d["date"][5:7])}' for d in days]  # day/month
+    temps = [d["temp_max_c"] for d in days]
+    fig = go.Figure()
+    fig.add_bar(x=x, y=temps, name=t("fc_tmax", lang), marker_color=[theme.HEAT_3 if v is not None and v > limit_c else theme.HEAT_1 for v in temps],
+                hovertemplate="%{x}: %{y:.1f} °C<extra></extra>")
+    fig.add_scatter(x=x, y=[d["rh_mean_pct"] for d in days], name=t("fc_rh", lang), yaxis="y2", mode="lines+markers",
+                    line=dict(color=theme.SKY, width=2.5), hovertemplate="%{x}: %{y:.0f}%<extra></extra>")
+    fig.add_scatter(x=x, y=[limit_c] * len(x), name=t("fc_limit", lang).format(limit=f"{limit_c:.0f}"), mode="lines",
+                    line=dict(color=theme.HEAT_3, dash="dash", width=1.5), hoverinfo="skip")
+    fig.update_layout(**theme.plotly_layout(lang, 280))
+    fig.update_layout(yaxis=dict(ticksuffix=" °C"), yaxis2=dict(overlaying="y", side="right", ticksuffix="%", range=[0, 100], showgrid=False),
+                      xaxis=dict(type="category"))  # "09-26" labels, not dates to parse
+    return fig
+
+
+def solar_months(monthly: dict, lang: str) -> go.Figure:
+    """PVGIS monthly solar yield per installed kW (terrain shading included)."""
+    fig = go.Figure(go.Bar(x=MONTHS[lang], y=[monthly.get(str(m), monthly.get(m)) for m in range(1, 13)], marker_color=theme.HEAT_1,
+                           hovertemplate="%{x}: %{y:.0f} kWh<extra></extra>"))
+    fig.update_layout(**theme.plotly_layout(lang, 260))
+    fig.update_yaxes(ticksuffix=" kWh")
+    return fig

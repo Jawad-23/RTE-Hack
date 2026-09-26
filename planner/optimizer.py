@@ -7,12 +7,13 @@ JSON-safe (plain floats, strings, lists, dicts) and every number traces to a sou
 from __future__ import annotations
 
 import math
+from datetime import date
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from planner import agronomy, climate, cooling, crops, dust, economics, kit, market, site_climate, solar, water
+from planner import agronomy, climate, cooling, crops, dust, economics, finance, kit, market, site_climate, site_data, solar, water
 from planner.schemas import MIN_COVERAGE_PCT, MIN_LIGHT_OK_PCT, PRIORITIES, SETUPS
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
@@ -60,6 +61,12 @@ def plan(lat: float, lon: float, area_m2: float, budget_qar: float, priority: st
             options.append(_evaluate_option(climate_df, row, setup, area_m2, budget_qar, cleaning_interval_days,
                                             prices["prices"].get(row.crop)))
 
+    cfg = solar.load_settings()
+    money = site_data.money(market.iso3(prices["country"]))
+    rate = finance.real_rate(money, cfg)
+    for o in options:
+        o.update(finance.evaluate(o, rate["rate_pct"], cfg.get("electricity_sell_qar_kwh", 0)))
+
     passing = [o for o in options if o["passes"]]
     ranked = _rank(passing, priority)
     recommended = ranked[0] if ranked else None
@@ -76,7 +83,16 @@ def plan(lat: float, lon: float, area_m2: float, budget_qar: float, priority: st
         "sources": _sources(lat, lon, prices),
         "assumptions": _assumptions(crops_df, prices),
         "kit": kit.costs(area_m2, recommended),
+        "finance": {**rate, "years": finance.YEARS, "price_down_pct": finance.PRICE_DOWN * 100, "capex_up_pct": finance.CAPEX_UP * 100},
+        "solar_gis": site_data.pvgis(lat, lon),
+        "forecast": site_data.forecast(lat, lon),
     }
+    today = date.today().isoformat()
+    for name, info in (("Discount rate: World Bank lending rate and inflation", money),
+                       ("Solar yield with terrain shading: EU JRC PVGIS", result["solar_gis"]),
+                       ("7-day heat, humidity and UV forecast: Open-Meteo", result["forecast"])):
+        if info.get("available"):
+            result["sources"].append({"name": name, "url": info["source"], "fetched": today})
     # The existing assistant already forwards assumptions; no provider-code change
     # is needed for these new diagnostics to reach the model and number checker.
     result["assumptions"]["option_diagnostics"] = [{k: o.get(k) for k in (

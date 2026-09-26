@@ -32,3 +32,4 @@ kit_dew_gap_alert_c,2.0,°C,estimate - leaf temperature within this margin of th
 kit_noise_temp_c,0.3,°C,estimate - standard deviation of simulated sensor noise on temperatures
 kit_noise_rh_pct,2.0,%,estimate - standard deviation of simulated sensor noise on humidity
 kit_noise_par_fraction,0.03,fraction,estimate - standard deviation of simulated sensor noise on sunlight
+discount_rate_fallback_pct,4.0,%,"estimate - real discount rate used only when the World Bank has no lending rate or inflation for the country"

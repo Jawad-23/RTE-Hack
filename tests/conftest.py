@@ -46,3 +46,14 @@ def offline_market(monkeypatch):
 
     monkeypatch.setattr(market, "load_price_table", lambda refresh=True: market._read_table(market.SNAPSHOT_CSV))
     monkeypatch.setattr(market, "country_for", lambda lat, lon: {"name": "Qatar", "m49": 634})
+
+
+@pytest.fixture(autouse=True)
+def offline_site_data(monkeypatch):
+    """PVGIS, Open-Meteo and the World Bank are never called from tests."""
+    from planner import site_data
+
+    off = {"available": False, "reason": "offline test"}
+    for name in ("pvgis", "forecast"):
+        monkeypatch.setattr(site_data, name, lambda lat, lon: off)
+    monkeypatch.setattr(site_data, "money", lambda iso3: off)

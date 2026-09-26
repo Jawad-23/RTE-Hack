@@ -1,7 +1,10 @@
-"""Croptions Kit phone remote: the phone plays the kit and sends simulated readings. Owned by Me.
+"""Kit simulator: plays the Croptions Kit for demos and sends simulated readings to a Kit ID. Owned by Me.
 
-Opened from the QR code on the Kit page (…/kit-remote?farm=1234). No top bar, big buttons, works on a phone.
+Not linked from the app; opened from the README ("Try the Croptions Kit"): /kit-simulator?farm=1234.
+No top bar, big buttons, works on a phone too.
 """
+
+from html import escape
 
 import streamlit as st
 
@@ -20,7 +23,7 @@ if not ctx:
     st.stop()
 
 st.markdown(f'<p class="cr-title" style="font-size:26px">{t("kit_remote_title", lang).format(code=code)}</p>'
-            f'<p class="cr-sub">{ctx["site"]} · {state.crop_label(ctx["crop"], lang)} · {state.setup_label(ctx["setup"], lang)}</p>',
+            f'<p class="cr-sub">{escape(str(ctx["site"]))} · {state.crop_label(ctx["crop"], lang)} · {state.setup_label(ctx["setup"], lang)}</p>',
             unsafe_allow_html=True)
 st.markdown(f'<div class="cr-banner">⚠ {t("kit_sim_banner", lang)}</div>', unsafe_allow_html=True)
 

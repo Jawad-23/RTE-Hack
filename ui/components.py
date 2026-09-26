@@ -151,3 +151,54 @@ def site_card(site_label: str, kind_label: str | None, lat: float, lon: float, p
   <div class="rec {rec_cls}"><div class="cr-note" style="color:inherit;opacity:.85">{escape(t("recommendation", lang))}</div><div class="v">{escape(verdict)}</div></div>
   <div class="rows">{"".join(rows)}</div>
 </div>"""
+
+
+KIT_ART = """<svg viewBox="0 0 240 200" width="100%" role="img" aria-label="Croptions Kit pod" style="max-width:260px">
+  <circle cx="176" cy="44" r="22" fill="#E9B92F"/><circle cx="176" cy="44" r="34" fill="#E9B92F" opacity=".18"/>
+  <rect x="96" y="70" width="12" height="100" rx="4" fill="#CFC3AA"/>
+  <rect x="62" y="44" width="80" height="44" rx="10" fill="#FFFDF8" stroke="#EBDDBF" stroke-width="2"/>
+  <rect x="70" y="36" width="64" height="12" rx="3" fill="#1E5B3F" transform="skewX(-12)"/>
+  <circle cx="86" cy="66" r="10" fill="#1E2A22"/><circle cx="86" cy="66" r="5" fill="#E0782A"/>
+  <rect x="104" y="58" width="28" height="6" rx="3" fill="#2B78B0"/><rect x="104" y="70" width="20" height="6" rx="3" fill="#6E7F62"/>
+  <path d="M86 78 L60 150 M86 78 L112 150" stroke="#E0782A" stroke-width="1.5" stroke-dasharray="3 4" opacity=".8"/>
+  <g fill="#A7C4A0"><ellipse cx="44" cy="168" rx="26" ry="12"/><ellipse cx="96" cy="172" rx="22" ry="10"/><ellipse cx="150" cy="168" rx="26" ry="12"/></g>
+  <g fill="#E0782A" opacity=".85"><circle cx="58" cy="164" r="4"/><circle cx="150" cy="166" r="3"/></g>
+  <rect x="0" y="178" width="240" height="22" rx="6" fill="#CFC3AA" opacity=".5"/>
+</svg>"""
+
+
+def kit_pitch(lang: str, price_qar: float | None = None, service_qar: float | None = None, compact: bool = False) -> str:
+    """Marketing block for the Croptions Kit: what it is, what each part does, and the placeholder price."""
+    features = "".join(
+        f'<div class="f"><div class="i">{icon}</div><div><b>{escape(t(f"kp_f{i}", lang))}</b><p>{escape(t(f"kp_f{i}t", lang))}</p></div></div>'
+        for i, icon in enumerate(("🌡", "💧", "🧭", "☀"), start=1)
+    )
+    price = ""
+    if price_qar is not None:
+        price = (f'<div class="price">{escape(t("kp_price", lang).format(price=n0(price_qar), service=n0(service_qar)))}'
+                 f'<span>{escape(t("kp_price_note", lang))}</span></div>')
+    art = "" if compact else f'<div class="art">{KIT_ART}</div>'
+    return (f'<div class="cr-kit{" compact" if compact else ""}"><div class="copy"><span class="cr-pill sand">{escape(t("kp_eyebrow", lang))}</span>'
+            f'<h2>{escape(t("kp_title", lang))}</h2><p class="lead">{escape(t("kp_sub", lang))}</p>'
+            f'<div class="feats">{features}</div>{price}</div>{art}</div>')
+
+
+def investment(options: list[dict], rec: dict | None, lang: str) -> str:
+    """Investment table for one crop: CapEx, OpEx, revenue, NPV, IRR, break-even price and the downside payback."""
+    cols = ["c_setup", "i_capex", "i_opex", "i_revenue", "i_npv", "i_irr", "i_breakeven", "i_downside"]
+    head = "".join(f"<th>{escape(t(c, lang))}</th>" for c in cols)
+    rows = []
+    for o in options:
+        is_rec = rec is not None and o["setup"] == rec["setup"] and o["crop"] == rec["crop"]
+        npv = o.get("npv_qar")
+        npv_cls = "" if npv is None else ("good" if npv >= 0 else "bad")
+        irr = "—" if o.get("irr_pct") is None else f'{n1(o["irr_pct"])} %'
+        be, price = o.get("breakeven_price_qar_kg"), o.get("price_qar_kg")
+        be_cell = "—" if be is None else f'{n1(be)} <small>/ {n1(price)}</small>'
+        down = "—" if o.get("payback_price_down_years") is None else f'{n1(o["payback_price_down_years"])} {t("years", lang)}'
+        rows.append(
+            f'<tr class="{"rec" if is_rec else ""}"><td><div class="strong">{_swatch(o["setup"])}{escape(setup_label(o["setup"], lang))}</div></td>'
+            f'<td class="num">{n0(o["capex_qar"])}</td><td class="num">{n0(o["opex_qar_year"])}</td><td class="num">{n0(o["revenue_qar_year"])}</td>'
+            f'<td class="num strong {npv_cls}">{n0(npv)}</td><td class="num">{escape(irr)}</td>'
+            f'<td class="num">{be_cell}</td><td class="num">{escape(down)}</td></tr>')
+    return f'<div style="overflow-x:auto"><table class="cr-table cr-invest"><thead><tr>{head}</tr></thead><tbody>{"".join(rows)}</tbody></table></div>'

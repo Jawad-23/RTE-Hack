@@ -1,12 +1,10 @@
-"""Croptions Kit pieces shared by the dashboard (views/operate.py) and the phone remote (views/kit_remote.py). Owned by Me.
+"""Croptions Kit pieces shared by the Kit page (views/operate.py), Results and the kit simulator (views/kit_remote.py). Owned by Me.
 
-The phone and the laptop are separate Streamlit sessions; they meet in one KitStore kept by
+The simulator and the dashboard are separate Streamlit sessions; they meet in one KitStore kept by
 st.cache_resource, so it is shared by every visitor of this server (and emptied on restart).
 """
 
 from __future__ import annotations
-
-from urllib.parse import urlsplit
 
 import numpy as np
 import streamlit as st
@@ -14,33 +12,16 @@ import streamlit as st
 from i18n import t
 from planner import kit
 
-REMOTE_PATH = "kit-remote"
-
 
 @st.cache_resource(show_spinner=False)
 def store() -> kit.KitStore:
     return kit.KitStore()
 
 
-def remote_url(code: str, lang: str) -> str:
-    """Link the phone opens: this server's address + /kit-remote?farm=<code>."""
-    parts = urlsplit(st.context.url or "")
-    base = f"{parts.scheme}://{parts.netloc}" if parts.netloc else ""
-    return f"{base}/{REMOTE_PATH}?farm={code}" + ("&lang=ar" if lang == "ar" else "")
-
-
-def is_local(url: str) -> bool:
-    host = urlsplit(url).hostname or ""
-    return host in ("", "localhost", "127.0.0.1", "0.0.0.0")
-
-
-def qr_data_uri(url: str) -> str | None:
-    """QR code for the remote link as an SVG data URI (segno, pure Python). None if segno is not installed."""
-    try:
-        import segno
-    except ImportError:
-        return None
-    return segno.make(url, error="m").svg_data_uri(scale=6, border=2, dark="#1E5B3F")
+def latest(code: str | None) -> dict | None:
+    """The newest reading stored for a Kit ID, or None."""
+    readings = store().readings(code) if code else []
+    return readings[-1] if readings else None
 
 
 def scenario_label(scenario: str, lang: str) -> str:

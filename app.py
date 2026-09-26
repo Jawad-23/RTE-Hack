@@ -25,22 +25,28 @@ PAGES = {
     "operate": st.Page("views/operate.py", title=t("nav_operate", lang), url_path="kit"),
     "assumptions": st.Page("views/assumptions.py", title=t("nav_settings", lang), url_path="assumptions"),
 }
-# The phone remote for the Croptions Kit: reached only by its QR code link, so it is not in the top bar.
-REMOTE = st.Page("views/kit_remote.py", title=t("kit_remote_nav", lang), url_path="kit-remote")
+# Kit simulator for demos: not in any menu, reached only by the link in the README ("Try the Croptions Kit").
+REMOTE = st.Page("views/kit_remote.py", title=t("kit_remote_nav", lang), url_path="kit-simulator")
+MENU_ICONS = {"home": "🏠", "plan": "📍", "results": "📊", "compare": "⚖️", "operate": "🌡️", "assumptions": "📋"}
 st.session_state["_pages"] = PAGES
 current = st.navigation([*PAGES.values(), REMOTE], position="hidden")
-if current.url_path == REMOTE.url_path:  # phone screen: no top bar, no assistant
+if current.url_path == REMOTE.url_path:  # simulator screen: no top bar, no assistant
     current.run()
     st.stop()
 
 # ---------- top bar ----------
 with st.container(key="topbar"):
-    # wider nav ratios so Arabic labels do not clip; chat column grows for Arabic text
-    nav_ratios = [1.35, 1.0, 1.0, 1.1, 1.5, 1.2, 1.3, 1.6, 1.5]
+    # Home, Plan and Results are always visible; the menu holds every page, including the Kit and Compare sites.
+    nav_ratios = [1.35, 0.75, 0.7, 0.9, 1.55, 1.05, 0.9, 1.55, 1.45]
     cols = st.columns(nav_ratios, vertical_alignment="center")
     cols[0].markdown(ui.brand(lang), unsafe_allow_html=True)
-    for col, key in zip(cols[1:7], PAGES):
+    for col, key in zip(cols[1:4], ("home", "plan", "results")):
         col.page_link(PAGES[key], label=PAGES[key].title)
+    cols[4].page_link(PAGES["operate"], label=f"✦ {PAGES['operate'].title}")
+    with cols[5].popover(f"☰ {t('menu', lang)}", use_container_width=True):
+        st.markdown(f'<div class="cr-eyebrow">{t("menu_sub", lang)}</div>', unsafe_allow_html=True)
+        for key in PAGES:
+            st.page_link(PAGES[key], label=PAGES[key].title, icon=MENU_ICONS[key])
     if cols[7].button(f"● {t('chat_open', lang)}", key="ask_top", type="primary", use_container_width=True):
         state.open_chat()
     cols[8].segmented_control(
