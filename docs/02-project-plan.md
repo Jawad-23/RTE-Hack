@@ -2,7 +2,7 @@
 
 Sep 25, 2026 · @Blay
 
-**Branch status:** Stage 2 is implemented on `jawad/optional-update`. See [the current implementation and validation record](05-optional-update.md) for exact behaviour and limits. This branch includes the redesign and existing OpenRouter work. No PR or deployment has been made. The original schedule and pitch below are planning targets, not evidence of completion.
+**Status (Sep 26, 2026):** everything below is merged on `main` and deployed from it to https://croptions.streamlit.app. For how it works today, see [System architecture](07-architecture.md). The original schedule and pitch below are planning targets, not evidence of completion.
 
 ## 1. Goal and deliverables
 
@@ -13,7 +13,7 @@ We submit four things:
 1. **Working prototype:** a web app that runs live, not slides pretending to be an app.
 2. **Public GitHub repo** ([Jawad-23/RTE-Hack](https://github.com/Jawad-23/RTE-Hack)): MIT license, clean code, README, credits for all data and libraries.
 3. **Pitch deck:** about 6 slides, problem to solution to demo to impact.
-4. **Demo video (backup):** a 2-minute screen recording in case the live demo fails. The Operate simulator (step 6) is built for this.
+4. **Demo video (backup):** a 2-minute screen recording in case the live demo fails. The Croptions Kit page with the hidden simulator (`/kit-simulator`) is built for this; the readings CSV drives the 3D video.
 
 ## 2. Scope
 
@@ -25,7 +25,7 @@ We submit four things:
 | --- | --- | --- | --- |
 | Must-have | Pin on map (or typed coordinates), fetch NASA POWER data | Everything depends on it | Working; live NASA fetch still to be tested on a laptop |
 | Must-have | Crop check: which crops fit which months | Challenge 1 feature: site suitability | Working |
-| Must-have | Cooling simulation for 4 setups (8,760 hours) | Our unique insight | Working |
+| Must-have | Cooling simulation for 7 setups (8,760 hours) | Our unique insight | Working |
 | Must-have | Solar sizing and payback for each setup | Challenge 1 feature: investment planning | Working, on estimated costs |
 | Must-have | Results screen with recommendation and comparison table | What judges see | Working |
 | Must-have | LLM explanation with number checker | Responsible AI criterion | Working; needs an API key to test live |
@@ -35,7 +35,7 @@ We submit four things:
 
 ### Stage 2: smarter shading and dust (implemented on this branch)
 
-These steps are collected on the user-requested `jawad/optional-update` branch. The detailed completion record and scientific limitations are in [Optional update](05-optional-update.md).
+These steps are merged on `main`. The detailed completion record and scientific limitations are in [Optional update](05-optional-update.md).
 
 | Step | Feature | Owner | Status |
 | --- | --- | --- | --- |
@@ -44,11 +44,12 @@ These steps are collected on the user-requested `jawad/optional-update` branch. 
 | 3 | Light sufficiency (daily light integral) so shading has a trade-off | Me + Mustafa | Implemented |
 | 4 | Three new setups: NIR-screen wet pad, fixed agrivoltaic, agrivoltaic louvers | Me + Mustafa (CSV rows, electricity revenue) | Implemented |
 | 5 | One shared rule-based screen controller | Me | Implemented |
-| 6 | Operate simulator page for the demo video | Me | Implemented |
+| 6 | Operate simulator for the demo video | Me | Implemented; `planner/operate.py` is kept and tested, its page was replaced by the Croptions Kit |
 | 7 | Dust: haze light loss, cleaning interval, dust-storm exposure (Open-Meteo) | Me + Mustafa | Implemented: recent 30-day exposure plus separate cleaning scenarios |
 | 8 | Area scan (draw a rectangle, grid of plans) | Me | Implemented (max 25 points) |
 | 9 | Wire new metrics through app, agent, checker, i18n, README | Everyone | Implemented |
-| 10 | Croptions Kit (simulated): phone remote, live dashboard, thermal grid, CSV, kit cost; NASA climate card on Results | Me | Implemented ([details](06-croptions-kit.md)) |
+| 10 | Croptions Kit (simulated): hidden simulator, live dashboard, thermal grid, CSV, kit cost; NASA climate card on Results | Me | Implemented ([details](06-croptions-kit.md)) |
+| 11 | Results hub: assistant summary, investment scenarios (NPV, IRR, break-even), PVGIS solar, 7-day forecast, compare a second site | Me | Implemented |
 
 ### Not in scope (roadmap only; mention in the pitch, do not build)
 
@@ -156,18 +157,24 @@ RTE-Hack/
 │   ├── solar.py            # panel sizing
 │   ├── economics.py        # cost, profit, payback
 │   ├── optimizer.py        # every crop × setup, filter, rank: plan()
-│   ├── agent.py            # Claude agent with tools
+│   ├── controller.py, agronomy.py, water.py, dust.py, market.py, scan.py, operate.py
+│   ├── site_climate.py     # the "What NASA measured" card
+│   ├── finance.py          # NPV, IRR, break-even, downside cases
+│   ├── site_data.py        # PVGIS, Open-Meteo forecast, World Bank rates
+│   ├── kit.py              # Croptions Kit: readings, CWSI/VPD, advice, costs, KitStore
+│   ├── agent.py            # LLM agent with tools (OpenRouter, Claude or local)
 │   ├── checker.py          # blocks numbers not in the plan
 │   └── chat_ui.py          # English/Arabic chat panel
 ├── i18n/                   # en.json, ar.json, t()
 ├── styles/rtl.css          # right-to-left layout for Arabic
 ├── data/
-│   ├── crops.csv           # heat limits, yield, water (estimates until sourced)
+│   ├── crops.csv           # heat limits, yield, VPD/DLI, FAO-56 crop coefficients
+│   ├── kit_scenarios.csv   # Croptions Kit simulator scenarios (estimates)
 │   ├── snapshots/          # offline copy of FAOSTAT prices (planner/market.py)
 │   ├── setups.csv          # build/running costs and cooling parameters
 │   ├── settings.csv        # electricity, solar cost, performance ratio
 │   ├── demo_sites.csv      # example pins (Al Khor, Al Karaana)
-│   └── cache/              # cached climate per pin (not committed)
+│   └── cache/              # NASA climate, FAOSTAT, countries, site/ (PVGIS, forecast, World Bank); not committed
 ├── tests/                  # one test file per module
 ├── docs/                   # these planning docs
 ├── ui-demo/                # Croptions UI prototype
@@ -175,15 +182,15 @@ RTE-Hack/
 └── LICENSE                 # MIT
 ```
 
-Implemented in stage 2: `planner/controller.py` and `views/operate.py` (pages live in `views/`, not `pages/`, because the app uses its own top navigation).
+Pages live in `views/` (not `pages/`, because the app uses its own top navigation): home, plan, results, compare, operate (the Croptions Kit, `/kit`), assumptions and the hidden kit simulator `kit_remote.py` (`/kit-simulator`). Full detail: [System architecture](07-architecture.md).
 
 | Layer | Tool |
 | --- | --- |
 | Language | Python 3.11 |
 | App and map | Streamlit, folium (Leaflet), Plotly |
 | Physics | PsychroLib (Stull formula as fallback), NumPy, pandas |
-| Data | NASA POWER API, FAOSTAT producer prices (live, with offline snapshot), FAO-56 water use, FAO EcoCrop, Nominatim, Open-Meteo Air Quality |
-| AI agent | Claude API (`claude-sonnet-5`) with tool use by default; no temperature is sent because this model rejects it. Or any open-source model through an OpenAI-compatible server (for example Qwen2.5 7B on Ollama), at temperature 0. Either way the number checker keeps answers grounded |
+| Data | NASA POWER API, FAOSTAT producer prices (live, with offline snapshot), FAO-56 water use, FAO EcoCrop, Nominatim, Open-Meteo Air Quality and forecast, EU JRC PVGIS, World Bank |
+| AI agent | The deployed app uses free open models on OpenRouter (OpenAI-compatible API, temperature 0.4, fallback model list). Claude (`claude-sonnet-5`, no temperature sent) and local models (Ollama) also work. Either way the number checker keeps answers grounded |
 | Hosting for demo | Streamlit Community Cloud (free) |
 
 ## 7. Demo script and pitch flow
@@ -214,7 +221,7 @@ Pick and test both demo pins on Friday night, and screenshot the results in case
 | Cost and price numbers are rough | Labelled "estimate" in the CSVs and in the app; judges value honesty. Quote only the app's numbers in the pitch |
 | The chiller payback on estimated costs is long | This may undercut the pitch's "solar chiller pays off" story. Replace estimates with sourced costs before building slides around it |
 | Crop heat limits are hard to find | Start with 8 well-known crops typed in by hand from EcoCrop; mark each value's source |
-| Someone builds hardware tonight | Cameras and ESP32 are roadmap only; the Operate simulator stands in for them in the demo |
+| Someone builds hardware tonight | Cameras and ESP32 are roadmap only; the Croptions Kit simulator stands in for them in the demo |
 | Running out of time | Drop stretch features at Friday 17:00, never the must-haves |
 
 ## 9. Submission checklist
@@ -256,7 +263,8 @@ Pick and test both demo pins on Friday night, and screenshot the results in case
 | NASA POWER spectral data (PAR, UV, longwave, clear-sky) | Implemented and checked live | |
 | Open-Meteo Air Quality (dust) | Implemented for recent modelled dust exposure | |
 | Open-Meteo Climate API (2040/2050 view) | Not built (stretch) | |
-| Nominatim (place name → coordinates) | Listed in the Problem and solution tab, not built | Small; only if time allows |
+| Nominatim search (place name → coordinates) | Built on the Plan page ("Search by place name"); reverse lookup gives the country for prices | |
+| EU JRC PVGIS, Open-Meteo 7-day forecast, World Bank lending rate and inflation | Implemented with recorded-response tests; **never called live from the build environment** (blocked there). Each is optional: a failure hides its card or uses the 4 % fallback rate, and the service is skipped for 15 minutes | Open Results on the deployed app and check the "Sun, heat and humidity" card and the investment note |
 
 ### Numbers that are estimates (all in `data/*.csv`, all labelled `estimate`)
 
@@ -273,9 +281,10 @@ Pick and test both demo pins on Friday night, and screenshot the results in case
 5. **Wet pads:** efficiency is constant; pad water now follows the weather (`planner/water.py`). If the country lookup (Nominatim) fails, prices fall back to world medians and the source line says so.
 6. **Revenue** = yield × price × (growing months ÷ 12) × setup yield factor. Heat stress within a growing month is not modelled as a yield curve. DLI now gates suitability; the optional soiling scenario applies an estimated light/yield factor. A growing month is one with at least 90 % of hours below the crop's limit.
 7. **Coverage only checks the crop's maximum temperature**, over all 8,760 hours. Cold winter nights inside a greenhouse are not checked.
-8. **Economics:** no discounting, panel degradation, labour, land, financing or equipment replacement. The budget only limits build cost.
+8. **Economics:** payback and 10-year profit are undiscounted; the investment table discounts at a real rate (World Bank, else 4 %). No panel degradation, labour, land, financing or equipment replacement. The budget only limits build cost.
 9. **Typical year:** averaging 5 years smooths out heatwaves, so extremes are under-represented.
 10. **Arabic:** most labels come from the designer's prototype; the ones added for the app (chat, charts, compare) were written without a native speaker and need review.
-11. **Prototype features not built:** editing assumptions inside the app (values are read-only; edit `data/*.csv`), PDF export (the app downloads the plan as JSON), place search on the map, and the offline/error preview toggles.
+11. **Prototype features not built:** editing assumptions inside the app (values are read-only; edit `data/*.csv`), PDF export (the app downloads the plan as JSON) and the offline/error preview toggles.
+12. **Croptions Kit:** no hardware. Readings come from the hidden simulator and live in server memory (lost on restart). CWSI coefficients, alert limits and kit prices are estimates; no yield gain from the kit is assumed.
 
 What is **not** faked: the app never uses made-up climate data. The synthetic climate years exist only in `tests/`.

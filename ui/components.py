@@ -167,7 +167,8 @@ KIT_ART = """<svg viewBox="0 0 240 200" width="100%" role="img" aria-label="Crop
 </svg>"""
 
 
-def kit_pitch(lang: str, price_qar: float | None = None, service_qar: float | None = None, compact: bool = False) -> str:
+def kit_pitch(lang: str, price_qar: float | None = None, service_qar: float | None = None, compact: bool = False,
+              pod_area_m2: float | None = None) -> str:
     """Marketing block for the Croptions Kit: what it is, what each part does, and the placeholder price."""
     features = "".join(
         f'<div class="f"><div class="i">{icon}</div><div><b>{escape(t(f"kp_f{i}", lang))}</b><p>{escape(t(f"kp_f{i}t", lang))}</p></div></div>'
@@ -176,7 +177,7 @@ def kit_pitch(lang: str, price_qar: float | None = None, service_qar: float | No
     price = ""
     if price_qar is not None:
         price = (f'<div class="price">{escape(t("kp_price", lang).format(price=n0(price_qar), service=n0(service_qar)))}'
-                 f'<span>{escape(t("kp_price_note", lang))}</span></div>')
+                 f'<span>{escape(t("kp_price_note", lang).format(area=n0(pod_area_m2)))}</span></div>')
     art = "" if compact else f'<div class="art">{KIT_ART}</div>'
     return (f'<div class="cr-kit{" compact" if compact else ""}"><div class="copy"><span class="cr-pill sand">{escape(t("kp_eyebrow", lang))}</span>'
             f'<h2>{escape(t("kp_title", lang))}</h2><p class="lead">{escape(t("kp_sub", lang))}</p>'

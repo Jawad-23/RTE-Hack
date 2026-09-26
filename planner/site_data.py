@@ -23,6 +23,8 @@ import requests
 CACHE_DIR = Path(__file__).resolve().parent.parent / "data" / "cache" / "site"
 TIMEOUT_S = 20
 DAY_S = 24 * 3600
+RETRY_AFTER_S = 15 * 60  # after a failed call, skip that service for this long (per process)
+_failed: dict[str, float] = {}  # service name -> time.monotonic() of its last failure
 
 PVGIS_URL = "https://re.jrc.ec.europa.eu/api/v5_3/PVcalc"
 PVGIS_PAGE = "https://joint-research-centre.ec.europa.eu/photovoltaic-geographical-information-system-pvgis_en"
@@ -37,17 +39,26 @@ FORECAST_DAILY = ["temperature_2m_max", "relative_humidity_2m_mean", "uv_index_m
 
 
 def _cached(name: str, max_age_s: float, fetch) -> dict:
-    """Read data/cache/site/<name>.json if younger than max_age_s, else call fetch() and cache a good result."""
+    """Read data/cache/site/<name>.json if younger than max_age_s, else call fetch() and cache a good result.
+
+    A failure is not cached on disk, but the service (the part of name before "_") is skipped for
+    RETRY_AFTER_S, so an unreachable API costs one timeout, not one per plan.
+    """
     path = CACHE_DIR / f"{name}.json"
     try:
         if path.exists() and time.time() - path.stat().st_mtime < max_age_s:
             return json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         pass
+    service = name.split("_", 1)[0]
+    if service in _failed and time.monotonic() - _failed[service] < RETRY_AFTER_S:
+        return {"available": False, "reason": f"{service} failed recently; retrying later"}
     try:
         result = {"available": True, **fetch()}
     except (requests.RequestException, ValueError, KeyError, IndexError, TypeError) as exc:
+        _failed[service] = time.monotonic()
         return {"available": False, "reason": f"{type(exc).__name__}: {exc}"}
+    _failed.pop(service, None)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(result), encoding="utf-8")
     return result
@@ -67,7 +78,8 @@ def pvgis(lat: float, lon: float) -> dict:
             "sun_on_panel_kwh_m2_year": round(float(fixed["H(i)_y"]), 1),
             "heat_loss_pct": round(-float(fixed["l_tg"]), 1),
             "tilt_deg": int(mount["slope"]["value"]),
-            "azimuth_deg": int(mount["azimuth"]["value"]),
+            "azimuth_deg": int(mount["azimuth"]["value"]),  # PVGIS convention: 0 = south, 90 = west, -90 = east
+            "bearing_deg": int(mount["azimuth"]["value"] + 180) % 360,  # compass: 0 = north, 180 = south
             "elevation_m": float(data["inputs"]["location"]["elevation"]),
             "terrain_horizon": bool(meteo.get("use_horizon")),
             "monthly_kwh_per_kw": {int(m["month"]): round(float(m["E_m"]), 1) for m in data["outputs"]["monthly"]["fixed"]},

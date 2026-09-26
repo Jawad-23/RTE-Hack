@@ -67,9 +67,11 @@ def hourly_profile(climate_df: pd.DataFrame, setup: str, area_m2: float, crop=No
     screen = np.zeros(len(t))
     reasons = ["fixed"] * len(t)
     if setup == "agrivoltaic_louver":
+        if not crop:
+            raise ValueError("agrivoltaic_louver needs the crop's limits: its screen follows the crop's t_max_c")
         previous = {"screen_pct": 0}
         for i, row in enumerate(climate_df.to_dict("records")):
-            previous = controller.decide(row, crop or {"t_max_c": 35}, previous, cfg)
+            previous = controller.decide(row, crop, previous, cfg)
             screen[i], reasons[i] = previous["screen_pct"], previous["reason"]
     par = climate_df.get("par_w_m2", pd.Series(np.nan, index=climate_df.index)).to_numpy(dtype=float)
     transmission = float(p["par_transmission"]) * (1 - screen / 100 * float(p["screen_max_light_loss"]))
@@ -130,7 +132,7 @@ def hourly_profile(climate_df: pd.DataFrame, setup: str, area_m2: float, crop=No
 
 def simulate(climate_df: pd.DataFrame, setup: str, crop_limit_c: float, area_m2: float, crop=None) -> dict:
     """Climate table, setup name, crop t_max_c (°C), area (m²) -> inside_temp_c (8,760 °C), coverage_pct, cooling_kwh_year, cooling_kwh_peak_day."""
-    prof = hourly_profile(climate_df, setup, area_m2, crop)
+    prof = hourly_profile(climate_df, setup, area_m2, crop or {"t_max_c": crop_limit_c})
     daily_kwh = prof["cooling_kwh"].groupby(prof["hour_of_year"] // 24).sum()
     return {
         "inside_temp_c": [round(float(v), 2) for v in prof["inside_c"]],

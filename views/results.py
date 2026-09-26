@@ -192,7 +192,7 @@ if gis.get("available") or fc.get("available"):
                      "note": t("gis_yield_n", lang).format(years=gis["years"])},
                     {"k": t("gis_heat", lang), "v": state.n1(gis["heat_loss_pct"]), "unit": "%", "note": t("gis_heat_n", lang)},
                     {"k": t("gis_tilt", lang), "v": str(gis["tilt_deg"]), "unit": "°",
-                     "note": t("gis_tilt_n", lang).format(az=gis["azimuth_deg"], elev=state.n0(gis["elevation_m"]))},
+                     "note": t("gis_tilt_n", lang).format(az=gis.get("bearing_deg", (gis["azimuth_deg"] + 180) % 360), elev=state.n0(gis["elevation_m"]))},
                 ]), unsafe_allow_html=True)
                 st.plotly_chart(charts.solar_months(gis["monthly_kwh_per_kw"], lang), use_container_width=True, config=PLOTLY_CONFIG)
                 st.markdown(f'<p class="cr-note">{t("gis_src", lang)}</p>', unsafe_allow_html=True)

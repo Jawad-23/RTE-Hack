@@ -49,7 +49,7 @@ Alerts are logged when they start, not on every reading. The CWSI coefficients, 
 
 ## Cost
 
-`kit.costs()` adds `ceil(area / kit_pod_area_m2)` pods at `kit_pod_price_qar` (2,000 QAR) plus `kit_service_qar_year` (300 QAR a pod). It reports build cost, yearly profit and payback with the kit next to the plan without it. These are fixed placeholder prices, not quotes. **No yield gain from the kit is assumed.** The only calculated benefit is the day simulator's comparison of fixed shade with the smart screen.
+`kit.costs()` adds `ceil(area / kit_pod_area_m2)` pods at `kit_pod_price_qar` (2,000 QAR) plus `kit_service_qar_year` (300 QAR a pod). It reports build cost, yearly profit and payback with the kit next to the plan without it. These are fixed placeholder prices, not quotes. **No yield gain from the kit is assumed.** The only calculated benefit is `planner/operate.simulate_day`, which compares fixed shade with the smart screen for one day; it is tested but not shown in the app at the moment.
 
 ## How the simulator reaches the dashboard
 

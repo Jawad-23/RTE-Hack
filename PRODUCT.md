@@ -13,4 +13,4 @@ Preserve the committed Croptions prototype and `ui/theme.py`: calm sand surfaces
 Use labelled native controls, readable contrast, responsive layouts, RTL Arabic and reduced-motion alternatives. Colour alone must not communicate suitability.
 
 ## Scope
-Plan → Build → Operate simulation. The Croptions Kit is simulated: a phone sends simulated readings, labelled as such on every screen. Cameras, ESP32, learned controllers and live hardware remain roadmap only. Model/provider configuration and credentials are maintained separately by the teammate.
+Plan → Build → Operate simulation. The Croptions Kit is simulated: the hidden simulator page (`/kit-simulator`) sends readings marked `source = simulated`, and the simulator page and readings CSV say so. Cameras, ESP32, learned controllers and live hardware remain roadmap only. Model/provider configuration and credentials are maintained separately by the teammate.

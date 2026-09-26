@@ -92,4 +92,5 @@ def render(plan: dict | None, lang: str, preset: str | None = None, key: str = "
     })
     if result["plan"] is not None:
         st.session_state["plan"] = result["plan"]
+        ss["chat_plan_sig"] = _plan_signature(result["plan"])  # keep this conversation; only a plan from the Plan page starts a new one
     st.rerun()  # full rerun redraws the dashboard; the dialog reopens because chat_open stays True
