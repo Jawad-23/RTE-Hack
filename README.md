@@ -39,7 +39,7 @@ Simulated readings are built from the site's NASA typical-year weather passed th
 
 ## Record a demo video
 
-`scripts/record_demo.py` drives a real browser through the whole app (Home, Try Al Khor, Results, a question to the assistant, Plan, Compare sites, the Croptions Kit with the phone simulator, Arabic) with captions on screen, and saves `demo-video/croptions-demo.mp4`:
+`scripts/record_demo.py` drives a real browser through the whole app (Home, Try Al Khor, Results and its tabs, a question to the assistant, Plan, Compare sites, the Croptions Kit with the phone simulator and screen evaluation, Arabic) with captions on screen, and saves `demo-video/croptions-demo.mp4`:
 
 ```bash
 pip install playwright imageio-ffmpeg

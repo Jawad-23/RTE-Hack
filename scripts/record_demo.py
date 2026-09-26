@@ -5,9 +5,9 @@
     python scripts/record_demo.py                                # the live site
     python scripts/record_demo.py --url http://localhost:8501    # a local run
 
-Walks through Home -> Try Al Khor -> Results (verdict, assistant, Kit card, investment, NASA card,
-calendar, setups, charts) -> a question to the assistant -> Plan -> Compare sites -> Croptions Kit with the
-phone simulator (Heat stress, Approve) and the one-day smart-screen simulation -> Arabic. Captions are drawn
+Walks through Home -> Try Al Khor -> Results (verdict, assistant, Kit card, then the Money, Site, Crops,
+Energy and Details tabs) -> a question to the assistant -> Plan -> Compare sites -> Croptions Kit with the
+phone simulator (Heat stress, Approve) and the screen evaluation -> Arabic. Captions are drawn
 on the page. Writes <out>/croptions-demo.mp4 (plus the raw .webm clips).
 
 Set CHROMIUM_PATH to use a specific Chromium build. Tips: run it once first so NASA data for Al Khor is cached and the recording has no long wait.
@@ -127,22 +127,20 @@ def record(url: str, out: Path, chat: bool, preview: bool, pace: float) -> dict:
         d.scroll_to(".st-key-card_chat", 1)
         d.say("The assistant explains the plan; every number it writes is checked", 4.5)
         d.say("The Croptions Kit: cost and payback with sensor pods added", 3.5)
-        if d.scroll_to(".st-key-card_invest", 1):
-            d.say("Investment view: NPV, IRR, break-even crop price and a downside case", 4.5)
-        if d.scroll_to(".st-key-card_site", 1):
-            d.say("What NASA measured at this exact site", 3)
-            d.scroll_by(420, 3)
-        if d.scroll_to(".st-key-card_gis", 1):
-            d.say("Terrain-aware solar from EU PVGIS and this week's forecast", 4)
-        if d.scroll_to(".st-key-card_calendar", 1):
-            d.say("Which crops can grow outdoors in which months", 3.5)
-        if d.scroll_to(".st-key-card_compare", 1):
-            d.say("All seven setups compared for the chosen crop", 4)
-        if d.scroll_to(".st-key-card_temp", 1):
-            d.say("Inside temperature of every setup against the crop's heat limit", 4)
-        if d.scroll_to(".st-key-card_sources", 1):
-            d.say("Every assumption and data source is shown", 3)
-
+        tabs = [("Money", ".st-key-card_invest", "Investment view: NPV, IRR, break-even crop price and a downside case"),
+                ("Site", ".st-key-card_site", "What NASA measured at this exact site, plus solar and this week's forecast"),
+                ("Crops", ".st-key-card_calendar", "Which crops grow in which months, and all seven setups compared"),
+                ("Energy", ".st-key-card_temp", "Inside temperature of every setup, solar and cumulative profit"),
+                ("Details", ".st-key-card_sources", "Every assumption and data source is shown")]
+        for name, card, caption in tabs:
+            tab = page.get_by_role("tab", name=re.compile(name))
+            if not tab.count():
+                continue
+            d.say("")
+            d.click(tab, 1.2)
+            d.scroll_to(card, 0.5)
+            d.say(caption, 3)
+            d.scroll_by(420, 2.5)
         # ---------- Ask the assistant ----------
         if chat:
             d.scroll_to(".st-key-card_chat", 1.5)
@@ -171,7 +169,7 @@ def record(url: str, out: Path, chat: bool, preview: bool, pace: float) -> dict:
         # ---------- Compare sites ----------
         d.say("")
         d.click(page.locator(".st-key-topbar").get_by_role("button", name=re.compile("Menu")), 1)
-        d.click(page.get_by_role("link", name=re.compile("Compare sites")), 2)
+        d.click(page.get_by_role("link", name=re.compile("Compare sites")), 2.5)
         d.say("Compare two sites with the same farm and budget")
         d.click(page.get_by_role("button", name=re.compile("^Compare")), 1)
         page.locator(".cr-strip").first.wait_for(timeout=240000)
@@ -181,7 +179,8 @@ def record(url: str, out: Path, chat: bool, preview: bool, pace: float) -> dict:
 
         # ---------- Croptions Kit ----------
         d.say("")
-        d.click(page.locator(".st-key-topbar").get_by_role("link", name=re.compile("Croptions Kit")), 3)
+        d.click(page.locator(".st-key-topbar").get_by_role("button", name=re.compile("Menu")), 1)
+        d.click(page.get_by_role("link", name=re.compile("Croptions Kit")), 3)
         d.say("The Croptions Kit page gets a Kit ID for this farm", 3.5)
         code = page.locator(".cr-kit-id").first.inner_text().strip()
         marks["switch"] = d.now()
@@ -213,16 +212,24 @@ def record(url: str, out: Path, chat: bool, preview: bool, pace: float) -> dict:
             d.click(approve, 3)
         if d.scroll_to(".st-key-card_kit_thermal", 1):
             d.say("Thermal view, alerts and a readings log for the farm", 4)
-        exp = page.locator("[data-testid='stExpander'] summary", has_text=re.compile("one simulated day"))
-        if exp.count():
-            d.click(exp, 2)
-            d.scroll_by(300, 1)
-            d.say("One simulated day: fixed shade vs the kit's smart screen", 5)
+        pick = page.locator(".st-key-card_screen_pick").get_by_text(re.compile("Coated ETFE"))
+        if pick.count():
+            d.say("")
+            d.scroll_to(".st-key-card_screen_pick", 0.5)
+            d.click(pick, 2)
+            d.say("Choose the farm's screen: how it treats light, heat and the crew", 3.5)
+            for name, caption in (("Canopy", "Canopy heat and crop stress under this screen"),
+                                  ("Maintenance", "Maintenance and hazard training for the crew")):
+                tab = page.get_by_role("tab", name=re.compile(name))
+                if tab.count():
+                    d.say("")
+                    d.click(tab, 1)
+                    d.say(caption, 3.5)
 
         # ---------- Arabic ----------
         d.say("")
         d.click(page.locator(".st-key-topbar").get_by_role("link", name="Home"), 2)
-        d.click(page.locator(".st-key-topbar").get_by_text("العربية", exact=True), 3)
+        d.click(page.locator(".st-key-topbar").get_by_text("عربي", exact=True), 3)
         d.say("Full Arabic, right to left", 3.5)
         d.say("croptions.streamlit.app · Plan the farm. The Croptions Kit protects it.", 4)
         marks["end"] = d.now()
