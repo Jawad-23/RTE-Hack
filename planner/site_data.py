@@ -35,7 +35,7 @@ WORLD_BANK_PAGE = "https://data.worldbank.org/indicator/{indicator}"
 LENDING_RATE = "FR.INR.LEND"      # Lending interest rate (%)
 INFLATION = "FP.CPI.TOTL.ZG"      # Inflation, consumer prices (annual %)
 FORECAST_DAILY = ["temperature_2m_max", "relative_humidity_2m_mean", "uv_index_max", "shortwave_radiation_sum",
-                  "et0_fao_evapotranspiration"]
+                  "et0_fao_evapotranspiration", "apparent_temperature_max", "wind_speed_10m_max"]
 
 
 def _cached(name: str, max_age_s: float, fetch) -> dict:
@@ -90,17 +90,18 @@ def pvgis(lat: float, lon: float) -> dict:
 
 
 def forecast(lat: float, lon: float) -> dict:
-    """Pin -> the next 7 days: date, max °C, mean RH %, max UV index, sunlight MJ/m², ET0 mm."""
+    """Pin -> the next 7 days: date, max °C, mean RH %, max UV index, sunlight MJ/m², ET0 mm, feels-like max °C, max wind km/h."""
     def fetch():
         resp = requests.get(FORECAST_URL, params={"latitude": round(lat, 4), "longitude": round(lon, 4), "daily": ",".join(FORECAST_DAILY),
                                                   "timezone": "auto", "forecast_days": 7}, timeout=TIMEOUT_S)
         resp.raise_for_status()
         daily = resp.json()["daily"]
         keys = {"temperature_2m_max": "temp_max_c", "relative_humidity_2m_mean": "rh_mean_pct", "uv_index_max": "uv_max",
-                "shortwave_radiation_sum": "sun_mj_m2", "et0_fao_evapotranspiration": "et0_mm"}
+                "shortwave_radiation_sum": "sun_mj_m2", "et0_fao_evapotranspiration": "et0_mm",
+                "apparent_temperature_max": "feels_like_max_c", "wind_speed_10m_max": "wind_max_kmh"}
         days = [{"date": d, **{new: daily[old][i] for old, new in keys.items()}} for i, d in enumerate(daily["time"])]
         return {"days": days, "source": FORECAST_PAGE}
-    return _cached(f"forecast_{lat:.2f}_{lon:.2f}", 3 * 3600, fetch)
+    return _cached(f"forecast_v2_{lat:.2f}_{lon:.2f}", 3 * 3600, fetch)
 
 
 def money(iso3: str | None) -> dict:
