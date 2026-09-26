@@ -9,7 +9,7 @@ python -m venv .venv
 # Windows:  .venv\Scripts\activate
 # Mac/Linux: source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env          # then paste your own ANTHROPIC_API_KEY (never commit .env)
+cp .env.example .env          # then paste your own LLM key: OpenRouter by default, or Claude (never commit .env)
 streamlit run app.py
 ```
 
@@ -35,7 +35,7 @@ There is no hardware yet, so a hidden simulator page plays the kit. It is not li
 4. Select a scenario: **Normal** (at the time of day you choose), **Heat stress**, **Dry air**, **Sun surge** or **Humid night**, or press **Stream the day** for one reading every two seconds from 05:00 to 20:00.
 5. Back on the Kit page the reading appears within two seconds with leaf temperature, water stress (CWSI), air dryness (VPD), dew-point risk, alerts and the screen advice (Auto, Approve once or Manual). The Results page shows the latest reading in its Croptions Kit card.
 
-Simulated readings are built from the site's NASA typical-year weather passed through the recommended setup; the downloaded readings CSV marks every row `source = simulated`.
+Simulated readings are built from the site's NASA typical-year weather passed through the recommended setup. The Kit page tags each one **Demo reading · simulated**, the Results card says "Latest demo reading (simulated)", and the readings CSV marks every row `source = simulated`. At the bottom of the Kit page, **Fixed shade vs the kit's smart screen** simulates one day of the typical year: the kit benefit the app actually calculates.
 
 ## Layout
 
@@ -52,16 +52,17 @@ Simulated readings are built from the site's NASA typical-year weather passed th
 | `planner/site_climate.py`, `planner/kit.py`, `ui/kit_ui.py` | NASA climate card on Results; the simulated Croptions Kit (readings, CWSI/VPD/dew point, advice, costs, simulator ↔ dashboard inbox) | Repo owner |
 | `planner/finance.py`, `planner/site_data.py` | NPV, IRR, break-even price and downside cases; PVGIS solar, Open-Meteo 7-day forecast and World Bank rates | Repo owner |
 | `planner/crops.py`, `solar.py`, `economics.py`, `data/*.csv` | Crop check, solar sizing, economics, data tables (`demo_sites.csv` holds the example pins) | Mustafa |
-| `planner/agent.py`, `checker.py`, `chat_ui.py`, `i18n/`, `styles/rtl.css` | Claude agent, number checker, English/Arabic chat | Salih |
+| `planner/agent.py`, `checker.py`, `chat_ui.py`, `i18n/`, `styles/rtl.css` | LLM agent (OpenRouter, Claude or a local model), number checker, English/Arabic chat | Salih |
+| `planner/controller.py`, `agronomy.py`, `water.py`, `dust.py`, `scan.py`, `operate.py`, `market.py` | Screen rule, light/VPD checks, FAO-56 water, dust scenarios, area scan, one-day fixed-shade vs smart-screen simulation (a section on the Kit page), FAOSTAT prices | Repo owner / Mustafa |
 | `tests/` | One test file per module | everyone |
-| `docs/` | Problem, plan, team tasks, hackathon brief ([start here](docs/README.md)) | |
+| `docs/` | Problem, plan, team tasks, hackathon brief, Croptions Kit and the [system architecture](docs/07-architecture.md) ([start here](docs/README.md)) | |
 | `ui-demo/` | Croptions UI prototype and design system the app is styled on (open `Croptions.dc.html`) | |
 
 Crop prices come from FAOSTAT for the pin's country and water use is calculated from the site's weather. Crop limits, yields and equipment costs in `data/*.csv` are still estimates, and the app says so. Costs in particular decide which setup wins, so treat recommendations as illustrative until those rows have real sources.
 
 ## The AI assistant
 
-The chat uses Claude with two tools that run our own planner (`run_plan`, `compare_sites`). A checker compares every number in the reply with the plan and tool results; an answer with an unknown number is rewritten once, then replaced by a template built only from plan fields. Without a model configured the chat says it is unavailable and the dashboard still works.
+The assistant runs on any LLM set in `.env` or the app's Secrets: free open models on OpenRouter (the deployed app), Claude, or a local model. On Results it opens with a summary of the plan; the **Ask Croptions** button opens the same conversation in a dialog. It has two tools that run our own planner (`run_plan`, `compare_sites`). A checker compares every number in the reply with the plan and tool results; an answer with an unknown number is rewritten once, then replaced by a template built only from plan fields. Without a model configured the chat says it is unavailable and the dashboard still works.
 
 **Claude (default):** put `ANTHROPIC_API_KEY=...` in `.env`.
 
@@ -101,7 +102,7 @@ Branch per person and feature (`<owner>/<feature>`), only edit files you own, an
 
 ## Roadmap: Plan → Build → Operate
 
-**The planner and Operate simulator use satellite climate data.** Stage 2 is implemented on `jawad/optional-update`: spectral sunlight, humidity stress, daily light, three new setups, a rule-based screen controller, ten-minute simulation playback, cleaning scenarios and a bounded area scan. The branch includes both the Croptions redesign and the existing OpenRouter integration. Model configuration and API credentials are maintained separately by the teammate.
+**Plan and Build are real calculations on open data; Operate is simulated.** On `main` today: spectral sunlight, humidity stress, daily light, seven setups, a rule-based screen controller, cleaning scenarios, a bounded area scan, FAOSTAT prices, FAO-56 water, investment scenarios (NPV, IRR, break-even, downside), PVGIS solar, a 7-day forecast and the Croptions Kit dashboard. How it all fits together: [docs/07-architecture.md](docs/07-architecture.md).
 
 See [implementation, validation and remaining work](docs/05-optional-update.md). Run `python scripts/validate_demo.py --five-sites` to verify public data access and cache demo sites. The default planner now prices uncovered cooling electricity hour by hour; surplus solar earns zero by default. All new crop and equipment parameters remain illustrative estimates.
 

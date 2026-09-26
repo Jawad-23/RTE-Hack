@@ -35,7 +35,7 @@ def render(plan: dict | None, lang: str, preset: str | None = None, key: str = "
     if summary and plan and ss.get("chat_plan_sig") != _plan_signature(plan):
         ss["chat"], ss["chat_plan_sig"], ss["chat_summary_pending"] = [], _plan_signature(plan), True
     chat = ss.setdefault("chat", [])
-    head, new = st.columns([4, 1], vertical_alignment="center")
+    head, new = st.columns([3, 1.3], vertical_alignment="center")
     head.caption(f"● {t('reply_in', lang)} · {t('chat_footer', lang)}")
     if chat and new.button(t("new_chat", lang), key=f"{key}_new", use_container_width=True):
         chat.clear()
@@ -92,4 +92,5 @@ def render(plan: dict | None, lang: str, preset: str | None = None, key: str = "
     })
     if result["plan"] is not None:
         st.session_state["plan"] = result["plan"]
+        ss["chat_plan_sig"] = _plan_signature(result["plan"])  # keep this conversation; only a plan from the Plan page starts a new one
     st.rerun()  # full rerun redraws the dashboard; the dialog reopens because chat_open stays True

@@ -126,6 +126,9 @@ header[data-testid="stHeader"] {{ display: none; }}
 .stButton button[kind="primary"]:hover {{ background: {GREEN_700}; color: {SAND_50}; }}
 .stButton button:disabled {{ background: #9AAE9F; color: {SAND_50}; border: 0; }}
 .stButton button:focus-visible {{ outline: 3px solid {SKY}; outline-offset: 2px; }}
+.stButton button div, .stButton button p, .stDownloadButton button div, .stDownloadButton button p {{ white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.25; }}
+.st-key-topbar .stButton button div, .st-key-topbar .stButton button p {{ white-space: nowrap; }}
+.cr-pill.demo {{ background: {RISKY_FILL}; color: #7A5200; margin-inline-start: 6px; }}
 
 /* Inputs */
 [data-baseweb="input"], [data-baseweb="select"] > div, .stNumberInput > div > div {{

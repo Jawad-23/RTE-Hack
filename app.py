@@ -45,7 +45,7 @@ with st.container(key="topbar"):
     cols[0].markdown(ui.brand(lang), unsafe_allow_html=True)
     cols[1].page_link(PAGES["home"], label=PAGES["home"].title)
     cols[2].page_link(PAGES["plan"], label=PAGES["plan"].title)
-    with cols[4].popover(t("menu", lang), icon=":material/menu:", key="nav_menu", use_container_width=True):
+    with cols[4].popover(t("menu", lang), icon=":material/menu:", key="nav_menu", on_change="rerun", use_container_width=True):
         for group, keys in MENU_GROUPS:
             st.markdown(f'<div class="cr-menu-group">{t(group, lang)}</div>', unsafe_allow_html=True)
             for key in keys:

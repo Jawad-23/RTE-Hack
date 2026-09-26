@@ -71,3 +71,34 @@ def test_failed_call_is_unavailable_not_an_error(tmp_path, monkeypatch):
     assert real.forecast(25.29, 51.53)["available"] is False
     assert real.money("QAT")["available"] is False
     assert real.money(None)["available"] is False
+
+
+def test_failed_service_is_not_retried_on_every_plan(tmp_path, monkeypatch):
+    import importlib
+    real = importlib.reload(site_data)
+    monkeypatch.setattr(real, "CACHE_DIR", tmp_path)
+    calls = []
+
+    def boom(*a, **k):
+        calls.append(1)
+        raise requests.ConnectTimeout("slow")
+    monkeypatch.setattr(real.requests, "get", boom)
+    assert real.forecast(25.29, 51.53)["available"] is False
+    assert real.forecast(24.0, 50.0)["available"] is False  # skipped: the service failed a moment ago
+    assert len(calls) == 1
+
+
+def test_pvgis_gives_a_compass_bearing(tmp_path, monkeypatch):
+    import importlib
+    real = importlib.reload(site_data)
+    monkeypatch.setattr(real, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(real.requests, "get", lambda *a, **k: _Resp(PVGIS))
+    assert real.pvgis(25.29, 51.53)["bearing_deg"] == 194  # PVGIS azimuth 14 (west of south) = compass 194
+
+
+def test_scan_skips_online_extras(monkeypatch):
+    from planner import scan
+    seen = []
+    monkeypatch.setattr(scan, "plan", lambda lat, lon, **kw: seen.append(kw.get("extras")) or {"reason": "", "recommended": None})
+    scan.scan_area((25.0, 51.0, 25.2, 51.2), 2, area_m2=500, budget_qar=1, priority="profit")
+    assert seen == [False] * 4

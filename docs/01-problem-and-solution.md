@@ -1,9 +1,7 @@
 # Farming the Desert Sun: Problem and Solution
 
-**Implementation update:** the Stage 2 software described below is now on
-`jawad/optional-update`. See [implementation and validation](05-optional-update.md)
-for delivered behaviour, measured API checks and remaining assumptions. Hardware
-and learned controllers remain future work; the original pitch narrative is not
+**Status (Sep 26, 2026):** everything below is merged on `main` and deployed from it to https://croptions.streamlit.app. For how it works today, see [System architecture](07-architecture.md). Measured API checks are in [Optional update](05-optional-update.md).
+Hardware and learned controllers remain future work; the original pitch narrative is not
 evidence that the estimated farm economics have been validated.
 
 Sep 24, 2026 · @Blay · updated Sep 25, 2026 to match the code (see [README](README.md) for what changed)
@@ -125,8 +123,8 @@ To stay fully open, the agent talks to the LLM through one function (`call_llm` 
 3. **Light sufficiency (daily light integral)**, so a setup that keeps the crop cool by starving it of light is rejected.
 4. **Three new setups:** a wet-pad greenhouse with a heat-reflective (NIR-blocking) roof, fixed agrivoltaic panels over the crop, and agrivoltaic louvers that move.
 5. **One rule-based controller** that decides how far to close a smart screen each hour. The planner and the demo use the same rule.
-6. **Operate simulator:** a demo page that replays one day at the chosen site, comparing fixed shade with the smart screen. It is a simulation using satellite climate data, not live sensor data.
-8. **Croptions Kit (simulated):** the Operate page becomes the kit dashboard. A phone plays the sensor pod and sends simulated readings; the dashboard shows CWSI, VPD, dew-point risk, light so far and the controller's advice. The Results page adds the kit's cost and a "What NASA measured at this site" card. See [Croptions Kit](06-croptions-kit.md).
+6. **Operate simulator:** `planner/operate.py` replays one day at the chosen site, comparing fixed shade with the smart screen. It is shown at the bottom of the Croptions Kit page as the kit's calculated benefit.
+8. **Croptions Kit (simulated):** the Operate page is the kit dashboard. A hidden simulator page (`/kit-simulator`, on a phone or a second tab) plays the sensor pod and sends simulated readings; the dashboard shows CWSI, VPD, dew-point risk, light so far and the controller's advice. The Results page adds the kit's cost and a "What NASA measured at this site" card. See [Croptions Kit](06-croptions-kit.md).
 7. **Dust:** haze light loss, panel and roof cleaning intervals, and dust-storm exposure.
 
 ## 8. Roadmap: Plan → Build → Operate

@@ -138,3 +138,16 @@ def test_kit_screen_choice_shows_three_evaluations(offline, screen, lang):
     assert not at.exception, at.exception
     assert len(at.tabs) == 3
     assert any(p.value < 1 for p in at.get("progress"))  # hazard training starts unbriefed
+
+
+def test_kit_page_labels_demo_readings_without_the_day_simulator(offline):
+    from ui import kit_ui
+    at = run("views/operate.py", plan=True)
+    code = at.session_state["_kit_code"]
+    kit_ui.send(code, kit_ui.store().context(code), "normal", 12)
+    at.run()
+    assert not at.exception, at.exception
+    text = " ".join(m.value for m in at.markdown)
+    assert "Demo reading" in text
+    assert not any("one simulated day" in e.label for e in at.expander)  # removed on request: it added no new value
+    assert "Too hot with fixed shade" not in text

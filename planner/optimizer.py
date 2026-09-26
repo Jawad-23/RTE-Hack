@@ -28,8 +28,11 @@ RANK_WORDS = {"profit": "highest 10-year profit", "payback": "fastest payback", 
 
 
 def plan(lat: float, lon: float, area_m2: float, budget_qar: float, priority: str, crop: str | None = None,
-         *, cleaning_interval_days: int | None = None) -> dict:
-    """Pin (°), farm area (m²), budget (QAR), priority, optional crop -> dict: site, recommended, options, calendar, sources, assumptions."""
+         *, cleaning_interval_days: int | None = None, extras: bool = True) -> dict:
+    """Pin (°), farm area (m²), budget (QAR), priority, optional crop -> dict: site, recommended, options, calendar, sources, assumptions.
+
+    extras=False skips the online extras (World Bank rate, PVGIS, forecast), e.g. for each point of an area scan.
+    """
     if priority not in PRIORITIES:
         raise ValueError(f"priority must be one of {PRIORITIES}, got {priority!r}")
     if not np.isfinite([lat, lon, area_m2, budget_qar]).all() or not (-90 <= lat <= 90 and -180 <= lon <= 180):
@@ -62,7 +65,8 @@ def plan(lat: float, lon: float, area_m2: float, budget_qar: float, priority: st
                                             prices["prices"].get(row.crop)))
 
     cfg = solar.load_settings()
-    money = site_data.money(market.iso3(prices["country"]))
+    skipped = {"available": False, "reason": "not requested (extras=False)"}
+    money = site_data.money(market.iso3(prices["country"])) if extras else skipped
     rate = finance.real_rate(money, cfg)
     for o in options:
         o.update(finance.evaluate(o, rate["rate_pct"], cfg.get("electricity_sell_qar_kwh", 0)))
@@ -84,8 +88,8 @@ def plan(lat: float, lon: float, area_m2: float, budget_qar: float, priority: st
         "assumptions": _assumptions(crops_df, prices),
         "kit": kit.costs(area_m2, recommended),
         "finance": {**rate, "years": finance.YEARS, "price_down_pct": finance.PRICE_DOWN * 100, "capex_up_pct": finance.CAPEX_UP * 100},
-        "solar_gis": site_data.pvgis(lat, lon),
-        "forecast": site_data.forecast(lat, lon),
+        "solar_gis": site_data.pvgis(lat, lon) if extras else skipped,
+        "forecast": site_data.forecast(lat, lon) if extras else skipped,
     }
     today = date.today().isoformat()
     for name, info in (("Discount rate: World Bank lending rate and inflation", money),

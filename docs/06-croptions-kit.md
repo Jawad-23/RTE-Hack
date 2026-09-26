@@ -43,13 +43,15 @@ A reading is a plain dict, the same shape a real pod could post later:
 | Leaf too hot | Leaf above the crop's `t_max_c` | Yes |
 | Light so far today | Latest PAR per simulated hour × 3,600 s × `par_umol_j` | Compared with `dli_min_mol_m2_day` |
 | Screen advice | The same `controller.decide` rule the planner uses, run until it settles | — |
-| Thermal image | 32 × 24 grid, crop rows plus stress hot spots. The mean leaf temperature equals the reading; the pattern is illustrative | — |
+| Thermal image | 32 × 24 grid, crop rows plus stress hot spots (labelled illustrative in the app). The mean leaf temperature equals the reading; the pattern is illustrative | — |
 
 Alerts are logged when they start, not on every reading. The CWSI coefficients, alert limits, noise and scenarios are all **estimates** in CSV files. They are not crop-calibrated.
 
 ## Cost
 
-`kit.costs()` adds `ceil(area / kit_pod_area_m2)` pods at `kit_pod_price_qar` (2,000 QAR) plus `kit_service_qar_year` (300 QAR a pod). It reports build cost, yearly profit and payback with the kit next to the plan without it. These are fixed placeholder prices, not quotes. **No yield gain from the kit is assumed.** The only calculated benefit is the day simulator's comparison of fixed shade with the smart screen.
+`kit.costs()` adds `ceil(area / kit_pod_area_m2)` pods at `kit_pod_price_qar` (2,000 QAR) plus `kit_service_qar_year` (300 QAR a pod). It reports build cost, yearly profit and payback with the kit next to the plan without it. These are fixed placeholder prices, not quotes. **No yield gain from the kit is assumed.** The only calculated benefit is `planner/operate.simulate_day`, which compares fixed shade with the smart screen for one day; it is the **Fixed shade vs the kit's smart screen** section at the bottom of the Kit page.
+
+Every simulated reading is tagged **Demo reading · simulated** on the Kit page, and the Results card calls it the latest demo reading. The thermal image is described as illustrative.
 
 ## How the simulator reaches the dashboard
 

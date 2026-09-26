@@ -1,8 +1,8 @@
 # Project docs
 
-**Current branch update:** [Optional update: implementation and validation](05-optional-update.md). Stage 2 is implemented on `jawad/optional-update`; see its live-data report and remaining human validation tasks. Earlier Sep 25 notes below describe the prior baseline.
+**Start here:** [System architecture](07-architecture.md) describes what is on `main` now: every module, API, cache and deployment setting. [Optional update](05-optional-update.md) is the stage 2 validation record (history).
 
-**Croptions Kit:** [simulated kit, phone remote and NASA climate card](06-croptions-kit.md).
+**Croptions Kit:** [the kit dashboard, the hidden simulator and the NASA climate card](06-croptions-kit.md).
 
 Planning documents for our Reboot the Earth Doha 2026 project (Challenge 1). Read them in this order:
 

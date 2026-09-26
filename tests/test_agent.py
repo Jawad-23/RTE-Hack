@@ -98,3 +98,17 @@ def test_compact_plan_is_json_safe_and_smaller(monkeypatch, dry_year):
     slim = agent.compact_plan(full)
     assert len(json.dumps(slim)) < len(json.dumps(full))
     assert "monthly_coverage_pct" not in json.dumps(slim)
+
+
+def test_history_that_opens_with_the_summary_starts_with_a_user_turn(monkeypatch):
+    calls = script(monkeypatch, text("The wet-pad greenhouse keeps it cool."))
+    history = [{"role": "assistant", "content": "Here is your plan summary."}]
+    agent.ask("Why?", history, PLAN)
+    sent = calls[0]["messages"]
+    assert sent[0]["role"] == "user" and sent[1]["role"] == "assistant"
+    assert [m["role"] for m in sent] == ["user", "assistant", "user"]
+
+
+def test_system_prompt_names_every_setup():
+    from planner.schemas import SETUPS
+    assert all(s in agent.SYSTEM_PROMPT for s in SETUPS)

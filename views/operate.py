@@ -110,7 +110,8 @@ def live():
     last = log[-1]
     received = t("kit_last", lang).format(n=last["seq"], at=last["sent_at"][11:19], hour=f"{last['sim_hour']:02d}:00",
                                           scenario=kit_ui.scenario_label(last["scenario"], lang))
-    st.markdown(f'<p class="cr-note">📡 {received}</p>', unsafe_allow_html=True)
+    demo = f'<span class="cr-pill demo">{t("kit_demo_tag", lang)}</span>' if last.get("source") == "simulated" else ""
+    st.markdown(f'<p class="cr-note">📡 {received}{demo}</p>', unsafe_allow_html=True)
     light = kit.dli_so_far(log, last["sim_day"], cfg)
     st.markdown(ui.tiles([
         {"k": t("kit_leaf", lang), "v": state.n1(last["leaf_c"]), "unit": "°C",
