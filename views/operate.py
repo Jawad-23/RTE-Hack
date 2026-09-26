@@ -10,23 +10,25 @@ import pandas as pd
 import streamlit as st
 
 from i18n import t
-from planner import crops, kit, operate
+from planner import crops, kit
 from planner.solar import load_settings
-from ui import charts, insights, kit_ui, state, theme
+from ui import charts, insights, kit_screens, kit_ui, state, theme
 from ui import components as ui
 
 lang = state.lang()
 ss = st.session_state
 plan = ss.get("plan")
-st.markdown(f'<h1 style="font-size:32px;margin:8px 0 0">{t("kit_name", lang)}</h1><p class="cr-sub">{t("kit_sub", lang)}</p>',
-            unsafe_allow_html=True)
 if not plan or not plan.get("options"):
-    st.markdown(ui.kit_pitch(lang), unsafe_allow_html=True)
-    st.write(t("r_empty", lang))
-    if st.button(f"{t('l_plan', lang)} →", type="primary"):
-        st.switch_page(ss["_pages"]["plan"])
+    cfg = load_settings()
+    with st.container(key="kit_home"):  # the pitch is written for the dark green panel
+        st.markdown(ui.kit_pitch(lang, cfg["kit_pod_price_qar"], cfg["kit_service_qar_year"], pod_area_m2=cfg["kit_pod_area_m2"]), unsafe_allow_html=True)
+        st.markdown(f'<p class="cr-kit-empty">{t("kit_empty", lang)}</p>', unsafe_allow_html=True)
+        if st.button(f"{t('l_plan', lang)} →", type="primary", key="kit_plan"):
+            st.switch_page(ss["_pages"]["plan"])
     st.stop()
 
+st.markdown(f'<h1 style="font-size:32px;margin:8px 0 0">{t("kit_name", lang)}</h1><p class="cr-sub">{t("kit_sub", lang)}</p>',
+            unsafe_allow_html=True)
 inp = plan["inputs"]
 weather = state.climate_for(inp["lat"], inp["lon"])
 crop_table = crops.load_crops().set_index("crop")
@@ -65,6 +67,9 @@ with st.container(key="card_kit_setup"):
     st.segmented_control(t("kit_mode", lang), ["auto", "approve", "manual"], default="approve",
                          format_func=lambda m: t(f"kit_mode_{m}", lang), key="_kit_mode")
     st.caption(t(f"kit_mode_{ss.get('_kit_mode') or 'approve'}_n", lang))
+
+# screen choice and its three evaluations (spectrum, canopy stress, maintenance and hazard training)
+kit_screens.render(plan, weather, crop, code, sim_day, cfg, lang)
 
 def _event(seq, kind, **params):
     ss["_kit_events"] = (ss["_kit_events"] + [{"seq": seq, "kind": kind, **params}])[-40:]
@@ -175,27 +180,3 @@ def live():
             st.rerun(scope="fragment")
 
 live()
-
-# ---------- the kit's calculated benefit: one simulated day, fixed shade vs the smart screen ----------
-with st.expander(t("kd_title", lang)):
-    st.caption(t("kd_note", lang))
-    day_no = st.slider(t("kd_day", lang), 1, 365, sim_day, key="_kd_day")
-    try:
-        frame = operate.simulate_day(weather, day_no, crop, inp["area_m2"])
-    except ValueError:
-        frame = None
-        st.warning(t("operate_missing", lang))
-    if frame is not None:
-        limit = float(crop["t_max_c"])
-        step_min = 24 * 60 // len(frame)
-        fixed_hot, smart_hot = (int((frame[k] > limit).sum()) * step_min for k in ("fixed_inside_c", "smart_inside_c"))
-        fixed_par, smart_par = frame["fixed_par_w_m2"].sum(), frame["smart_par_w_m2"].sum()
-        st.markdown(ui.tiles([
-            {"k": t("kd_fixed_hot", lang), "v": state.n0(fixed_hot), "unit": t("kd_min", lang), "note": t("kd_hot_n", lang).format(limit=f"{limit:.0f}")},
-            {"k": t("kd_smart_hot", lang), "v": state.n0(smart_hot), "unit": t("kd_min", lang), "note": t("kd_hot_n", lang).format(limit=f"{limit:.0f}")},
-            {"k": t("kd_light", lang), "v": state.n0(smart_par / fixed_par * 100) if fixed_par > 0 else "—", "unit": "%", "note": t("kd_light_n", lang)},
-            {"k": t("kd_pv", lang), "v": state.n1(frame["smart_pv_kwh"].sum()), "unit": "kWh",
-             "note": t("kd_pv_n", lang).format(fixed=state.n1(frame["fixed_pv_kwh"].sum()))},
-        ]), unsafe_allow_html=True)
-        st.plotly_chart(charts.day_compare(frame, limit, lang), use_container_width=True, config=theme.PLOTLY_CONFIG, key="kd_chart")
-        st.download_button(t("kd_csv", lang), frame.to_csv(index=False), f"croptions-day-{day_no}.csv", "text/csv")

@@ -147,19 +147,3 @@ def solar_months(monthly: dict, lang: str) -> go.Figure:
     fig.update_layout(**theme.plotly_layout(lang, 260))
     fig.update_yaxes(ticksuffix=" kWh")
     return fig
-
-
-def day_compare(frame: pd.DataFrame, limit_c: float, lang: str) -> go.Figure:
-    """One simulated day (operate.simulate_day): outside, fixed shade and smart screen temperatures, and the screen position."""
-    fig = go.Figure()
-    fig.add_bar(x=frame["time"], y=frame["screen_pct"], name=t("operate_screen", lang), yaxis="y2", marker_color="rgba(30,91,63,0.15)")
-    for key, label, colour, dash in (("outside_c", "kd_outside", theme.HEAT_2, "dot"), ("fixed_inside_c", "kd_fixed", theme.SKY, "solid"),
-                                     ("smart_inside_c", "kd_smart", theme.GREEN, "solid")):
-        fig.add_scatter(x=frame["time"], y=frame[key].round(1), name=t(label, lang), mode="lines", line=dict(color=colour, width=2.5, dash=dash))
-    fig.add_scatter(x=frame["time"], y=[limit_c] * len(frame), name=t("fc_limit", lang).format(limit=f"{limit_c:.0f}"), mode="lines",
-                    line=dict(color=theme.HEAT_3, dash="dash", width=2), hoverinfo="skip")
-    fig.update_layout(**theme.plotly_layout(lang, 340))
-    fig.update_layout(yaxis=dict(ticksuffix=" °C"), yaxis2=dict(overlaying="y", side="right", ticksuffix="%", range=[0, 100], tickmode="linear",
-                                                            dtick=20, showgrid=False))
-    fig.update_xaxes(tickmode="array", tickvals=["00:00", "06:00", "12:00", "18:00", "23:50"])
-    return fig

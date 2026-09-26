@@ -9,9 +9,19 @@ LANGS = ("en", "ar")
 _DIR = Path(__file__).resolve().parent
 
 
-@lru_cache(maxsize=None)
 def _load(lang: str) -> dict:
-    return json.loads((_DIR / f"{lang}.json").read_text(encoding="utf-8"))
+    """Strings for one language, re-read whenever the JSON file changes.
+
+    Keyed on the file's modification time: a long-running server (Streamlit Cloud reloads changed code
+    but keeps this module) would otherwise keep serving the strings from before a deploy.
+    """
+    path = _DIR / f"{lang}.json"
+    return _read(path, path.stat().st_mtime_ns)
+
+
+@lru_cache(maxsize=8)
+def _read(path: Path, mtime_ns: int) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def t(key: str, lang: str = "en") -> str:
